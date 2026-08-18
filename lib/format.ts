@@ -33,6 +33,23 @@ export function formatSignedNumber(value: number, digits = 2): string {
   return `${sign}${Math.abs(value).toFixed(digits)}`;
 }
 
+const compactFormatter = new Intl.NumberFormat("en-US", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+/**
+ * Magnitudes that span several orders of magnitude, e.g. gamma exposure.
+ *
+ * The number itself is unitless — what matters is one strike's size relative to
+ * its neighbours — so a compact form carries the comparison without pretending
+ * the trailing digits mean anything.
+ */
+export function formatCompact(value: number): string {
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return `${sign}${compactFormatter.format(Math.abs(value))}`;
+}
+
 export function directionClass(value: number): string {
   if (value > 0) return "text-up";
   if (value < 0) return "text-down";

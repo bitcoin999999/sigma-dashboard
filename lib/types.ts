@@ -5,6 +5,45 @@ export type SigmaStatus =
   | "OVERHEATED"
   | "OVERSOLD";
 
+/** One strike's net gamma exposure. `netGex` is signed: + cushions, − amplifies. */
+export interface GexLevel {
+  strike: number;
+  netGex: number;
+}
+
+/**
+ * Dealer gamma exposure for one symbol, as published by the snapshot job.
+ *
+ * Every figure here is computed upstream by `compactor.summarize_gex` in the
+ * uw-analyzer repo — the same single-source rule the σ band follows. Nothing in
+ * this app re-derives a level from raw greeks.
+ *
+ * The sign convention is the whole point: positive net GEX means dealers are
+ * long gamma and hedge *against* the move, which is what makes a strike behave
+ * like support or resistance. Negative net GEX means they hedge *with* it, so
+ * those strikes are acceleration risk, not a floor.
+ */
+export interface GexProfile {
+  /** Settlement date of the open interest behind these figures. */
+  asOf: string;
+  dealer: "LONG_GAMMA" | "SHORT_GAMMA";
+  /** Net gamma across all strikes for `asOf`. */
+  netGamma: number;
+  /** Recent sessions, oldest first — shows whether the cushion is building. */
+  netGammaHistory: { date: string; value: number }[];
+  /** Strike where net GEX flips sign, or null when it never does in range. */
+  zeroGamma: number | null;
+  maxPositive: GexLevel | null;
+  maxNegative: GexLevel | null;
+  /** Positive-GEX strikes above spot, strongest first. */
+  resistance: GexLevel[];
+  /** Positive-GEX strikes below spot, strongest first. */
+  support: GexLevel[];
+  acceleration: (GexLevel & { side: "ABOVE" | "BELOW" })[];
+  /** Strikes nearest spot, ascending. The chart series. */
+  profile: GexLevel[];
+}
+
 /**
  * What a data source (hosted snapshot today, a database later) is expected to
  * provide. Everything else on `StockData` is derived from these fields.
@@ -24,6 +63,8 @@ export interface Quote {
   sigmaPercent: number;
   /** Recent regular-session closes, oldest first. Charted, never derived from. */
   history: { date: string; close: number }[];
+  /** Absent when the options feed had nothing usable for this symbol. */
+  gex?: GexProfile;
 }
 
 export interface SectorEtfQuote extends Quote {

@@ -1,5 +1,7 @@
 "use client";
 
+import * as React from "react";
+
 import { X } from "lucide-react";
 
 import { Dialog, DialogClose, DialogPortal } from "@/components/ui/dialog";
@@ -15,6 +17,7 @@ import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 import { ChangePill } from "./change-pill";
+import { GexPanel } from "./gex-panel";
 import { PriceChart } from "./price-chart";
 import { SigmaRangeBar } from "./sigma-range-bar";
 import { StatusBadge } from "./status-badge";
@@ -44,15 +47,25 @@ export function StockDetailPanel({
             "sm:data-closed:slide-out-to-right-6 sm:data-open:slide-in-from-right-6",
           )}
         >
-          {stock && <DetailContent stock={stock} />}
+          {/* Keyed on the symbol so switching tickers resets the view tab —
+              a GEX ladder left over from the previous symbol would read as
+              this one's. */}
+          {stock && <DetailContent key={stock.symbol} stock={stock} />}
         </DialogPrimitive.Popup>
       </DialogPortal>
     </Dialog>
   );
 }
 
+type DetailView = "GEX" | "BAND";
+
 function DetailContent({ stock }: { stock: StockData }) {
   const meta = STATUS_META[stock.status];
+  // GEX is the headline view when the options feed carried this symbol; the
+  // price path stays one click away rather than being replaced outright.
+  const [view, setView] = React.useState<DetailView>(
+    stock.gex ? "GEX" : "BAND",
+  );
 
   return (
     <div style={statusStyle(stock.status)} className="flex min-h-0 flex-col">
@@ -108,11 +121,31 @@ function DetailContent({ stock }: { stock: StockData }) {
         </div>
 
         <div className="mt-6">
-          <span className="label-xs">
-            Price path vs band · last {stock.history.length} sessions
-          </span>
-          <div className="mt-2">
-            <PriceChart stock={stock} />
+          {stock.gex ? (
+            <div className="flex items-center gap-1 rounded-full border border-border/70 p-1">
+              <ViewTab
+                label="Options GEX"
+                active={view === "GEX"}
+                onClick={() => setView("GEX")}
+              />
+              <ViewTab
+                label="Price path"
+                active={view === "BAND"}
+                onClick={() => setView("BAND")}
+              />
+            </div>
+          ) : (
+            <span className="label-xs">
+              Price path vs band · last {stock.history.length} sessions
+            </span>
+          )}
+
+          <div className="mt-3">
+            {view === "GEX" && stock.gex ? (
+              <GexPanel stock={stock} />
+            ) : (
+              <PriceChart stock={stock} />
+            )}
           </div>
         </div>
 
@@ -131,6 +164,33 @@ function DetailContent({ stock }: { stock: StockData }) {
         </dl>
       </div>
     </div>
+  );
+}
+
+function ViewTab({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={cn(
+        "flex-1 rounded-full px-3 py-1 text-xs font-medium transition-colors",
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        active
+          ? "bg-[color-mix(in_oklch,var(--foreground)_8%,transparent)] text-foreground"
+          : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {label}
+    </button>
   );
 }
 
