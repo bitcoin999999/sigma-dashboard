@@ -1,0 +1,40 @@
+const priceFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+const smallPriceFormatter = new Intl.NumberFormat("en-US", {
+  minimumFractionDigits: 3,
+  maximumFractionDigits: 3,
+});
+
+/** Sub-$10 names need an extra digit or the σ band edges collapse visually. */
+export function formatPrice(value: number): string {
+  const formatter = Math.abs(value) < 10 ? smallPriceFormatter : priceFormatter;
+  return formatter.format(value);
+}
+
+export function formatCurrency(value: number): string {
+  return `$${formatPrice(value)}`;
+}
+
+export function formatPercent(value: number, digits = 2): string {
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return `${sign}${Math.abs(value).toFixed(digits)}%`;
+}
+
+export function formatSigma(zScore: number, digits = 2): string {
+  const sign = zScore > 0 ? "+" : zScore < 0 ? "−" : "";
+  return `${sign}${Math.abs(zScore).toFixed(digits)}σ`;
+}
+
+export function formatSignedNumber(value: number, digits = 2): string {
+  const sign = value > 0 ? "+" : value < 0 ? "−" : "";
+  return `${sign}${Math.abs(value).toFixed(digits)}`;
+}
+
+export function directionClass(value: number): string {
+  if (value > 0) return "text-up";
+  if (value < 0) return "text-down";
+  return "text-muted-foreground";
+}
