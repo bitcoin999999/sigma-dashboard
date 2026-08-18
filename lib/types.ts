@@ -6,7 +6,7 @@ export type SigmaStatus =
   | "OVERSOLD";
 
 /**
- * What a data source (mock file today, market API later) is expected to
+ * What a data source (hosted snapshot today, a database later) is expected to
  * provide. Everything else on `StockData` is derived from these fields.
  *
  * `anchor` is the close the σ band was struck from — the band is centred on a

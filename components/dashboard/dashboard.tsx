@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
 
 import { ControlsBar } from "./controls-bar";
 import { SectorEtfMonitor } from "./sector-etf-monitor";
-import { SectorHeatmap } from "./sector-heatmap";
+import { SectorTreemap } from "./sector-treemap";
 import { SigmaOverview } from "./sigma-overview";
 import { StockDetailPanel } from "./stock-detail-panel";
 import { StockGrid } from "./stock-grid";
@@ -230,10 +230,14 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
 
           <Section
             eyebrow="Sector map"
-            title="Sector heatmap"
-            description="Sorted by z-score. Tint intensity tracks distance from the anchor close; hue carries direction."
+            title="Sector map"
+            description="The whole board at once. Tint intensity tracks distance from the anchor close; hue carries direction and stage."
           >
-            <SectorHeatmap etfs={etfs} onSelect={setSelected} />
+            <SectorTreemap
+              stocks={stocks}
+              etfs={etfs}
+              onSelect={setSelected}
+            />
           </Section>
         </div>
       </main>

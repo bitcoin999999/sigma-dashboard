@@ -36,7 +36,7 @@ export function resolveStatus(zScore: number): SigmaStatus {
 
 /**
  * Turns a raw quote into the full derived record the UI renders.
- * Swapping the mock file for a live feed only has to satisfy `Quote`.
+ * The upstream publisher only has to satisfy `Quote` for the UI to render.
  */
 export function buildStockData(quote: Quote): StockData {
   const standardDeviation = (quote.anchor * quote.sigmaPercent) / 100;
