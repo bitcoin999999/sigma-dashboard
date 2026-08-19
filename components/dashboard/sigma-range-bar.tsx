@@ -1,3 +1,7 @@
+"use client";
+
+import * as React from "react";
+
 import {
   BAND_LIMIT,
   SIGMA_EXTREME,
@@ -52,6 +56,22 @@ export function SigmaRangeBar({
   const clipped = isBeyondBand(zScore);
   const isExtreme = status === "OVERHEATED" || status === "OVERSOLD";
   const detailed = variant === "detailed";
+
+  // Hover cannot carry this on a phone, and neither can `:focus` — mobile
+  // Safari does not focus a button on tap, so the price vanished the moment
+  // the finger lifted. A tap latches it instead, and a second tap puts the
+  // name back. Ticks latch independently on purpose: reading the band means
+  // comparing −1σ against +1σ, and one shared slot would only ever show one
+  // of them. The two rows are far enough apart that the numbers never meet.
+  const [latched, setLatched] = React.useState<ReadonlySet<TickKey>>(
+    () => new Set(),
+  );
+  const toggle = (key: TickKey) =>
+    setLatched((prev) => {
+      const next = new Set(prev);
+      if (!next.delete(key)) next.add(key);
+      return next;
+    });
 
   return (
     <div style={statusStyle(status)} className={cn("w-full", className)}>
@@ -148,6 +168,8 @@ export function SigmaRangeBar({
               );
             }
 
+            const held = latched.has(tick.key);
+
             return (
               <button
                 key={tick.key}
@@ -162,26 +184,35 @@ export function SigmaRangeBar({
                 // exactly where the plain label did.
                 className={cn(
                   placement,
-                  "group grid cursor-default justify-items-center rounded-sm px-2 py-1 -my-1",
+                  "group grid cursor-pointer justify-items-center rounded-sm px-2 py-1 -my-1",
                   "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
                 )}
                 style={{ left: `${tick.at}%` }}
+                onClick={() => toggle(tick.key)}
+                aria-pressed={held}
                 aria-label={`${tick.label}: ${formatCurrency(price)}`}
               >
-                {/* `active` is not redundant with `focus`: a tap on mobile
-                    Safari does not reliably focus a button, so without it the
-                    price would never appear there. With it the number shows
-                    while the finger is down, and stays up afterwards on the
-                    browsers that do focus. */}
+                {/* Each state picks exactly one opacity utility rather than
+                    layering `opacity-100` over `opacity-0`. Two utilities from
+                    the same group have equal specificity, so which one won
+                    would come down to their order in the sheet. */}
                 <span
                   aria-hidden
-                  className="[grid-area:1/1] transition-opacity duration-150 group-hover:opacity-0 group-focus:opacity-0 group-active:opacity-0"
+                  className={cn(
+                    "[grid-area:1/1] transition-opacity duration-150",
+                    held ? "opacity-0" : "group-hover:opacity-0 group-focus:opacity-0",
+                  )}
                 >
                   {tick.label}
                 </span>
                 <span
                   aria-hidden
-                  className="[grid-area:1/1] whitespace-nowrap text-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus:opacity-100 group-active:opacity-100"
+                  className={cn(
+                    "[grid-area:1/1] whitespace-nowrap text-foreground transition-opacity duration-150",
+                    held
+                      ? "opacity-100"
+                      : "opacity-0 group-hover:opacity-100 group-focus:opacity-100",
+                  )}
                 >
                   {formatCurrency(price)}
                 </span>
