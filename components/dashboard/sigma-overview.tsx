@@ -2,6 +2,7 @@
 
 import { formatSigma } from "@/lib/format";
 import {
+  BAND_LIMIT,
   SIGMA_EXTREME,
   STATUS_META,
   STATUS_ORDER,
@@ -124,12 +125,17 @@ export function SigmaOverview({
 }
 
 function Axis() {
+  // ±2σ is where `bandPosition` clamps, so those ticks sit exactly on the ends
+  // of the track — they label the edge of the plot rather than a point inside
+  // it. `dropped` alternates from there inward so no two neighbours share a row.
   const ticks = [
+    { z: -BAND_LIMIT, label: "−2σ", dropped: false },
     { z: -SIGMA_EXTREME, label: "−1.5σ", dropped: true },
     { z: -1, label: "−1σ", dropped: false },
     { z: 0, label: "Anchor", dropped: false },
     { z: 1, label: "+1σ", dropped: false },
     { z: SIGMA_EXTREME, label: "+1.5σ", dropped: true },
+    { z: BAND_LIMIT, label: "+2σ", dropped: false },
   ];
 
   return (
