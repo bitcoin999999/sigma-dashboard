@@ -9,7 +9,7 @@ import {
   statusStyle,
   type StatusCounts,
 } from "@/lib/sigma";
-import type { StockData } from "@/lib/types";
+import type { SigmaStatus, StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 import { SIGMA } from "./sigma-glyph";
@@ -108,11 +108,13 @@ export function SigmaOverview({
       <div className="flex min-w-0 flex-col gap-5 border-t border-border/70 pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
         <ExtremeList
           title="Most overheated"
+          status="OVERHEATED"
           stocks={overheated}
           onSelect={onSelect}
         />
         <ExtremeList
           title="Most oversold"
+          status="OVERSOLD"
           stocks={oversold}
           onSelect={onSelect}
         />
@@ -210,16 +212,26 @@ function Stat({
 
 function ExtremeList({
   title,
+  status,
   stocks,
   onSelect,
 }: {
   title: string;
+  /** Which end of the band the list covers. Colours the heading, nothing else. */
+  status: SigmaStatus;
   stocks: StockData[];
   onSelect: (symbol: string) => void;
 }) {
   return (
-    <div>
-      <h3 className="label-xs">{title}</h3>
+    // The heading borrows the band's own colour so the two lists are told
+    // apart before either is read. It is the same hue the legend, the dots and
+    // the badges use for that end of the band — a fourth palette here would
+    // make the page carry two scales that mean the same thing.
+    <div style={statusStyle(status)}>
+      <h3 className="label-xs state-tint flex items-center gap-1.5">
+        <span aria-hidden className="size-1.5 rounded-full bg-[var(--state)]" />
+        {title}
+      </h3>
       <ul className="mt-2.5 space-y-1">
         {stocks.map((stock) => (
           <li key={stock.symbol}>
