@@ -50,6 +50,21 @@ export function formatCompact(value: number): string {
   return `${sign}${compactFormatter.format(Math.abs(value))}`;
 }
 
+/**
+ * "2026-08-18" → "Aug 18".
+ *
+ * Pinned to UTC on both ends. Snapshot dates are calendar labels for a US
+ * trading session, not instants; parsing them in the viewer's zone would slide
+ * the label a day backwards for anyone west of Greenwich.
+ */
+export function formatDay(iso: string): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 export function directionClass(value: number): string {
   if (value > 0) return "text-up";
   if (value < 0) return "text-down";

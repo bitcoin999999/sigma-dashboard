@@ -1,3 +1,4 @@
+import { formatDay } from "@/lib/format";
 import type { MarketSnapshot, Quote, SectorEtfQuote } from "@/lib/types";
 
 import { blobSource } from "./sources/blob";
@@ -10,14 +11,6 @@ export interface SnapshotPayload {
   quotes: Quote[];
   sectorQuotes: SectorEtfQuote[];
   snapshot: MarketSnapshot;
-}
-
-function formatDay(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  });
 }
 
 /** The band runs anchor close → next Friday close, so the window is anchor + 7d. */

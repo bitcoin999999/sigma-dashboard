@@ -129,14 +129,16 @@ function DetailContent({ stock }: { stock: StockData }) {
                 onClick={() => setView("GEX")}
               />
               <ViewTab
-                label="Price path"
+                label={stock.intraday ? "Price today" : "Price path"}
                 active={view === "BAND"}
                 onClick={() => setView("BAND")}
               />
             </div>
           ) : (
             <span className="label-xs">
-              Price path vs band · last {stock.history.length} sessions
+              {stock.intraday
+                ? "Price today vs band"
+                : `Price path vs band · last ${stock.history.length} sessions`}
             </span>
           )}
 

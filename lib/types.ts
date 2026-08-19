@@ -65,6 +65,23 @@ export interface Quote {
   history: { date: string; close: number }[];
   /** Absent when the options feed had nothing usable for this symbol. */
   gex?: GexProfile;
+  /** Absent when the intraday feed was short or landed on a different session. */
+  intraday?: IntradaySeries;
+}
+
+/**
+ * One regular session, bar by bar.
+ *
+ * The publisher only emits this when the bars belong to the same session
+ * `price` came from. That check is not cosmetic: a chart from another day
+ * sitting under the "… close" label is stale data wearing a current label.
+ */
+export interface IntradaySeries {
+  date: string;
+  /** Bar size the publisher used, e.g. "5m". Displayed, never parsed. */
+  candle: string;
+  /** Oldest first. `time` is ET "HH:MM", running 09:30 → 16:00. */
+  points: { time: string; close: number }[];
 }
 
 export interface SectorEtfQuote extends Quote {
