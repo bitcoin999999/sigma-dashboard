@@ -110,6 +110,13 @@ function DetailContent({ stock }: { stock: StockData }) {
             zScore={stock.zScore}
             status={stock.status}
             variant="detailed"
+            prices={{
+              lowerExtreme: stock.sigmaExtremeLower,
+              lower1: stock.sigma1Lower,
+              anchor: stock.anchor,
+              upper1: stock.sigma1Upper,
+              upperExtreme: stock.sigmaExtremeUpper,
+            }}
           />
         </div>
 

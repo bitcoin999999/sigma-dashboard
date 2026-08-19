@@ -5,7 +5,7 @@ import {
   isBeyondBand,
   statusStyle,
 } from "@/lib/sigma";
-import { formatSigma } from "@/lib/format";
+import { formatCurrency, formatSigma } from "@/lib/format";
 import type { SigmaStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -17,12 +17,14 @@ const EDGES = {
   upperExtreme: bandPosition(SIGMA_EXTREME),
 };
 
-const TICKS = [
-  { at: EDGES.lowerExtreme, label: "−1.5σ", strong: true },
-  { at: EDGES.lower1, label: "−1σ", strong: false },
-  { at: EDGES.anchor, label: "Anchor", strong: true },
-  { at: EDGES.upper1, label: "+1σ", strong: false },
-  { at: EDGES.upperExtreme, label: "+1.5σ", strong: true },
+type TickKey = keyof typeof EDGES;
+
+const TICKS: { key: TickKey; at: number; label: string; strong: boolean }[] = [
+  { key: "lowerExtreme", at: EDGES.lowerExtreme, label: "−1.5σ", strong: true },
+  { key: "lower1", at: EDGES.lower1, label: "−1σ", strong: false },
+  { key: "anchor", at: EDGES.anchor, label: "Anchor", strong: true },
+  { key: "upper1", at: EDGES.upper1, label: "+1σ", strong: false },
+  { key: "upperExtreme", at: EDGES.upperExtreme, label: "+1.5σ", strong: true },
 ];
 
 interface SigmaRangeBarProps {
@@ -30,6 +32,12 @@ interface SigmaRangeBarProps {
   status: SigmaStatus;
   /** `detailed` adds axis labels and a floating read-out above the marker. */
   variant?: "compact" | "detailed";
+  /**
+   * What each tick is worth in money. Supplying it turns the `detailed` axis
+   * labels into hit targets that trade their name for their price on hover or
+   * tap; without it they stay plain text.
+   */
+  prices?: Record<TickKey, number>;
   className?: string;
 }
 
@@ -37,6 +45,7 @@ export function SigmaRangeBar({
   zScore,
   status,
   variant = "compact",
+  prices,
   className,
 }: SigmaRangeBarProps) {
   const position = bandPosition(zScore);
@@ -45,13 +54,15 @@ export function SigmaRangeBar({
   const detailed = variant === "detailed";
 
   return (
-    <div
-      style={statusStyle(status)}
-      className={cn("w-full", className)}
-      role="img"
-      aria-label={`Position within expected range: ${formatSigma(zScore)} from the anchor close, between ${BAND_LIMIT} sigma bounds.`}
-    >
-      <div className={cn("relative", detailed ? "h-2.5" : "h-1.5")}>
+    <div style={statusStyle(status)} className={cn("w-full", className)}>
+      {/* The graphic is the track alone. The axis below it is text, and in the
+          detailed variant it is focusable — neither can live inside role="img",
+          whose subtree a screen reader collapses into the label. */}
+      <div
+        className={cn("relative", detailed ? "h-2.5" : "h-1.5")}
+        role="img"
+        aria-label={`Position within expected range: ${formatSigma(zScore)} from the anchor close, between ${BAND_LIMIT} sigma bounds.`}
+      >
         {/* Track: neutral outside, faintly lit inside the ±1σ core. */}
         <div className="absolute inset-0 overflow-hidden rounded-full bg-[color-mix(in_oklch,var(--foreground)_8%,transparent)]">
           <div
@@ -79,7 +90,7 @@ export function SigmaRangeBar({
         {/* Guide rails. */}
         {TICKS.map((tick) => (
           <span
-            key={tick.label}
+            key={tick.key}
             aria-hidden
             className={cn(
               "absolute -translate-x-1/2 rounded-full",
@@ -112,23 +123,71 @@ export function SigmaRangeBar({
 
       {detailed && (
         /* Two rows: ±1.5σ sits below ±1σ so the labels never collide in the
-           narrow detail panel. */
+           narrow detail panel. That stagger is also what lets a label widen
+           into a price on hover without running into its neighbour. */
         <div className="relative mt-2 h-8">
-          {TICKS.map((tick) => (
-            <span
-              key={tick.label}
-              className={cn(
-                "num absolute -translate-x-1/2 text-[10px] tracking-tight",
-                tick.strong && tick.at !== EDGES.anchor ? "top-4" : "top-0",
-                tick.at === EDGES.anchor
-                  ? "text-foreground/70"
-                  : "text-muted-foreground/70",
-              )}
-              style={{ left: `${tick.at}%` }}
-            >
-              {tick.label}
-            </span>
-          ))}
+          {TICKS.map((tick) => {
+            const placement = cn(
+              "num absolute -translate-x-1/2 text-[10px] tracking-tight",
+              tick.strong && tick.key !== "anchor" ? "top-4" : "top-0",
+              tick.key === "anchor"
+                ? "text-foreground/70"
+                : "text-muted-foreground/70",
+            );
+            const price = prices?.[tick.key];
+
+            if (price === undefined) {
+              return (
+                <span
+                  key={tick.key}
+                  className={placement}
+                  style={{ left: `${tick.at}%` }}
+                >
+                  {tick.label}
+                </span>
+              );
+            }
+
+            return (
+              <button
+                key={tick.key}
+                type="button"
+                // Reading a level off the bar meant doing the arithmetic against
+                // the table further down. The name and the number occupy one
+                // grid cell so the swap costs no layout and shifts nothing.
+                //
+                // `px-2 py-1 -my-1` widens the hit area for a fingertip; the
+                // padding cancels against the centring transform horizontally
+                // and against the negative margin vertically, so the text lands
+                // exactly where the plain label did.
+                className={cn(
+                  placement,
+                  "group grid cursor-default justify-items-center rounded-sm px-2 py-1 -my-1",
+                  "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                )}
+                style={{ left: `${tick.at}%` }}
+                aria-label={`${tick.label}: ${formatCurrency(price)}`}
+              >
+                {/* `active` is not redundant with `focus`: a tap on mobile
+                    Safari does not reliably focus a button, so without it the
+                    price would never appear there. With it the number shows
+                    while the finger is down, and stays up afterwards on the
+                    browsers that do focus. */}
+                <span
+                  aria-hidden
+                  className="[grid-area:1/1] transition-opacity duration-150 group-hover:opacity-0 group-focus:opacity-0 group-active:opacity-0"
+                >
+                  {tick.label}
+                </span>
+                <span
+                  aria-hidden
+                  className="[grid-area:1/1] whitespace-nowrap text-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus:opacity-100 group-active:opacity-100"
+                >
+                  {formatCurrency(price)}
+                </span>
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
