@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-import { formatPercent, formatSigma } from "@/lib/format";
+import { formatCurrency, formatPercent, formatSigma } from "@/lib/format";
 import { BAND_LIMIT, statusStyle } from "@/lib/sigma";
 import { type Rect, type TreemapTile, inset, squarify } from "@/lib/treemap";
 import type { SectorEtfData, StockData } from "@/lib/types";
@@ -210,7 +210,7 @@ export function SectorTreemap({
                   height: frame.height,
                 }}
               >
-                <span className="block truncate px-1.5 text-[10px] leading-[19px] font-medium tracking-[0.08em] text-muted-foreground/80 uppercase">
+                <span className="block truncate px-1.5 text-[11px] leading-[19px] font-medium tracking-[0.08em] text-muted-foreground/80 uppercase">
                   {group.data.label}
                 </span>
               </div>
@@ -267,17 +267,26 @@ function TreemapCell({ tile, onSelect, showSector }: TreemapCellProps) {
   // symbol above it.
   const sigmaSize = Math.max(9, symbolSize * 0.52);
   const changeSize = Math.max(8, symbolSize * 0.44);
+  const priceSize = Math.max(8, symbolSize * 0.42);
+  // The sector caption gets its own ramp rather than a fixed 10px: on the ETF
+  // map it names the tile, and at 10px "Consumer Staples" was unreadable at a
+  // glance. Capped so it never competes with the ticker above it.
+  const labelSize = Math.max(11, Math.min(symbolSize * 0.42, 14));
 
   const showSigma = height >= symbolSize + sigmaSize + 12 && width >= 44;
   const showChange =
     showSigma && height >= symbolSize + sigmaSize + changeSize + 18;
-  const showLabel = showSector && height >= 86 && width >= 78;
+  const showPrice =
+    showChange &&
+    width >= 52 &&
+    height >= symbolSize + sigmaSize + changeSize + priceSize + 24;
+  const showLabel = showSector && height >= 96 && width >= 78;
 
   return (
     <button
       type="button"
       onClick={() => onSelect(data.symbol)}
-      title={`${data.symbol} · ${data.name} · ${formatSigma(data.zScore)} · ${formatPercent(data.changePercent)}`}
+      title={`${data.symbol} · ${data.name} · ${formatCurrency(data.price)} · ${formatSigma(data.zScore)} · ${formatPercent(data.changePercent)}`}
       style={{
         ...statusStyle(data.status),
         left: tile.x + GAP / 2,
@@ -329,8 +338,22 @@ function TreemapCell({ tile, onSelect, showSector }: TreemapCellProps) {
         </span>
       )}
 
+      {showPrice && (
+        <span
+          className="num leading-none text-foreground/75"
+          style={{ fontSize: priceSize }}
+        >
+          {formatCurrency(data.price)}
+        </span>
+      )}
+
       {showLabel && "sectorLabel" in data && (
-        <span className="mt-0.5 max-w-full truncate text-[10px] leading-tight text-muted-foreground">
+        // Wraps rather than truncates — "Communication Services" is the tile's
+        // name here, and a clipped name is worse than a second line.
+        <span
+          className="mt-0.5 line-clamp-2 max-w-full leading-tight text-muted-foreground"
+          style={{ fontSize: labelSize }}
+        >
           {data.sectorLabel}
         </span>
       )}
