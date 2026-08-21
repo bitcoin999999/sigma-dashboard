@@ -4,6 +4,7 @@ import type {
   SigmaStatus,
   SortKey,
   StockData,
+  WeeklyBand,
 } from "@/lib/types";
 
 /**
@@ -61,6 +62,78 @@ export function buildStockData(quote: Quote): StockData {
 
 export function buildStockList(quotes: Quote[]): StockData[] {
   return quotes.map(buildStockData);
+}
+
+/** A finished week scored against its own anchor. */
+export interface WeeklyBandResult {
+  anchorDate: string;
+  anchor: number;
+  /** Absolute 1σ in price units, fixed for that week. */
+  standardDeviation: number;
+
+  /**
+   * Where the week actually ended, at the closing Friday. This is the settled
+   * result — the number the band is judged on.
+   */
+  closeZ: number;
+  closeDate: string;
+  close: number;
+  status: SigmaStatus;
+
+  /**
+   * The furthest any close inside the week got from the anchor, signed and
+   * kept with its date.
+   *
+   * Measured on closes only, because closes are all the snapshot carries — an
+   * intraday spike that came back by the bell is invisible here. That is the
+   * honest reading of the data rather than a floor-to-ceiling range it cannot
+   * support.
+   */
+  peakZ: number;
+  peakDate: string;
+  /** True when the week ended somewhere other than its own extreme. */
+  retraced: boolean;
+}
+
+/**
+ * Scores a closed band. Returns null when the inputs cannot produce a z at all,
+ * which is the same "no data" the publisher signals by omitting the block.
+ */
+export function buildWeeklyBand(band: WeeklyBand): WeeklyBandResult | null {
+  const standardDeviation = (band.anchor * band.sigmaPercent) / 100;
+  if (!standardDeviation || band.closes.length === 0) return null;
+
+  const zAt = (close: number) =>
+    calculateZScore(close, band.anchor, standardDeviation);
+
+  const last = band.closes[band.closes.length - 1];
+  const closeZ = zAt(last.close);
+
+  let peakZ = 0;
+  let peakDate = last.date;
+  for (const point of band.closes) {
+    const z = zAt(point.close);
+    if (Math.abs(z) > Math.abs(peakZ)) {
+      peakZ = z;
+      peakDate = point.date;
+    }
+  }
+
+  return {
+    anchorDate: band.anchorDate,
+    anchor: band.anchor,
+    standardDeviation,
+    closeZ,
+    closeDate: last.date,
+    close: last.close,
+    status: resolveStatus(closeZ),
+    peakZ,
+    peakDate,
+    // A tenth of a sigma of slack: rounding to two decimals means a peak and a
+    // close that print the same string can still differ in the raw float, and
+    // flagging that as a retracement would be noise.
+    retraced: Math.abs(peakZ) - Math.abs(closeZ) >= 0.1,
+  };
 }
 
 /** Position of a z-score along the band track, as 0–100%. */

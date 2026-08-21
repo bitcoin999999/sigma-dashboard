@@ -67,6 +67,33 @@ export interface Quote {
   gex?: GexProfile;
   /** Absent when the intraday feed was short or landed on a different session. */
   intraday?: IntradaySeries;
+  /** The band that closed last Friday. Absent when it could not be sourced. */
+  lastWeek?: WeeklyBand;
+}
+
+/**
+ * A band that has already closed — last week's anchor and what price did inside
+ * it.
+ *
+ * Raw inputs only, exactly like `Quote`. z is derived in `lib/sigma.ts` through
+ * the same `(price − anchor) / (anchor × sigmaPercent/100)` path the live band
+ * uses, so a finished week and the running one are read off the same ruler.
+ *
+ * Absent when the publisher had no anchor σ cached for that week. It is never
+ * reconstructed from current implied volatility: pricing a finished week with
+ * this week's IV is the 1.47× divergence the upstream single-source rule exists
+ * to prevent, and it would silently rescale every number in the table.
+ */
+export interface WeeklyBand {
+  /** The Friday close the band was struck from. */
+  anchorDate: string;
+  anchor: number;
+  sigmaPercent: number;
+  /**
+   * Sessions inside the band, oldest first — the anchor itself is excluded, and
+   * the last entry is the closing Friday.
+   */
+  closes: { date: string; close: number }[];
 }
 
 /**

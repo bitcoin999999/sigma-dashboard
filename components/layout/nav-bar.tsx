@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const LINKS = [
   { id: "market", label: "Market" },
   { id: "watchlist", label: "Watchlist" },
+  { id: "lastweek", label: "Last week" },
   { id: "sectors", label: "Sectors" },
 ];
 

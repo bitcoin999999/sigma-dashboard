@@ -26,12 +26,14 @@ import type {
 import { cn } from "@/lib/utils";
 
 import { ControlsBar } from "./controls-bar";
+import { IndexStrip } from "./index-strip";
 import { SectorEtfMonitor } from "./sector-etf-monitor";
 import { SectorTreemap } from "./sector-treemap";
 import { SigmaOverview } from "./sigma-overview";
 import { StockDetailPanel } from "./stock-detail-panel";
 import { StockGrid } from "./stock-grid";
 import { SummaryCards } from "./summary-cards";
+import { WeeklyRecapTable } from "./weekly-recap-table";
 
 interface DashboardProps {
   quotes: Quote[];
@@ -164,6 +166,14 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
             )}
             aria-busy={refreshing}
           >
+            {/* The benchmarks come before the aggregate counts on purpose: a
+                dozen names past +1σ reads very differently depending on whether
+                the index went with them or not. */}
+            <div className="mb-6">
+              <p className="label-xs mb-3">Benchmarks</p>
+              <IndexStrip stocks={stocks} onSelect={setSelected} />
+            </div>
+
             <SummaryCards
               counts={counts}
               previousCounts={previousCounts}
@@ -216,6 +226,28 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
                   onReset={resetFilters}
                 />
               </div>
+            </div>
+          </Section>
+
+          <Section
+            id="lastweek"
+            eyebrow="Last week"
+            title="Weekly band recap"
+            description="How far each symbol got through the band that closed last Friday, next to where it sits in the band running now. Both columns are scored against their own week's anchor and its own σ."
+            action={
+              <span className="num text-xs text-muted-foreground">
+                {stocks.length} symbols
+              </span>
+            }
+          >
+            <div
+              className={cn(
+                "transition-opacity duration-200",
+                refreshing && "opacity-70",
+              )}
+              aria-busy={refreshing}
+            >
+              <WeeklyRecapTable stocks={stocks} onSelect={setSelected} />
             </div>
           </Section>
 
