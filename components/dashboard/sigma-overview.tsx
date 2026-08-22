@@ -7,6 +7,7 @@ import {
   STATUS_META,
   STATUS_ORDER,
   bandPosition,
+  buildWeeklyBand,
   statusStyle,
   type StatusCounts,
 } from "@/lib/sigma";
@@ -23,21 +24,71 @@ interface SigmaOverviewProps {
   stocks: StockData[];
   counts: StatusCounts;
   onSelect: (symbol: string) => void;
+  /**
+   * The band was struck at the last close and no session has traded inside it
+   * yet. Every z is 0 by construction, which changes what this panel can
+   * honestly say — see below.
+   */
+  opening: boolean;
 }
 
 export function SigmaOverview({
   stocks,
   counts,
   onSelect,
+  opening,
 }: SigmaOverviewProps) {
+  /**
+   * Before the week's first session closes there is nothing to distribute: all
+   * 75 dots stack on the anchor, average z is 0, and "inside ±1σ" reads 75/75.
+   * A plot that says the same thing about every symbol is not a reading, so the
+   * whole left half stands down until Monday settles.
+   *
+   * The two ranking lists have the same problem for a different reason — with
+   * every z tied at 0, "most overheated" would be whichever three symbols the
+   * sort happened to leave on top. So they fall back to the week that actually
+   * settled, retitled so the numbers cannot be mistaken for the running band.
+   */
+  if (opening) {
+    const settled = ends(settledEntries(stocks));
+    // No settled week to fall back on either — better an absent panel than two
+    // empty headings.
+    if (settled.overheated.length === 0) return null;
+
+    return (
+      <div className="glass p-5 sm:p-6">
+        <h2 className="font-heading text-base font-medium">
+          Where last week ended
+        </h2>
+        <p className="mt-1 text-xs text-muted-foreground">
+          The new band was struck at Friday&apos;s close, so every symbol sits at
+          its anchor until Monday trades. These are the extremes of the week that
+          just settled, scored at its own close.
+        </p>
+
+        <div className="mt-6 grid gap-6 sm:grid-cols-2 sm:gap-10">
+          <ExtremeList
+            title="Last week's most overheated"
+            status="OVERHEATED"
+            entries={settled.overheated}
+            onSelect={onSelect}
+          />
+          <ExtremeList
+            title="Last week's most oversold"
+            status="OVERSOLD"
+            entries={settled.oversold}
+            onSelect={onSelect}
+          />
+        </div>
+      </div>
+    );
+  }
+
   const plotted = layout(stocks);
   const maxRow = plotted.reduce((max, item) => Math.max(max, item.row), 0);
   const insideBand = counts.total - counts.beyondUpper1 - counts.beyondLower1;
 
-  const overheated = [...stocks]
-    .sort((a, b) => b.zScore - a.zScore)
-    .slice(0, 3);
-  const oversold = [...stocks].sort((a, b) => a.zScore - b.zScore).slice(0, 3);
+  const { overheated, oversold } = ends(currentEntries(stocks));
 
   return (
     <div className="glass grid gap-8 p-5 sm:p-6 lg:grid-cols-[minmax(0,1fr)_260px] lg:gap-10">
@@ -110,13 +161,13 @@ export function SigmaOverview({
         <ExtremeList
           title="Most overheated"
           status="OVERHEATED"
-          stocks={overheated}
+          entries={overheated}
           onSelect={onSelect}
         />
         <ExtremeList
           title="Most oversold"
           status="OVERSOLD"
-          stocks={oversold}
+          entries={oversold}
           onSelect={onSelect}
         />
       </div>
@@ -219,13 +270,13 @@ function Stat({
 function ExtremeList({
   title,
   status,
-  stocks,
+  entries,
   onSelect,
 }: {
   title: string;
   /** Which end of the band the list covers. Colours the heading, nothing else. */
   status: SigmaStatus;
-  stocks: StockData[];
+  entries: RankEntry[];
   onSelect: (symbol: string) => void;
 }) {
   return (
@@ -239,12 +290,12 @@ function ExtremeList({
         {title}
       </h3>
       <ul className="mt-2.5 space-y-1">
-        {stocks.map((stock) => (
+        {entries.map(({ stock, zScore, status: rowStatus }) => (
           <li key={stock.symbol}>
             <button
               type="button"
               onClick={() => onSelect(stock.symbol)}
-              style={statusStyle(stock.status)}
+              style={statusStyle(rowStatus)}
               className="flex w-full items-center gap-3 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               <span className="num w-14 shrink-0 text-xs font-semibold">
@@ -254,7 +305,7 @@ function ExtremeList({
                 {stock.name}
               </span>
               <span className="num state-tint ml-auto shrink-0 text-xs font-semibold">
-                {formatSigma(stock.zScore)}
+                {formatSigma(zScore)}
               </span>
             </button>
           </li>
@@ -262,6 +313,50 @@ function ExtremeList({
       </ul>
     </div>
   );
+}
+
+/**
+ * One symbol's reading for a ranking list, decoupled from which week it came
+ * from. `zScore` and `status` are passed rather than read off the stock so the
+ * same list can render the running band or a settled one.
+ */
+interface RankEntry {
+  stock: StockData;
+  zScore: number;
+  status: SigmaStatus;
+}
+
+function currentEntries(stocks: StockData[]): RankEntry[] {
+  return stocks.map((stock) => ({
+    stock,
+    zScore: stock.zScore,
+    status: stock.status,
+  }));
+}
+
+/**
+ * The same symbols scored at last Friday's close.
+ *
+ * Symbols the publisher could not source a settled band for are dropped, not
+ * zero-filled — a missing week is not a flat week, and zero-filling would park
+ * them in the middle of a ranking they have no reading for.
+ */
+function settledEntries(stocks: StockData[]): RankEntry[] {
+  return stocks.flatMap((stock) => {
+    const band = stock.lastWeek ? buildWeeklyBand(stock.lastWeek) : null;
+    return band
+      ? [{ stock, zScore: band.closeZ, status: band.status }]
+      : [];
+  });
+}
+
+/** The three highest and the three lowest, each ordered outward from the band. */
+function ends(entries: RankEntry[]) {
+  const sorted = [...entries].sort((a, b) => b.zScore - a.zScore);
+  return {
+    overheated: sorted.slice(0, 3),
+    oversold: sorted.slice(-3).reverse(),
+  };
 }
 
 /** Strip plot: bucket by horizontal position, stack collisions upward. */

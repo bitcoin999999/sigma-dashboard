@@ -209,6 +209,7 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
                 stocks={stocks}
                 counts={counts}
                 onSelect={setSelected}
+                opening={opening}
               />
             </div>
           </div>

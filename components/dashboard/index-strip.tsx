@@ -115,9 +115,18 @@ function IndexCard({
         className="mt-3"
       />
 
-      <p className="mt-2.5 text-[11px] text-muted-foreground">
-        {meta.longLabel}
-      </p>
+      {/* Same pairing the watchlist cards use — the ±1σ prices on the left, the
+          verdict on the right. Without the range the bar above is a position
+          with no scale: "0.00σ" says the index is at its anchor but not how
+          wide the week it is anchored in actually is. */}
+      <div className="mt-2.5 flex items-center justify-between gap-2">
+        <span className="num text-[11px] text-muted-foreground/80">
+          {formatCurrency(stock.sigma1Lower)} – {formatCurrency(stock.sigma1Upper)}
+        </span>
+        <span className="shrink-0 text-[11px] text-muted-foreground">
+          {meta.longLabel}
+        </span>
+      </div>
     </button>
   );
 }
