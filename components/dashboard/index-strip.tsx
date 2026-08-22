@@ -8,18 +8,23 @@ import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
- * The three tickers that answer "is it me or is it the market?" before any
- * single name means anything: the S&P, the Nasdaq 100, and semis.
+ * The four tickers that answer "is it me or is it the market?" before any
+ * single name means anything.
  *
- * Order is deliberate — broad, then growth, then the highest-beta of the three.
+ * Order runs by how much of the week's move is a growth story: the Nasdaq 100
+ * first, the S&P next, then the Dow as the old-economy read, and semis last as
+ * the highest-beta of the four. Read left to right, a divergence tells you
+ * which end of the market it belongs to.
+ *
  * The lookup is by symbol against the same universe the rest of the page reads,
  * so no separate data path exists to drift out of sync.
  */
-const INDEX_SYMBOLS = ["SPY", "QQQ", "SOXX"] as const;
+const INDEX_SYMBOLS = ["QQQ", "SPY", "DIA", "SOXX"] as const;
 
 const INDEX_CAPTION: Record<string, string> = {
-  SPY: "S&P 500",
   QQQ: "Nasdaq 100",
+  SPY: "S&P 500",
+  DIA: "Dow 30",
   SOXX: "Semiconductors",
 };
 
@@ -39,7 +44,10 @@ export function IndexStrip({ stocks, onSelect, className }: IndexStripProps) {
   if (indices.length === 0) return null;
 
   return (
-    <div className={cn("grid gap-3 sm:grid-cols-3", className)}>
+    // Two-up before four-up, never three: at three columns the fourth card
+    // drops to a row of its own and reads as an afterthought rather than a
+    // peer of the other three.
+    <div className={cn("grid gap-3 sm:grid-cols-2 lg:grid-cols-4", className)}>
       {indices.map((stock) => (
         <IndexCard key={stock.symbol} stock={stock} onSelect={onSelect} />
       ))}
