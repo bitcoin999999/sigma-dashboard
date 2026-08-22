@@ -12,7 +12,13 @@ export interface SnapshotFile {
   band: {
     anchorDate: string;
     sessionDate: string;
+    /** Regular sessions since the anchor. 0 on the Friday the band was struck. */
     elapsedDays: number;
+    /**
+     * Always false: the publisher rolls the band forward at Friday's close, so
+     * what it reports is by definition a band still to be traded. Kept because
+     * older snapshots carry it and dropping it would fail their parse.
+     */
     settled: boolean;
   };
   quotes: Quote[];
@@ -61,7 +67,11 @@ export function assertSnapshotFile(
     );
   }
 
-  if (!file.band?.anchorDate || !file.band?.sessionDate) {
+  if (
+    !file.band?.anchorDate ||
+    !file.band?.sessionDate ||
+    typeof file.band?.elapsedDays !== "number"
+  ) {
     throw new Error(`Snapshot from ${origin} is missing its band window.`);
   }
 

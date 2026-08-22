@@ -5,6 +5,7 @@ import * as React from "react";
 import { NavBar } from "@/components/layout/nav-bar";
 import { Section } from "@/components/layout/section";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { useStoredView } from "@/hooks/use-stored-view";
 
 import type { SnapshotPayload } from "@/lib/snapshot";
 import {
@@ -41,6 +42,7 @@ interface DashboardProps {
   snapshot: MarketSnapshot;
 }
 
+
 export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
   const [liveQuotes, setLiveQuotes] = React.useState(quotes);
   const [liveSectorQuotes, setLiveSectorQuotes] = React.useState(sectorQuotes);
@@ -50,6 +52,7 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
   const [query, setQuery] = React.useState("");
   const [filter, setFilter] = React.useState<FilterKey>("ALL");
   const [sort, setSort] = React.useState<SortKey>("ZSCORE");
+  const [view, setView] = useStoredView();
   const [selected, setSelected] = React.useState<string | null>(null);
 
   const stocks = React.useMemo(() => buildStockList(liveQuotes), [liveQuotes]);
@@ -64,6 +67,16 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
   );
 
   const counts = React.useMemo(() => summarize(stocks), [stocks]);
+
+  /**
+   * The band was struck at the most recent close and has not been traded yet —
+   * the Saturday state, once the publisher rolls the anchor to Friday's close.
+   *
+   * Worth calling out rather than letting the page read as a result: every z is
+   * 0 by construction, so a board with no dislocations means "the week has not
+   * started", not "nothing is stretched".
+   */
+  const opening = meta.bandElapsed === 0;
 
   /**
    * The same band scored at the prior session's close. σ and the anchor are
@@ -144,7 +157,7 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
           <div className="max-w-2xl">
             <p className="label-xs">
               Band window · {meta.bandWindow} · anchored {meta.bandAnchor}
-              {meta.settled && " · settled"}
+              {opening && " · opens Monday"}
             </p>
             <h1 className="mt-3 font-heading text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
               <span className="text-gradient">
@@ -153,9 +166,20 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
               {counts.total} symbols measured against their own implied
-              volatility for the week. Anything past ±1σ has left the range it
-              normally trades in — and is surfaced first. Prices are the{" "}
-              {meta.updatedAt}; the band resets each Friday.
+              volatility for the week.{" "}
+              {opening ? (
+                <>
+                  The band was struck at the {meta.updatedAt} and covers the
+                  week ahead, so every symbol sits at its anchor until Monday
+                  trades. What each card shows now is the range, not a result.
+                </>
+              ) : (
+                <>
+                  Anything past ±1σ has left the range it normally trades in —
+                  and is surfaced first. Prices are the {meta.updatedAt}; the
+                  band resets each Friday.
+                </>
+              )}
             </p>
           </div>
 
@@ -210,6 +234,8 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
                 onFilterChange={setFilter}
                 sort={sort}
                 onSortChange={setSort}
+                view={view}
+                onViewChange={setView}
                 filterCounts={filterCounts}
               />
 
@@ -223,6 +249,7 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
                 <StockGrid
                   stocks={visible}
                   onSelect={setSelected}
+                  view={view}
                   onReset={resetFilters}
                 />
               </div>
@@ -231,9 +258,9 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
 
           <Section
             id="lastweek"
-            eyebrow="Last week"
+            eyebrow="Last two weeks"
             title="Weekly band recap"
-            description="How far each symbol got through the band that closed last Friday, next to where it sits in the band running now. Both columns are scored against their own week's anchor and its own σ."
+            description="Where each symbol closed out the two weeks that have already settled, next to where it sits in the band running now. Every column is scored against its own week's anchor and its own σ, so the row reads as a direction rather than three unrelated numbers."
             action={
               <span className="num text-xs text-muted-foreground">
                 {stocks.length} symbols

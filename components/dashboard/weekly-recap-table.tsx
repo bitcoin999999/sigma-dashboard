@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp } from "lucide-react";
 
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { formatDay, formatSigma } from "@/lib/format";
@@ -10,20 +10,22 @@ import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 /**
- * One row: a symbol, the band that closed last Friday, and the band it is in
- * now.
+ * One row: a symbol and the two bands that have already settled, oldest first,
+ * next to the band it is in now.
  *
- * `lastWeek` is optional because the publisher only emits it when that week's
- * anchor σ was cached — a symbol added mid-week has no settled band to report
- * and is shown as such rather than being dropped from the table or, worse,
- * measured against a σ borrowed from a different week.
+ * Both settled slots are optional and independently so. The publisher fills
+ * them positionally — a symbol added mid-week has no anchor σ cached for the
+ * weeks before it joined — and a missing week is shown as missing rather than
+ * being back-filled from current implied volatility, which would price a
+ * finished week on a ruler that did not exist yet.
  */
 interface RecapRow {
   stock: StockData;
+  weekBeforeLast: WeeklyBandResult | null;
   lastWeek: WeeklyBandResult | null;
 }
 
-type RecapSort = "LAST_WEEK" | "PEAK" | "CURRENT" | "SYMBOL";
+type RecapSort = "LAST_WEEK" | "SWING" | "CURRENT" | "SYMBOL";
 
 /**
  * `narrow: false` marks a sort whose column is hidden on a phone. Offering it
@@ -31,7 +33,7 @@ type RecapSort = "LAST_WEEK" | "PEAK" | "CURRENT" | "SYMBOL";
  */
 const SORTS: { key: RecapSort; label: string; narrow: boolean }[] = [
   { key: "LAST_WEEK", label: "Last week", narrow: true },
-  { key: "PEAK", label: "Furthest", narrow: false },
+  { key: "SWING", label: "Biggest swing", narrow: false },
   { key: "CURRENT", label: "This week", narrow: true },
   { key: "SYMBOL", label: "Symbol", narrow: true },
 ];
@@ -48,6 +50,9 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
     () =>
       stocks.map((stock) => ({
         stock,
+        weekBeforeLast: stock.weekBeforeLast
+          ? buildWeeklyBand(stock.weekBeforeLast)
+          : null,
         lastWeek: stock.lastWeek ? buildWeeklyBand(stock.lastWeek) : null,
       })),
     [stocks],
@@ -75,8 +80,14 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
     switch (sort) {
       case "LAST_WEEK":
         return byMagnitude((row) => row.lastWeek?.closeZ ?? null);
-      case "PEAK":
-        return byMagnitude((row) => row.lastWeek?.peakZ ?? null);
+      case "SWING":
+        // The change between the two settled weeks, which is the one number
+        // neither column shows on its own. Needs both weeks to mean anything.
+        return byMagnitude((row) =>
+          row.lastWeek && row.weekBeforeLast
+            ? row.lastWeek.closeZ - row.weekBeforeLast.closeZ
+            : null,
+        );
       case "CURRENT":
         return byMagnitude((row) => row.stock.zScore);
       case "SYMBOL":
@@ -87,24 +98,26 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
   }, [rows, sort]);
 
   const covered = rows.filter((row) => row.lastWeek !== null);
-  const anchorDate = covered[0]?.lastWeek?.anchorDate;
-  const closeDate = covered[0]?.lastWeek?.closeDate;
+  const older = rows.filter((row) => row.weekBeforeLast !== null);
+  const lastEnd = covered[0]?.lastWeek?.closeDate;
+  const olderEnd = older[0]?.weekBeforeLast?.closeDate;
   const missing = rows.length - covered.length;
   const breached = covered.filter(
-    (row) => Math.abs(row.lastWeek!.peakZ) >= SIGMA_1,
+    (row) => Math.abs(row.lastWeek!.closeZ) >= SIGMA_1,
   ).length;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3">
         <p className="text-[13px] text-muted-foreground">
-          {anchorDate && closeDate ? (
+          {lastEnd ? (
             <>
-              Band struck {formatDay(anchorDate)}, settled {formatDay(closeDate)}.{" "}
+              Two settled weeks, each scored at its own Friday close
+              {olderEnd ? <> — {formatDay(olderEnd)}, then {formatDay(lastEnd)}</> : null}.{" "}
               <span className="text-foreground/80">
                 {breached} of {covered.length}
               </span>{" "}
-              left their ±1σ range at some point.
+              closed last week outside their ±1σ range.
             </>
           ) : (
             <>No settled band available for the previous week yet.</>
@@ -113,7 +126,7 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
 
         <div
           role="group"
-          aria-label="Sort last week's bands"
+          aria-label="Sort the weekly recap"
           className="flex items-center gap-1 rounded-lg border border-border/70 p-0.5"
         >
           {SORTS.map((option) => (
@@ -139,27 +152,31 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
 
       <div className="glass overflow-hidden p-0">
         {/* No card stack on small screens: the point of this view is reading
-            two σ figures for the same symbol side by side, and reflowing them
-            onto separate lines destroys exactly that. Instead the two columns
-            that were actually asked for — last week and this week — always fit,
-            and the two extras drop away as the viewport narrows. */}
+            the same symbol's σ across consecutive weeks on one line, and
+            reflowing them onto separate lines destroys exactly that. The two
+            most recent columns always fit; the oldest week drops away as the
+            viewport narrows. */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left sm:min-w-[42rem]">
             <caption className="sr-only">
-              Each tracked symbol&apos;s z-score at last Friday&apos;s close,
-              the furthest it closed from the anchor during that week, and its
-              z-score in the current band.
+              Each tracked symbol&apos;s z-score at the close of the two weeks
+              that have already settled, and its z-score in the band running
+              now.
             </caption>
             <thead>
               <tr className="border-b border-border/60">
                 <Th className="pl-4">Symbol</Th>
+                <Th align="right" className="hidden sm:table-cell">
+                  Two weeks ago
+                  <Sub>
+                    {olderEnd ? `${formatDay(olderEnd)} close` : "at the close"}
+                  </Sub>
+                </Th>
                 <Th align="right">
                   Last week
-                  <Sub>at Friday&apos;s close</Sub>
-                </Th>
-                <Th align="right" className="hidden sm:table-cell">
-                  Furthest
-                  <Sub>peak close in band</Sub>
+                  <Sub>
+                    {lastEnd ? `${formatDay(lastEnd)} close` : "at the close"}
+                  </Sub>
                 </Th>
                 <Th align="right">
                   This week
@@ -199,7 +216,7 @@ function Row({
   row: RecapRow;
   onSelect: (symbol: string) => void;
 }) {
-  const { stock, lastWeek } = row;
+  const { stock, weekBeforeLast, lastWeek } = row;
 
   return (
     <tr
@@ -224,23 +241,21 @@ function Row({
         </button>
       </td>
 
-      <SigmaCell value={lastWeek?.closeZ ?? null} />
+      <SigmaCell
+        value={weekBeforeLast?.closeZ ?? null}
+        className="hidden sm:table-cell"
+      />
 
-      <td className="hidden py-2.5 text-right sm:table-cell">
+      {/* The step between the two settled weeks rides in this cell rather than
+          taking a column of its own: it is a comparison, not a reading, and it
+          only exists when both weeks do. */}
+      <td className="py-2.5 text-right">
         {lastWeek ? (
           <span className="inline-flex items-baseline justify-end gap-1.5">
-            <SigmaText value={lastWeek.peakZ} />
-            {/* The date only earns its ink when the week ended somewhere other
-                than its own extreme — that gap is the difference between "broke
-                out" and "broke out and gave it back". */}
-            {lastWeek.retraced && (
-              <span
-                className="num text-[10px] text-muted-foreground/70"
-                title={`Reached ${formatSigma(lastWeek.peakZ)} on ${formatDay(lastWeek.peakDate)}, closed the week at ${formatSigma(lastWeek.closeZ)}`}
-              >
-                {formatDay(lastWeek.peakDate)}
-              </span>
+            {weekBeforeLast && (
+              <Step from={weekBeforeLast.closeZ} to={lastWeek.closeZ} />
             )}
+            <SigmaText value={lastWeek.closeZ} />
           </span>
         ) : (
           <Empty />
@@ -255,6 +270,34 @@ function Row({
         <StatusBadge status={stock.status} />
       </td>
     </tr>
+  );
+}
+
+/**
+ * Direction of travel between the two settled weeks.
+ *
+ * Signed on the raw z, not on distance from the anchor: −1.2σ following +0.3σ
+ * is a fall even though both weeks "moved away from zero", and an arrow that
+ * pointed up there would invert the story the column exists to tell.
+ */
+function Step({ from, to }: { from: number; to: number }) {
+  const delta = to - from;
+  // Under a tenth of a σ is inside the rounding the columns themselves print;
+  // drawing an arrow for it would claim a direction the numbers do not show.
+  if (Math.abs(delta) < 0.1) {
+    return (
+      <ArrowRight
+        className="size-3 text-muted-foreground/40"
+        aria-label="flat versus the week before"
+      />
+    );
+  }
+  const Icon = delta > 0 ? ArrowUp : ArrowDown;
+  return (
+    <Icon
+      className={cn("size-3", delta > 0 ? "text-up" : "text-down")}
+      aria-label={`${formatSigma(delta)} versus the week before`}
+    />
   );
 }
 
@@ -313,7 +356,7 @@ function Empty() {
   return (
     <span
       className="text-[13px] text-muted-foreground/40"
-      title="No settled band for this symbol last week"
+      title="No settled band for this symbol that week"
     >
       —
     </span>

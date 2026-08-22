@@ -64,7 +64,14 @@ export function buildStockList(quotes: Quote[]): StockData[] {
   return quotes.map(buildStockData);
 }
 
-/** A finished week scored against its own anchor. */
+/**
+ * A finished week scored against its own anchor.
+ *
+ * Only the closing reading is kept. An earlier version also carried the
+ * furthest close inside the week, but a peak is a fact about one week in
+ * isolation, and what the recap is read for is the step from one settled week
+ * to the next. The raw closes stay in the snapshot, so it can be recomputed.
+ */
 export interface WeeklyBandResult {
   anchorDate: string;
   anchor: number;
@@ -79,20 +86,6 @@ export interface WeeklyBandResult {
   closeDate: string;
   close: number;
   status: SigmaStatus;
-
-  /**
-   * The furthest any close inside the week got from the anchor, signed and
-   * kept with its date.
-   *
-   * Measured on closes only, because closes are all the snapshot carries — an
-   * intraday spike that came back by the bell is invisible here. That is the
-   * honest reading of the data rather than a floor-to-ceiling range it cannot
-   * support.
-   */
-  peakZ: number;
-  peakDate: string;
-  /** True when the week ended somewhere other than its own extreme. */
-  retraced: boolean;
 }
 
 /**
@@ -109,16 +102,6 @@ export function buildWeeklyBand(band: WeeklyBand): WeeklyBandResult | null {
   const last = band.closes[band.closes.length - 1];
   const closeZ = zAt(last.close);
 
-  let peakZ = 0;
-  let peakDate = last.date;
-  for (const point of band.closes) {
-    const z = zAt(point.close);
-    if (Math.abs(z) > Math.abs(peakZ)) {
-      peakZ = z;
-      peakDate = point.date;
-    }
-  }
-
   return {
     anchorDate: band.anchorDate,
     anchor: band.anchor,
@@ -127,12 +110,6 @@ export function buildWeeklyBand(band: WeeklyBand): WeeklyBandResult | null {
     closeDate: last.date,
     close: last.close,
     status: resolveStatus(closeZ),
-    peakZ,
-    peakDate,
-    // A tenth of a sigma of slack: rounding to two decimals means a peak and a
-    // close that print the same string can still differ in the raw float, and
-    // flagging that as a retracement would be noise.
-    retraced: Math.abs(peakZ) - Math.abs(closeZ) >= 0.1,
   };
 }
 

@@ -3,13 +3,16 @@
 import { SearchX } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
-import type { StockData } from "@/lib/types";
+import type { StockData, ViewMode } from "@/lib/types";
 
 import { StockCard } from "./stock-card";
+import { StockTable } from "./stock-table";
 
 interface StockGridProps {
   stocks: StockData[];
   onSelect: (symbol: string) => void;
+  /** Cards or rows. Purely presentational — the list itself is identical. */
+  view?: ViewMode;
   loading?: boolean;
   onReset?: () => void;
 }
@@ -20,11 +23,19 @@ const GRID =
 export function StockGrid({
   stocks,
   onSelect,
+  view = "CARD",
   loading,
   onReset,
 }: StockGridProps) {
+  // The skeleton and the empty state are shared on purpose: both say something
+  // about the data, not about the layout, and giving each view its own copy
+  // would be two more things to keep in sync for no reader benefit.
   if (loading) return <StockGridSkeleton />;
   if (stocks.length === 0) return <EmptyState onReset={onReset} />;
+
+  if (view === "LIST") {
+    return <StockTable stocks={stocks} onSelect={onSelect} />;
+  }
 
   return (
     <div className={GRID}>

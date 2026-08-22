@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowUpDown, Search, X } from "lucide-react";
+import { ArrowUpDown, LayoutGrid, List, Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import {
@@ -12,8 +12,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FILTER_OPTIONS, SORT_OPTIONS } from "@/lib/sigma";
-import type { FilterKey, SortKey } from "@/lib/types";
+import type { FilterKey, SortKey, ViewMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
+
+const VIEWS: { key: ViewMode; label: string; Icon: typeof LayoutGrid }[] = [
+  { key: "CARD", label: "Card view", Icon: LayoutGrid },
+  { key: "LIST", label: "List view", Icon: List },
+];
 
 interface ControlsBarProps {
   query: string;
@@ -22,6 +27,8 @@ interface ControlsBarProps {
   onFilterChange: (value: FilterKey) => void;
   sort: SortKey;
   onSortChange: (value: SortKey) => void;
+  view: ViewMode;
+  onViewChange: (value: ViewMode) => void;
   filterCounts: Record<FilterKey, number>;
 }
 
@@ -32,6 +39,8 @@ export function ControlsBar({
   onFilterChange,
   sort,
   onSortChange,
+  view,
+  onViewChange,
   filterCounts,
 }: ControlsBarProps) {
   const inputRef = React.useRef<HTMLInputElement>(null);
@@ -150,6 +159,38 @@ export function ControlsBar({
             ))}
           </SelectContent>
         </Select>
+
+        {/* Icons alone, with the name carried by the accessible label: the two
+            layouts are self-evident from the glyphs, and spelling them out
+            would take more width than the sort control next to it. */}
+        <div
+          role="group"
+          aria-label="Watchlist layout"
+          className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border/70 p-0.5"
+        >
+          {VIEWS.map(({ key, label, Icon }) => {
+            const active = key === view;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => onViewChange(key)}
+                aria-pressed={active}
+                aria-label={label}
+                title={label}
+                className={cn(
+                  "flex size-7 cursor-pointer items-center justify-center rounded-[6px] transition-colors",
+                  "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                  active
+                    ? "bg-[color-mix(in_oklch,var(--foreground)_9%,transparent)] text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <Icon className="size-3.5" aria-hidden />
+              </button>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

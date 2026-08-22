@@ -75,7 +75,7 @@ export async function loadSnapshot(): Promise<SnapshotPayload> {
       updatedAt: `${formatDay(file.band.sessionDate)} close`,
       bandAnchor: `${formatDay(file.band.anchorDate)} close`,
       bandWindow: bandWindow(file.band.anchorDate),
-      settled: file.band.settled,
+      bandElapsed: file.band.elapsedDays,
     },
   };
 }

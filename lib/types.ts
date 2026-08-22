@@ -67,8 +67,21 @@ export interface Quote {
   gex?: GexProfile;
   /** Absent when the intraday feed was short or landed on a different session. */
   intraday?: IntradaySeries;
-  /** The band that closed last Friday. Absent when it could not be sourced. */
+  /** The band that closed most recently. Absent when it could not be sourced. */
   lastWeek?: WeeklyBand;
+  /**
+   * The band that closed the Friday before `lastWeek` did.
+   *
+   * Two settled weeks side by side is what turns a single reading into a
+   * direction: −1.1σ after a flat week is a different story from −1.1σ after
+   * another −1σ week.
+   *
+   * Independently optional. The publisher fills these two slots positionally
+   * and omits whichever it cannot source, so a present `weekBeforeLast` next to
+   * an absent `lastWeek` is possible and means exactly what it says — it is
+   * never the older band shuffled up into the newer slot.
+   */
+  weekBeforeLast?: WeeklyBand;
 }
 
 /**
@@ -143,9 +156,18 @@ export interface MarketSnapshot {
   /** Anchor date of the σ band, i.e. the close the band was struck from. */
   bandAnchor: string;
   bandWindow: string;
-  /** True once the reference session is the closing Friday — the week is done. */
-  settled: boolean;
+  /**
+   * Regular sessions elapsed since the anchor close.
+   *
+   * `0` means the band was struck at the most recent close and has not been
+   * traded yet — the Saturday state, where every z is 0 by construction and the
+   * board is showing the range for the week ahead rather than a result.
+   */
+  bandElapsed: number;
 }
+
+/** How the watchlist is laid out. Presentation only — never filters anything. */
+export type ViewMode = "CARD" | "LIST";
 
 export type SortKey =
   | "SYMBOL"
