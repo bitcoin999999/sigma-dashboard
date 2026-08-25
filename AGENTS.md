@@ -50,8 +50,17 @@ oi_shock/tools/dashboard_snapshot.py   (UW API + sigma_core → 로컬 JSON)
 추가했다. 소급 복원은 불가능하다.
 
 **수집 시작 시점은 코드 추가일이 아니라 배포일이다.** 2026-08-25까지 이 코드는 미배포 상태였고
-(프로덕션 HTML에 `_vercel/insights` 스크립트가 없었다), 그날 커밋 `af6ee0d`와 함께 배포했다.
-즉 **실제 데이터는 2026-08-25부터**다. 확인은 `curl -s <URL> | grep insights`.
+그날 커밋 `af6ee0d`와 함께 배포했다. 즉 **실제 데이터는 2026-08-25부터**다.
+
+살아 있는지 확인하려면 **서버 HTML을 grep 하지 말 것.** `<Analytics />`는 `useEffect`로
+클라이언트에서 스크립트를 주입하므로 SSR HTML에는 절대 안 나온다(이걸로 "미배포"라고
+오판한 적 있다). 대신:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://sigma-dashboard-five.vercel.app/_vercel/insights/script.js
+```
+
+**200이면 정상**(프로젝트 설정의 Web Analytics 토글까지 켜져 있다는 뜻). 꺼져 있으면 404다.
 
 - 트래픽 질문이 오면 2026-08-23 이후 구간만 유효하다고 전제할 것. 그 이전을 물으면 데이터 없음을 먼저 알릴 것.
 - Vercel **Observability**의 엣지 요청 수는 그 이전에도 남아 있으나 봇·정적자산이 섞여 있어
