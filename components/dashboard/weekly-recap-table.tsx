@@ -178,7 +178,7 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
                     {lastEnd ? `${formatDay(lastEnd)} close` : "at the close"}
                   </Sub>
                 </Th>
-                <Th align="right">
+                <Th align="right" className="pr-4 md:pr-0">
                   This week
                   <Sub>current</Sub>
                 </Th>
@@ -248,12 +248,17 @@ function Row({
 
       {/* The step between the two settled weeks rides in this cell rather than
           taking a column of its own: it is a comparison, not a reading, and it
-          only exists when both weeks do. */}
+          only exists when both weeks do. It also drops below sm, where the week
+          it compares against is not on screen — same reason the SWING sort is
+          withheld there, and without it the cell shows two arrows in two
+          different colours with nothing to explain the first. */}
       <td className="py-2.5 text-right">
         {lastWeek ? (
           <span className="inline-flex items-baseline justify-end gap-1.5">
             {weekBeforeLast && (
-              <Step from={weekBeforeLast.closeZ} to={lastWeek.closeZ} />
+              <span className="hidden sm:inline-flex">
+                <Step from={weekBeforeLast.closeZ} to={lastWeek.closeZ} />
+              </span>
             )}
             <SigmaText value={lastWeek.closeZ} />
           </span>

@@ -24,7 +24,7 @@ export function SummaryCards({
   }));
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <SummaryCard
         icon={Activity}
         label="Market Status"
@@ -92,9 +92,9 @@ function SummaryCard({
   return (
     <div
       style={status ? statusStyle(status) : undefined}
-      className="glass flex flex-col justify-between gap-5 p-5"
+      className="glass flex flex-col justify-between gap-4 p-4 sm:gap-5 sm:p-5"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-2 sm:gap-3">
         <span className="label-xs">{label}</span>
         <span
           className={cn(
@@ -108,7 +108,7 @@ function SummaryCard({
 
       <div>
         <div className="flex items-baseline gap-2">
-          <span className="num text-[2rem] leading-none font-semibold tracking-tight">
+          <span className="num text-[1.75rem] leading-none font-semibold tracking-tight sm:text-[2rem]">
             {value}
           </span>
           <span className="text-sm text-muted-foreground">{unit}</span>

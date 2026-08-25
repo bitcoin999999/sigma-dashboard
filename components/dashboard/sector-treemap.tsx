@@ -259,8 +259,14 @@ function TreemapCell({ tile, onSelect, showSector }: TreemapCellProps) {
   // in a narrow tile has to shrink further than a three-letter one, and sizing
   // off the tile alone spills symbols like NBIS and RGTI past their edges. 0.62
   // is the advance width of the tabular numeric face at 1em.
+  //
+  // The 10 is the tile's own horizontal chrome — px-1 on both sides plus the
+  // 1px border — so `usable` is the content box the text actually gets. Reading
+  // it as 6 left four-letter tickers a couple of pixels over in the narrowest
+  // tiles, which `overflow-hidden` then clipped mid-glyph.
   const base = Math.min(width, height);
-  const perChar = (width - 6) / Math.max(data.symbol.length * 0.62, 1);
+  const usable = width - 10;
+  const perChar = usable / Math.max(data.symbol.length * 0.62, 1);
   const symbolSize = Math.max(8, Math.min(base * 0.26, perChar, 30));
 
   // A secondary line is only worth the space if it fits without crowding the
@@ -282,6 +288,11 @@ function TreemapCell({ tile, onSelect, showSector }: TreemapCellProps) {
     height >= symbolSize + sigmaSize + changeSize + priceSize + 24;
   const showLabel = showSector && height >= 96 && width >= 78;
 
+  // A tile too narrow to hold its ticker even at the 8px floor gives up its
+  // side padding rather than clipping the glyphs — 8px of gutter is worth less
+  // than the last letter of the symbol.
+  const tight = perChar < 8;
+
   return (
     <button
       type="button"
@@ -297,7 +308,8 @@ function TreemapCell({ tile, onSelect, showSector }: TreemapCellProps) {
         borderColor: `color-mix(in oklch, var(--state) ${edge}%, transparent)`,
       }}
       className={cn(
-        "absolute flex cursor-pointer flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[5px] border px-1 text-center",
+        "absolute flex cursor-pointer flex-col items-center justify-center gap-0.5 overflow-hidden rounded-[5px] border text-center",
+        tight ? "px-0" : "px-1",
         "transition-[filter,box-shadow] duration-150",
         "hover:z-10 hover:brightness-125 hover:shadow-[0_0_0_1px_var(--state)]",
         "focus-visible:z-10 focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-ring",

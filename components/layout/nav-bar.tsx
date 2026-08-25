@@ -39,7 +39,9 @@ export function NavBar({
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/45">
-      <div className="mx-auto flex h-14 w-full max-w-[1600px] items-center gap-4 px-4 sm:px-6 lg:px-8">
+      {/* Shorter on phones so the second nav row below can carry full-size tap
+          targets without the sticky header eating an eighth of the viewport. */}
+      <div className="mx-auto flex h-12 w-full max-w-[1600px] items-center gap-4 px-4 sm:h-14 sm:px-6 lg:px-8">
         <a
           href="#top"
           className="flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
@@ -124,7 +126,7 @@ export function NavBar({
 
       <nav
         aria-label="Sections"
-        className="flex items-center gap-1 border-t border-border/50 px-4 py-1.5 md:hidden"
+        className="flex items-center gap-1 border-t border-border/50 px-3 py-1 md:hidden"
       >
         {LINKS.map((link) => (
           <a
@@ -132,7 +134,7 @@ export function NavBar({
             href={`#${link.id}`}
             aria-current={active === link.id ? "true" : undefined}
             className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium transition-colors",
+              "inline-flex min-h-9 items-center rounded-full px-3 text-xs font-medium transition-colors",
               active === link.id
                 ? "bg-[color-mix(in_oklch,var(--foreground)_8%,transparent)] text-foreground"
                 : "text-muted-foreground",
