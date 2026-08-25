@@ -1,6 +1,11 @@
 "use client";
 
-import { formatCurrency, formatPercent, formatSigma } from "@/lib/format";
+import {
+  formatBandWidth,
+  formatCurrency,
+  formatPercent,
+  formatSigma,
+} from "@/lib/format";
 import { STATUS_META, statusStyle } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -47,7 +52,12 @@ export function StockTable({ stocks, onSelect }: StockTableProps) {
               {/* The bar is the one cell that should absorb slack as the table
                   widens, so it is the only one without a natural width. */}
               <Th className="hidden w-[26%] pl-6 md:table-cell">Band</Th>
-              <Th align="right">σ</Th>
+              {/* Matches the cell's gutter exactly — the status column takes it
+                  over at xl, and until then a bare header sits flush to the
+                  card edge while the numbers under it are inset. */}
+              <Th align="right" className="pr-4 xl:pr-0">
+                σ
+              </Th>
               <Th align="right" className="hidden pr-4 xl:table-cell">
                 Status
               </Th>
@@ -129,6 +139,9 @@ function Row({
 
       <td className="num hidden py-2.5 text-right text-[11px] whitespace-nowrap text-muted-foreground/80 lg:table-cell">
         {formatCurrency(stock.sigma1Lower)} – {formatCurrency(stock.sigma1Upper)}
+        <span className="ml-1.5 text-muted-foreground/60">
+          {formatBandWidth(stock.sigmaPercent)}
+        </span>
       </td>
 
       <td className="hidden py-2.5 pl-6 md:table-cell">

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatCurrency, formatSigma } from "@/lib/format";
+import { formatBandWidth, formatCurrency, formatSigma } from "@/lib/format";
 import { statusStyle } from "@/lib/sigma";
 import type { SectorEtfData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -129,9 +129,12 @@ export function SectorEtfMonitor({ etfs, onSelect }: SectorEtfMonitorProps) {
               </div>
 
               <div className="mt-3 flex items-center justify-between">
-                <span className="num text-[11px] text-muted-foreground/80">
+                <span className="num min-w-0 truncate text-[11px] text-muted-foreground/80">
                   {formatCurrency(etf.sigma1Lower)} –{" "}
                   {formatCurrency(etf.sigma1Upper)}
+                  <span className="ml-1.5 text-muted-foreground/60">
+                    {formatBandWidth(etf.sigmaPercent)}
+                  </span>
                 </span>
                 <span
                   className={cn(

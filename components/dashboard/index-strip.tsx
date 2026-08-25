@@ -2,7 +2,7 @@
 
 import { ChangePill } from "@/components/dashboard/change-pill";
 import { SigmaRangeBar } from "@/components/dashboard/sigma-range-bar";
-import { formatCurrency, formatSigma } from "@/lib/format";
+import { formatBandWidth, formatCurrency, formatSigma } from "@/lib/format";
 import { STATUS_META, statusStyle } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -128,8 +128,11 @@ function IndexCard({
           with no scale: "0.00σ" says the index is at its anchor but not how
           wide the week it is anchored in actually is. */}
       <div className="mt-2.5 flex items-center justify-between gap-2">
-        <span className="num text-[11px] text-muted-foreground/80">
+        <span className="num min-w-0 truncate text-[11px] text-muted-foreground/80">
           {formatCurrency(stock.sigma1Lower)} – {formatCurrency(stock.sigma1Upper)}
+          <span className="ml-1.5 text-muted-foreground/60">
+            {formatBandWidth(stock.sigmaPercent)}
+          </span>
         </span>
         <span className="shrink-0 text-[11px] text-muted-foreground">
           {meta.longLabel}

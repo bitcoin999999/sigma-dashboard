@@ -23,6 +23,18 @@ export function formatPercent(value: number, digits = 2): string {
   return `${sign}${Math.abs(value).toFixed(digits)}%`;
 }
 
+/**
+ * The 1σ band as a move off the anchor, e.g. "±2.4%".
+ *
+ * Reads `sigmaPercent` straight off the quote rather than re-deriving it from
+ * the band edges: the edges are already rounded for display, and a name whose
+ * anchor sits far from spot would otherwise show a width that does not match
+ * the σ the rest of the page is scaled by.
+ */
+export function formatBandWidth(sigmaPercent: number, digits = 1): string {
+  return `±${sigmaPercent.toFixed(digits)}%`;
+}
+
 export function formatSigma(zScore: number, digits = 2): string {
   const sign = zScore > 0 ? "+" : zScore < 0 ? "−" : "";
   return `${sign}${Math.abs(zScore).toFixed(digits)}σ`;

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatCurrency, formatSigma } from "@/lib/format";
+import { formatBandWidth, formatCurrency, formatSigma } from "@/lib/format";
 import { STATUS_META, statusStyle } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -70,8 +70,11 @@ export function StockCard({ stock, onSelect }: StockCardProps) {
       </div>
 
       <div className="mt-3.5 flex items-center justify-between gap-2">
-        <span className="num text-[11px] text-muted-foreground/80">
+        <span className="num min-w-0 truncate text-[11px] text-muted-foreground/80">
           {formatCurrency(stock.sigma1Lower)} – {formatCurrency(stock.sigma1Upper)}
+          <span className="ml-1.5 text-muted-foreground/60">
+            {formatBandWidth(stock.sigmaPercent)}
+          </span>
         </span>
         <span
           className={cn(
