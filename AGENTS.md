@@ -26,8 +26,12 @@ Vercel 팀 **`SVPK`(슬러그 `svpk1`)** / 프로젝트 `sigma-dashboard`에 배
 
 ```bash
 vercel link --yes --scope svpk1 --project sigma-dashboard
-vercel --prod
+vercel --prod --scope svpk1
 ```
+
+**`--scope svpk1`은 배포할 때도 붙여야 한다.** `.vercel/project.json`에 팀 ID가 적혀
+있어도 CLI는 로그인 사용자의 개인 스코프를 기본으로 잡아서, 빼면 `Not authorized`로
+떨어진다(2026-08-26에 겪었다). 링크 한 번 했으니 됐다고 넘어가지 말 것.
 
 ## 데이터 흐름
 
