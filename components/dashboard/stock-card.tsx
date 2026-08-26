@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { Anchor } from "lucide-react";
 
 import { formatBandWidth, formatCurrency, formatSigma } from "@/lib/format";
+import { findGexFloor } from "@/lib/gex-floor";
 import { STATUS_META, statusStyle } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -31,14 +33,23 @@ export function StockCard({ stock, onSelect, href }: StockCardProps) {
   const isExtreme =
     stock.status === "OVERHEATED" || stock.status === "OVERSOLD";
 
-  const label = `${stock.symbol}, ${stock.name}. ${STATUS_META[stock.status].longLabel}. ${
-    href ? "Open page." : "Open details."
-  }`;
+  // Derived here rather than passed in, so the purple shows up wherever a card
+  // does — the board, My Sigma, the daily digest — and not only on the screener
+  // built around it. There is nothing to look up: the levels are already on the
+  // snapshot this card was handed.
+  const floor = findGexFloor(stock);
+
+  const label = `${stock.symbol}, ${stock.name}. ${STATUS_META[stock.status].longLabel}.${
+    floor ? " GEX floor on the −1σ edge." : ""
+  } ${href ? "Open page." : "Open details."}`;
 
   const className = cn(
     "glass glass-interactive group block w-full cursor-pointer p-4 text-left",
     isExtreme &&
       "border-[color-mix(in_oklch,var(--state)_34%,transparent)] shadow-[0_0_0_1px_color-mix(in_oklch,var(--state)_14%,transparent),0_18px_44px_-32px_var(--state)]",
+    // Last, so it wins the border on a card that is both. The band state still
+    // reads off the badge and the σ figure, which is where it belongs.
+    floor && "gex-floor-card",
   );
 
   const body = (
@@ -80,6 +91,14 @@ export function StockCard({ stock, onSelect, href }: StockCardProps) {
       <div className="mt-4">
         <SigmaRangeBar zScore={stock.zScore} status={stock.status} />
       </div>
+
+      {/* Without this the glow is just a colour. The strike is the claim. */}
+      {floor && (
+        <p className="gex-floor-chip num mt-3 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium">
+          <Anchor className="size-3" aria-hidden />
+          GEX floor {formatCurrency(floor.strike)}
+        </p>
+      )}
 
       <div className="mt-3.5 flex items-center justify-between gap-2">
         <span className="num min-w-0 truncate text-[11px] text-muted-foreground/80">

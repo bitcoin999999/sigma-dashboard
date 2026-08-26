@@ -1,3 +1,4 @@
+import { selectGexFloors } from "@/lib/gex-floor";
 import { SIGMA_1 } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 
@@ -51,6 +52,18 @@ export const SCREENERS: Screener[] = [
       stocks
         .filter((stock) => stock.zScore <= -SIGMA_1)
         .sort((a, b) => a.zScore - b.zScore),
+  },
+  {
+    slug: "gex-floor-at-1-sigma",
+    title: "GEX floor at −1σ",
+    metaTitle: "Stocks With a Dealer Gamma Floor on Their −1 Sigma Edge",
+    metaDescription:
+      "Symbols whose strongest positive-GEX support strike sits within half a percent of the lower 1σ edge of their weekly expected-move range — two independent levels landing on the same price.",
+    blurb:
+      "The strongest positive-GEX strike below spot, within ½% of the −1σ edge, and clearly dominant rather than one strike among many. Implied volatility and dealer positioning are different inputs, so agreeing on a price is corroboration. Ranked by how much of the nearby gamma sits on that one strike.",
+    empty:
+      "No symbol has a dominant gamma floor on its −1σ edge in this snapshot.",
+    select: selectGexFloors,
   },
   {
     slug: "highest-implied-move",

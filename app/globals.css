@@ -66,6 +66,10 @@
   --sigma-lower: oklch(0.58 0.11 234);
   --sigma-cold: oklch(0.52 0.16 258);
 
+  /* Deliberately outside the σ ramp above, which runs amber → blue. A GEX
+     floor is not a band reading, so it must not look like one. */
+  --gex-floor: oklch(0.53 0.19 305);
+
   --surface-tint-a: oklch(1 0 0 / 90%);
   --surface-tint-b: oklch(1 0 0 / 55%);
   --hairline: oklch(0.24 0.02 264 / 9%);
@@ -104,6 +108,8 @@
   --sigma-hot: oklch(0.69 0.19 25);
   --sigma-lower: oklch(0.76 0.1 232);
   --sigma-cold: oklch(0.68 0.15 252);
+
+  --gex-floor: oklch(0.72 0.17 305);
 
   --surface-tint-a: oklch(1 0 0 / 6%);
   --surface-tint-b: oklch(1 0 0 / 2%);
@@ -271,6 +277,37 @@
           var(--state) calc(var(--glow-strength) * 100%),
           transparent
         );
+  }
+
+  /* A GEX floor sitting on the −1σ edge. Purple rather than a σ colour, and
+     applied on top of whatever band state the card already carries: the two
+     say different things and the card has to show both at once. */
+  .gex-floor-card {
+    border-color: color-mix(in oklch, var(--gex-floor) 42%, transparent);
+    box-shadow:
+      0 0 0 1px color-mix(in oklch, var(--gex-floor) 16%, transparent),
+      0 18px 44px -30px var(--gex-floor),
+      0 0 20px -6px
+        color-mix(
+          in oklch,
+          var(--gex-floor) calc(var(--glow-strength) * 100%),
+          transparent
+        );
+  }
+
+  .gex-floor-chip {
+    border: 1px solid color-mix(in oklch, var(--gex-floor) 34%, transparent);
+    background: color-mix(in oklch, var(--gex-floor) 14%, transparent);
+    color: color-mix(in oklch, var(--gex-floor) 88%, var(--foreground));
+  }
+
+  .gex-floor-tint {
+    color: var(--gex-floor);
+  }
+
+  .gex-floor-row {
+    background: color-mix(in oklch, var(--gex-floor) 6%, transparent);
+    box-shadow: inset 2px 0 0 0 var(--gex-floor);
   }
 
   .hairline-x {
