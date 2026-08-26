@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -24,62 +26,155 @@ const SESSION_LABEL: Record<MarketSnapshot["session"], string> = {
 interface NavBarProps {
   snapshot: MarketSnapshot;
   updatedAt: string;
-  onRefresh: () => void;
-  refreshing: boolean;
+  /** Omitted on pages that render one snapshot and never re-read it. */
+  onRefresh?: () => void;
+  refreshing?: boolean;
+  /**
+   * Whether the in-page section anchors belong in the nav.
+   *
+   * They only exist on the dashboard. Carrying them onto a symbol or screener
+   * page would offer links to headings that are not on it.
+   */
+  sections?: boolean;
+}
+
+const BRAND_CLASS =
+  "flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring";
+
+function Brand() {
+  return (
+    <>
+      <span className="num flex size-7 items-center justify-center rounded-[10px] bg-[linear-gradient(140deg,var(--primary),color-mix(in_oklch,var(--sigma-lower)_75%,var(--primary)))] text-[13px] font-semibold text-primary-foreground shadow-[0_6px_18px_-8px_var(--primary)]">
+        σ
+      </span>
+      <span className="text-[15px] font-semibold tracking-[-0.02em]">
+        1SIGMA
+      </span>
+    </>
+  );
+}
+
+interface NavLink {
+  href: string;
+  label: string;
+  current: boolean;
+  /** In-page anchors stay plain `<a>`; a router push would not scroll. */
+  anchor: boolean;
+}
+
+/**
+ * One nav entry, as either an in-page anchor or a route link.
+ *
+ * Anchors deliberately stay plain `<a>`: routing "/#watchlist" through the
+ * router remounts a force-dynamic page just to move the scroll position.
+ */
+function NavItem({
+  link,
+  className,
+  underline,
+}: {
+  link: NavLink;
+  className: string;
+  underline?: boolean;
+}) {
+  const content = (
+    <>
+      {link.label}
+      {underline && link.current && (
+        <span
+          aria-hidden
+          className="absolute inset-x-3 -bottom-px h-px bg-[linear-gradient(90deg,transparent,var(--primary),transparent)]"
+        />
+      )}
+    </>
+  );
+
+  if (link.anchor) {
+    return (
+      <a
+        href={link.href}
+        aria-current={link.current ? "true" : undefined}
+        className={className}
+      >
+        {content}
+      </a>
+    );
+  }
+
+  return (
+    <Link
+      href={link.href}
+      aria-current={link.current ? "page" : undefined}
+      className={className}
+    >
+      {content}
+    </Link>
+  );
+}
+
+function navLinkClass(current: boolean): string {
+  return cn(
+    "relative rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+    current ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+  );
 }
 
 export function NavBar({
   snapshot,
   updatedAt,
   onRefresh,
-  refreshing,
+  refreshing = false,
+  sections = true,
 }: NavBarProps) {
-  const active = useActiveSection(LINKS.map((link) => link.id));
+  const active = useActiveSection(sections ? LINKS.map((link) => link.id) : []);
+  const pathname = usePathname();
   const isOpen = snapshot.session === "OPEN";
+
+  const links: NavLink[] = [
+    ...(sections
+      ? LINKS.map((link) => ({
+          href: `#${link.id}`,
+          label: link.label,
+          current: active === link.id,
+          anchor: true,
+        }))
+      : [{ href: "/", label: "Board", current: false, anchor: false }]),
+    {
+      href: "/my-sigma",
+      label: "My Sigma",
+      current: pathname === "/my-sigma",
+      anchor: false,
+    },
+  ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/45">
       {/* Shorter on phones so the second nav row below can carry full-size tap
           targets without the sticky header eating an eighth of the viewport. */}
       <div className="mx-auto flex h-12 w-full max-w-[1600px] items-center gap-4 px-4 sm:h-14 sm:px-6 lg:px-8">
-        <a
-          href="#top"
-          className="flex shrink-0 items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-        >
-          <span className="num flex size-7 items-center justify-center rounded-[10px] bg-[linear-gradient(140deg,var(--primary),color-mix(in_oklch,var(--sigma-lower)_75%,var(--primary)))] text-[13px] font-semibold text-primary-foreground shadow-[0_6px_18px_-8px_var(--primary)]">
-            σ
-          </span>
-          <span className="text-[15px] font-semibold tracking-[-0.02em]">
-            1SIGMA
-          </span>
-        </a>
+        {sections ? (
+          <a href="#top" className={BRAND_CLASS}>
+            <Brand />
+          </a>
+        ) : (
+          <Link href="/" className={BRAND_CLASS}>
+            <Brand />
+          </Link>
+        )}
 
         <nav
           aria-label="Sections"
           className="hidden flex-1 justify-center md:flex"
         >
           <ul className="flex items-center gap-1">
-            {LINKS.map((link) => (
-              <li key={link.id}>
-                <a
-                  href={`#${link.id}`}
-                  aria-current={active === link.id ? "true" : undefined}
-                  className={cn(
-                    "relative rounded-lg px-3 py-1.5 text-[13px] font-medium transition-colors",
-                    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                    active === link.id
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  {link.label}
-                  {active === link.id && (
-                    <span
-                      aria-hidden
-                      className="absolute inset-x-3 -bottom-px h-px bg-[linear-gradient(90deg,transparent,var(--primary),transparent)]"
-                    />
-                  )}
-                </a>
+            {links.map((link) => (
+              <li key={link.href}>
+                <NavItem
+                  link={link}
+                  className={navLinkClass(link.current)}
+                  underline
+                />
               </li>
             ))}
           </ul>
@@ -107,18 +202,20 @@ export function NavBar({
             Updated {updatedAt}
           </span>
 
-          <button
-            type="button"
-            onClick={onRefresh}
-            disabled={refreshing}
-            aria-label="Refresh quotes"
-            className="flex size-8 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
-          >
-            <RefreshCw
-              className={cn("size-3.5", refreshing && "animate-spin")}
-              aria-hidden
-            />
-          </button>
+          {onRefresh && (
+            <button
+              type="button"
+              onClick={onRefresh}
+              disabled={refreshing}
+              aria-label="Refresh quotes"
+              className="flex size-8 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
+            >
+              <RefreshCw
+                className={cn("size-3.5", refreshing && "animate-spin")}
+                aria-hidden
+              />
+            </button>
+          )}
 
           <ThemeToggle />
         </div>
@@ -126,22 +223,19 @@ export function NavBar({
 
       <nav
         aria-label="Sections"
-        className="flex items-center gap-1 border-t border-border/50 px-3 py-1 md:hidden"
+        className="flex items-center gap-1 overflow-x-auto border-t border-border/50 px-3 py-1 md:hidden"
       >
-        {LINKS.map((link) => (
-          <a
-            key={link.id}
-            href={`#${link.id}`}
-            aria-current={active === link.id ? "true" : undefined}
+        {links.map((link) => (
+          <NavItem
+            key={link.href}
+            link={link}
             className={cn(
-              "inline-flex min-h-9 items-center rounded-full px-3 text-xs font-medium transition-colors",
-              active === link.id
+              "inline-flex min-h-9 shrink-0 items-center rounded-full px-3 text-xs font-medium transition-colors",
+              link.current
                 ? "bg-[color-mix(in_oklch,var(--foreground)_8%,transparent)] text-foreground"
                 : "text-muted-foreground",
             )}
-          >
-            {link.label}
-          </a>
+          />
         ))}
       </nav>
     </header>

@@ -73,6 +73,8 @@ export async function loadSnapshot(): Promise<SnapshotPayload> {
       // intraday path here, so the market is never "open" from this page.
       session: "CLOSED",
       updatedAt: `${formatDay(file.band.sessionDate)} close`,
+      generatedAt: file.generatedAt,
+      sessionDate: file.band.sessionDate,
       bandAnchor: `${formatDay(file.band.anchorDate)} close`,
       bandWindow: bandWindow(file.band.anchorDate),
       bandElapsed: file.band.elapsedDays,

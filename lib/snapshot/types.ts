@@ -75,6 +75,13 @@ export function assertSnapshotFile(
     throw new Error(`Snapshot from ${origin} is missing its band window.`);
   }
 
+  // The board publishes this as its "how old is this?" line, and every share
+  // card is stamped with it. An undated snapshot would render as a confident
+  // board with no way to tell it apart from today's.
+  if (typeof file.generatedAt !== "string" || !file.generatedAt) {
+    throw new Error(`Snapshot from ${origin} is missing its publish time.`);
+  }
+
   if (!Array.isArray(file.quotes) || !Array.isArray(file.sectorQuotes)) {
     throw new Error(`Snapshot from ${origin} is missing its quote arrays.`);
   }

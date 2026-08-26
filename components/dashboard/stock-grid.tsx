@@ -17,7 +17,8 @@ interface StockGridProps {
   onReset?: () => void;
 }
 
-const GRID =
+/** Shared so pages laying cards out themselves stay on the same rhythm. */
+export const GRID =
   "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4";
 
 export function StockGrid({

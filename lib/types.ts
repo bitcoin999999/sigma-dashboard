@@ -153,6 +153,19 @@ export interface SectorEtfData extends StockData {
 export interface MarketSnapshot {
   session: "PRE" | "OPEN" | "AFTER" | "CLOSED";
   updatedAt: string;
+  /**
+   * ISO instant at which the upstream publisher produced this snapshot.
+   *
+   * Carried raw rather than pre-formatted because it is the one figure that
+   * answers "how old is this board?", and the answer only means something in
+   * market time — the reader has to see it in ET, not in their own zone.
+   */
+  generatedAt: string;
+  /**
+   * Calendar date of the regular session every price came from, e.g.
+   * "2026-08-21". `updatedAt` is the same fact spelled for a human.
+   */
+  sessionDate: string;
   /** Anchor date of the σ band, i.e. the close the band was struck from. */
   bandAnchor: string;
   bandWindow: string;

@@ -27,6 +27,7 @@ import type {
 import { cn } from "@/lib/utils";
 
 import { ControlsBar } from "./controls-bar";
+import { DataBasis } from "./data-basis";
 import { IndexStrip } from "./index-strip";
 import { SectorEtfMonitor } from "./sector-etf-monitor";
 import { SectorTreemap } from "./sector-treemap";
@@ -182,6 +183,8 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
               )}
             </p>
           </div>
+
+          <DataBasis snapshot={meta} className="mt-7 max-w-4xl" />
 
           <div
             className={cn(
