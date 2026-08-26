@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import { DataBasis } from "@/components/dashboard/data-basis";
 import { SigmaRangeBar } from "@/components/dashboard/sigma-range-bar";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { ExploreNav } from "@/components/layout/explore-nav";
 import { NavBar } from "@/components/layout/nav-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { findStock, loadBoard } from "@/lib/board";
@@ -190,7 +191,9 @@ export default async function SymbolPage({ params }: Params) {
           </div>
         </div>
 
-        <DataBasis snapshot={snapshot} className="mt-10 max-w-4xl" />
+        <ExploreNav sessionDate={snapshot.sessionDate} className="mt-10" />
+
+        <DataBasis snapshot={snapshot} className="mt-7 max-w-4xl" />
       </main>
 
       <SiteFooter snapshot={snapshot} />

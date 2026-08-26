@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { Check, Copy, Plus, Search, X } from "lucide-react";
 
+import { ExploreNav } from "@/components/layout/explore-nav";
 import { NavBar } from "@/components/layout/nav-bar";
 import { Section } from "@/components/layout/section";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -237,6 +238,8 @@ export function MySigmaClient({ stocks, snapshot }: MySigmaClientProps) {
             share link below is the only way it leaves it.
           </p>
         </div>
+
+        <ExploreNav sessionDate={snapshot.sessionDate} className="mt-7" />
 
         <DataBasis snapshot={snapshot} className="mt-7 max-w-4xl" />
 

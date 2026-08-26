@@ -1,16 +1,15 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DataBasis } from "@/components/dashboard/data-basis";
 import { StockCard } from "@/components/dashboard/stock-card";
 import { GRID } from "@/components/dashboard/stock-grid";
+import { ExploreNav } from "@/components/layout/explore-nav";
 import { NavBar } from "@/components/layout/nav-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { loadBoard } from "@/lib/board";
-import { SCREENERS, findScreener } from "@/lib/screeners";
+import { findScreener } from "@/lib/screeners";
 import { SITE_NAME } from "@/lib/site";
-import { cn } from "@/lib/utils";
 
 /** The snapshot file is rewritten out of band by the daily job, so never cache it. */
 export const dynamic = "force-dynamic";
@@ -76,27 +75,11 @@ export default async function ScreenerPage({ params }: Params) {
           </p>
         </div>
 
-        <nav
-          aria-label="Screeners"
-          className="mt-7 flex flex-wrap items-center gap-2"
-        >
-          {SCREENERS.map((entry) => (
-            <Link
-              key={entry.slug}
-              href={`/screener/${entry.slug}`}
-              aria-current={entry.slug === screener.slug ? "page" : undefined}
-              className={cn(
-                "inline-flex h-9 items-center rounded-full border px-3.5 text-xs font-medium transition-colors",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-                entry.slug === screener.slug
-                  ? "border-border bg-[color-mix(in_oklch,var(--foreground)_8%,transparent)] text-foreground"
-                  : "border-border/80 text-muted-foreground hover:border-border hover:text-foreground",
-              )}
-            >
-              {entry.title}
-            </Link>
-          ))}
-        </nav>
+        <ExploreNav
+          sessionDate={snapshot.sessionDate}
+          current={screener.slug}
+          className="mt-7"
+        />
 
         <DataBasis snapshot={snapshot} className="mt-7 max-w-4xl" />
 

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { ExploreNav } from "@/components/layout/explore-nav";
 import { NavBar } from "@/components/layout/nav-bar";
 import { Section } from "@/components/layout/section";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -183,6 +184,8 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
               )}
             </p>
           </div>
+
+          <ExploreNav sessionDate={meta.sessionDate} className="mt-7" />
 
           <DataBasis snapshot={meta} className="mt-7 max-w-4xl" />
 

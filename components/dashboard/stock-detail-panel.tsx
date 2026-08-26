@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 
-import { X } from "lucide-react";
+import { ArrowUpRight, X } from "lucide-react";
 
 import { Dialog, DialogClose, DialogPortal } from "@/components/ui/dialog";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
@@ -157,6 +158,16 @@ function DetailContent({ stock }: { stock: StockData }) {
             )}
           </div>
         </div>
+
+        {/* The panel is the only way into a symbol from the board, so it also
+            has to be the way out to that symbol's own page. */}
+        <Link
+          href={`/symbol/${stock.symbol}`}
+          className="mt-5 inline-flex h-9 items-center gap-1.5 rounded-full border border-border/80 px-3.5 text-xs font-medium transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          Open {stock.symbol} page
+          <ArrowUpRight className="size-3.5" aria-hidden />
+        </Link>
 
         <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-0 border-t border-border/70">
           <Row label="Anchor" value={formatCurrency(stock.anchor)} />

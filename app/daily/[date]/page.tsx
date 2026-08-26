@@ -6,6 +6,7 @@ import { Download } from "lucide-react";
 import { DataBasis } from "@/components/dashboard/data-basis";
 import { StockCard } from "@/components/dashboard/stock-card";
 import { GRID } from "@/components/dashboard/stock-grid";
+import { ExploreNav } from "@/components/layout/explore-nav";
 import { NavBar } from "@/components/layout/nav-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { loadBoard } from "@/lib/board";
@@ -109,6 +110,12 @@ export default async function DailyPage({ params }: Params) {
             See the whole board
           </Link>
         </div>
+
+        <ExploreNav
+          sessionDate={snapshot.sessionDate}
+          current="daily"
+          className="mt-7"
+        />
 
         <DataBasis snapshot={snapshot} className="mt-7 max-w-4xl" />
 

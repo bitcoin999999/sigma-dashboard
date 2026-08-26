@@ -1,4 +1,41 @@
+import Link from "next/link";
+
+import { SCREENERS } from "@/lib/screeners";
 import type { MarketSnapshot } from "@/lib/types";
+
+const FOOTER_LINK =
+  "rounded text-xs text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+
+/**
+ * The footer is the one block every route renders, which makes it the place to
+ * guarantee that no page is reachable only by typing its address.
+ */
+function FooterNav({ sessionDate }: { sessionDate: string }) {
+  return (
+    <nav aria-label="Footer" className="grid grid-cols-2 gap-x-10 gap-y-3">
+      <Link href="/" className={FOOTER_LINK}>
+        Board
+      </Link>
+      <Link href="/my-sigma" className={FOOTER_LINK}>
+        My Sigma
+      </Link>
+      {SCREENERS.map((screener) => (
+        <Link
+          key={screener.slug}
+          href={`/screener/${screener.slug}`}
+          className={FOOTER_LINK}
+        >
+          {screener.title}
+        </Link>
+      ))}
+      {/* Built from the snapshot, not from today's clock: the card route
+          answers for exactly one session and 404s on any other date. */}
+      <Link href={`/daily/${sessionDate}`} className={FOOTER_LINK}>
+        Today&rsquo;s card
+      </Link>
+    </nav>
+  );
+}
 
 export function SiteFooter({ snapshot }: { snapshot: MarketSnapshot }) {
   return (
@@ -19,6 +56,8 @@ export function SiteFooter({ snapshot }: { snapshot: MarketSnapshot }) {
               its own expected range, rather than another list of prices.
             </p>
           </div>
+
+          <FooterNav sessionDate={snapshot.sessionDate} />
 
           <dl className="grid grid-cols-2 gap-x-10 gap-y-4 sm:grid-cols-3">
             <div>
