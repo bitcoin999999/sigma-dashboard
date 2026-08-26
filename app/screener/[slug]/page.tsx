@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { DataBasis } from "@/components/dashboard/data-basis";
-import { StockCard } from "@/components/dashboard/stock-card";
-import { GRID } from "@/components/dashboard/stock-grid";
+import { ScreenerResults } from "@/components/dashboard/screener-results";
 import { ExploreNav } from "@/components/layout/explore-nav";
 import { NavBar } from "@/components/layout/nav-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -84,34 +83,28 @@ export default async function ScreenerPage({ params }: Params) {
         <DataBasis snapshot={snapshot} className="mt-7 max-w-4xl" />
 
         <div className="mt-10">
-          <div className="mb-5 flex items-end justify-between gap-4">
-            <h2 className="font-heading text-xl font-semibold tracking-[-0.02em]">
-              Results
-            </h2>
-            <span className="num text-xs text-muted-foreground">
-              {hits.length} of {all.length} symbols
-            </span>
-          </div>
-
           {hits.length === 0 ? (
-            <div className="glass flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
-              <p className="text-sm font-medium">{screener.empty}</p>
-              <p className="text-xs text-muted-foreground">
-                Measured at the {snapshot.updatedAt}.
-              </p>
-            </div>
+            <>
+              {/* No layout toggle on an empty list: there is nothing to lay
+                  out, and a control that changes nothing invites a click that
+                  looks broken. */}
+              <div className="mb-5 flex items-end justify-between gap-4">
+                <h2 className="font-heading text-xl font-semibold tracking-[-0.02em]">
+                  Results
+                </h2>
+                <span className="num text-xs text-muted-foreground">
+                  0 of {all.length} symbols
+                </span>
+              </div>
+              <div className="glass flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
+                <p className="text-sm font-medium">{screener.empty}</p>
+                <p className="text-xs text-muted-foreground">
+                  Measured at the {snapshot.updatedAt}.
+                </p>
+              </div>
+            </>
           ) : (
-            <div className={GRID}>
-              {hits.map((stock) => (
-                // The card renders as the link itself rather than being wrapped
-                // in one, so there is exactly one interactive element per card.
-                <StockCard
-                  key={stock.symbol}
-                  stock={stock}
-                  href={`/symbol/${stock.symbol}`}
-                />
-              ))}
-            </div>
+            <ScreenerResults stocks={hits} total={all.length} />
           )}
         </div>
       </main>
