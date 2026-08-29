@@ -226,7 +226,7 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
             id="watchlist"
             eyebrow="Watchlist"
             title="Sigma monitor"
-            description="Every tracked symbol with its live position on the band. Overheated and oversold names float to the top."
+            description="Every tracked symbol with its live position on the band. Overheated and oversold names float to the top. With no filter applied the list breaks out by sector, the sector holding the most dislocated names first."
             action={
               <span className="num text-xs text-muted-foreground">
                 {visible.length} of {counts.total} symbols
@@ -257,6 +257,7 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
                   stocks={visible}
                   onSelect={setSelected}
                   view={view}
+                  grouped={filter === "ALL"}
                   onReset={resetFilters}
                 />
               </div>

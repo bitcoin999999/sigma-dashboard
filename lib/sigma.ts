@@ -300,6 +300,67 @@ export function sortStocks(stocks: StockData[], sort: SortKey): StockData[] {
   return sorted;
 }
 
+/** A sector's members plus the aggregates a reader needs before reading them. */
+export interface SectorGroup {
+  sector: string;
+  stocks: StockData[];
+  /** How many members sit past ±1σ. */
+  dislocated: number;
+  /** The signed median z — the sector's centre of gravity, not its outlier. */
+  medianZ: number;
+  /** The single furthest member, signed. Breaks ties in the ordering. */
+  peakZ: number;
+}
+
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
+ * The list broken out by sector, hottest sector first.
+ *
+ * Member order is inherited, not re-sorted: the caller has already applied the
+ * reader's chosen sort, and re-sorting here would quietly override it.
+ *
+ * Sectors rank by how many members have actually left their range, with the
+ * furthest single member breaking ties. Ranking by median instead would bury a
+ * three-name sector holding one symbol at +3σ under a large sector drifting at
+ * +0.4 — the opposite of what a scan is looking for.
+ */
+export function groupBySector(stocks: StockData[]): SectorGroup[] {
+  const buckets = new Map<string, StockData[]>();
+  for (const stock of stocks) {
+    const key = stock.sector || "Other";
+    const bucket = buckets.get(key);
+    if (bucket) bucket.push(stock);
+    else buckets.set(key, [stock]);
+  }
+
+  const groups: SectorGroup[] = [...buckets].map(([sector, members]) => ({
+    sector,
+    stocks: members,
+    dislocated: members.filter((stock) => Math.abs(stock.zScore) >= SIGMA_1)
+      .length,
+    medianZ: median(members.map((stock) => stock.zScore)),
+    peakZ: members.reduce(
+      (far, stock) =>
+        Math.abs(stock.zScore) > Math.abs(far) ? stock.zScore : far,
+      0,
+    ),
+  }));
+
+  groups.sort(
+    (a, b) =>
+      b.dislocated - a.dislocated ||
+      Math.abs(b.peakZ) - Math.abs(a.peakZ) ||
+      a.sector.localeCompare(b.sector),
+  );
+  return groups;
+}
+
 export const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "ZSCORE", label: "Z-Score" },
   { key: "MOST_OVERHEATED", label: "Most Overheated" },

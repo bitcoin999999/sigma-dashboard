@@ -11,15 +11,27 @@ import {
   formatSigma,
 } from "@/lib/format";
 import { findGexFloor } from "@/lib/gex-floor";
-import { STATUS_META, statusStyle } from "@/lib/sigma";
+import { STATUS_META, statusStyle, type SectorGroup } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
+import { SectorHeading } from "./sector-heading";
 import { SigmaRangeBar } from "./sigma-range-bar";
 import { StatusBadge } from "./status-badge";
 
+/** Every column the header declares — the width a separator row has to span. */
+const COLUMNS = 7;
+
 interface StockTableProps {
   stocks: StockData[];
+  /**
+   * Breaks the rows into sector blocks under separator headings.
+   *
+   * One table rather than one per sector, because the point of the list view is
+   * scanning a column of σ readings top to bottom, and fourteen tables would
+   * each pick their own column widths and repeat the header fourteen times.
+   */
+  groups?: SectorGroup[];
   /** Opens the detail panel in place. Ignored when `hrefFor` is given. */
   onSelect?: (symbol: string) => void;
   /**
@@ -44,7 +56,12 @@ interface StockTableProps {
  * range, then the price, then the status badge. What survives on a phone is
  * symbol, change and σ — the three that answer "did this leave its range".
  */
-export function StockTable({ stocks, onSelect, hrefFor }: StockTableProps) {
+export function StockTable({
+  stocks,
+  groups,
+  onSelect,
+  hrefFor,
+}: StockTableProps) {
   return (
     <div className="glass overflow-hidden p-0">
       <div className="overflow-x-auto">
@@ -82,16 +99,44 @@ export function StockTable({ stocks, onSelect, hrefFor }: StockTableProps) {
               </Th>
             </tr>
           </thead>
-          <tbody>
-            {stocks.map((stock) => (
-              <Row
-                key={stock.symbol}
-                stock={stock}
-                onSelect={onSelect}
-                href={hrefFor?.(stock.symbol)}
-              />
-            ))}
-          </tbody>
+          {groups ? (
+            groups.map((group) => (
+              <tbody key={group.sector}>
+                <tr>
+                  <th
+                    scope="colgroup"
+                    colSpan={COLUMNS}
+                    className="border-b border-border/60 bg-[color-mix(in_oklch,var(--foreground)_3%,transparent)] px-4 pt-3"
+                  >
+                    <SectorHeading
+                      group={group}
+                      className="mb-1 border-0 pb-0"
+                    />
+                  </th>
+                </tr>
+                {group.stocks.map((stock) => (
+                  <Row
+                    key={stock.symbol}
+                    stock={stock}
+                    onSelect={onSelect}
+                    href={hrefFor?.(stock.symbol)}
+                    showSector={false}
+                  />
+                ))}
+              </tbody>
+            ))
+          ) : (
+            <tbody>
+              {stocks.map((stock) => (
+                <Row
+                  key={stock.symbol}
+                  stock={stock}
+                  onSelect={onSelect}
+                  href={hrefFor?.(stock.symbol)}
+                />
+              ))}
+            </tbody>
+          )}
         </table>
       </div>
     </div>
@@ -102,10 +147,12 @@ function Row({
   stock,
   onSelect,
   href,
+  showSector = true,
 }: {
   stock: StockData;
   onSelect?: (symbol: string) => void;
   href?: string;
+  showSector?: boolean;
 }) {
   const router = useRouter();
   const isExtreme =
@@ -133,7 +180,7 @@ function Row({
         />
       )}
       <span className="ml-2 hidden text-[11px] text-muted-foreground/80 sm:inline">
-        {stock.sector}
+        {showSector ? stock.sector : stock.name}
       </span>
       <span className="block max-w-[16rem] truncate text-[11px] text-muted-foreground/70 sm:hidden">
         {stock.name}
@@ -204,7 +251,8 @@ function Row({
       </td>
 
       <td className="num hidden py-2.5 text-right text-[11px] whitespace-nowrap text-muted-foreground/80 lg:table-cell">
-        {formatCurrency(stock.sigma1Lower)} – {formatCurrency(stock.sigma1Upper)}
+        {formatCurrency(stock.sigma1Lower)} –{" "}
+        {formatCurrency(stock.sigma1Upper)}
         <span className="ml-1.5 text-muted-foreground/60">
           {formatBandWidth(stock.sigmaPercent)}
         </span>

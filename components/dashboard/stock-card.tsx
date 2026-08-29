@@ -27,9 +27,16 @@ interface StockCardProps {
    * however it likes, and keyboard users get two focus stops for one card.
    */
   href?: string;
+  /** Off inside a sector block, where the heading already said it. */
+  showSector?: boolean;
 }
 
-export function StockCard({ stock, onSelect, href }: StockCardProps) {
+export function StockCard({
+  stock,
+  onSelect,
+  href,
+  showSector = true,
+}: StockCardProps) {
   const isExtreme =
     stock.status === "OVERHEATED" || stock.status === "OVERSOLD";
 
@@ -68,9 +75,11 @@ export function StockCard({ stock, onSelect, href }: StockCardProps) {
             <span className="num text-[15px] leading-none font-semibold tracking-tight">
               {stock.symbol}
             </span>
-            <span className="truncate text-[11px] text-muted-foreground/80">
-              {stock.sector}
-            </span>
+            {showSector && (
+              <span className="truncate text-[11px] text-muted-foreground/80">
+                {stock.sector}
+              </span>
+            )}
           </div>
           <p className="mt-1.5 truncate text-xs text-muted-foreground">
             {stock.name}

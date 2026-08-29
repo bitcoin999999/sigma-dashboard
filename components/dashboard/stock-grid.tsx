@@ -3,8 +3,10 @@
 import { SearchX } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
+import { groupBySector } from "@/lib/sigma";
 import type { StockData, ViewMode } from "@/lib/types";
 
+import { SectorHeading } from "./sector-heading";
 import { StockCard } from "./stock-card";
 import { StockTable } from "./stock-table";
 
@@ -13,6 +15,14 @@ interface StockGridProps {
   onSelect: (symbol: string) => void;
   /** Cards or rows. Purely presentational — the list itself is identical. */
   view?: ViewMode;
+  /**
+   * Break the list into sector blocks instead of one flat run.
+   *
+   * Only meaningful with no status filter applied: filtered down to the six
+   * names past +1.5σ, sector headings shatter a short list into six blocks of
+   * one and hide the very comparison the filter was for.
+   */
+  grouped?: boolean;
   loading?: boolean;
   onReset?: () => void;
 }
@@ -25,6 +35,7 @@ export function StockGrid({
   stocks,
   onSelect,
   view = "CARD",
+  grouped = false,
   loading,
   onReset,
 }: StockGridProps) {
@@ -33,6 +44,36 @@ export function StockGrid({
   // would be two more things to keep in sync for no reader benefit.
   if (loading) return <StockGridSkeleton />;
   if (stocks.length === 0) return <EmptyState onReset={onReset} />;
+
+  if (grouped) {
+    const groups = groupBySector(stocks);
+
+    // The rows stay in one table and take separator headings; the cards, having
+    // no columns to keep aligned, become one section per sector.
+    if (view === "LIST") {
+      return <StockTable stocks={stocks} groups={groups} onSelect={onSelect} />;
+    }
+
+    return (
+      <div className="space-y-8">
+        {groups.map((group) => (
+          <section key={group.sector}>
+            <SectorHeading group={group} />
+            <div className={GRID}>
+              {group.stocks.map((stock) => (
+                <StockCard
+                  key={stock.symbol}
+                  stock={stock}
+                  onSelect={onSelect}
+                  showSector={false}
+                />
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+    );
+  }
 
   if (view === "LIST") {
     return <StockTable stocks={stocks} onSelect={onSelect} />;
