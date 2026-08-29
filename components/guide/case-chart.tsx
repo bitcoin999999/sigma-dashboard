@@ -56,13 +56,14 @@ const price = new Intl.NumberFormat("en-US", {
  */
 export function CaseChart({ className }: { className?: string }) {
   return (
-    /* Scrolls rather than shrinks on a phone. Every label is drawn in viewBox
-       units, so letting the figure take a 375px column would render the prices
-       at about five pixels. */
+    /* Everything here is drawn in viewBox units, so the figure's type size is
+       whatever the container makes it. Both bounds are about that: below 34rem
+       the prices fall to about five pixels on a phone, and above 48rem they
+       overtake the body text on a wide screen. */
     <div className={cn("-mx-1 overflow-x-auto px-1", className)}>
       <svg
         viewBox={`0 0 ${VIEW.width} ${VIEW.height}`}
-        className="h-auto w-full min-w-[34rem]"
+        className="mx-auto h-auto w-full max-w-3xl min-w-[34rem]"
         role="img"
         aria-label={`${CASE.symbol} daily candles for ${CASE.bandWindow}. Monday traded down to $1,416.56, below both the −1σ edge at $${price.format(CASE.sigma1Lower)} and the gamma strike at $${price.format(CASE.gex.strike)}, and closed back above them at $1,493.12. Tuesday reached $1,564.99.`}
       >

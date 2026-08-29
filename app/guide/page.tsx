@@ -450,10 +450,10 @@ export default async function GuidePage() {
                 </p>
                 <p className="mt-3 text-[13px] leading-relaxed text-muted-foreground">
                   The session traded up to {formatCurrency(tuesdayHigh)} before
-                  giving most of it back. That is the whole case for watching a
-                  confluence zone: not that it predicted a bottom, but that the
-                  reaction when price reached it was large enough to be worth
-                  being early for.
+                  giving back more than half of it. That is the whole case for
+                  watching a confluence zone: not that it predicted a bottom,
+                  but that the reaction when price reached it was large enough
+                  to be worth being early for.
                 </p>
               </div>
 
