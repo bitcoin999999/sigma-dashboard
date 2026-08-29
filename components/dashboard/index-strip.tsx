@@ -1,6 +1,7 @@
 "use client";
 
 import { ChangePill } from "@/components/dashboard/change-pill";
+import { PriceChart } from "@/components/dashboard/price-chart";
 import { SigmaRangeBar } from "@/components/dashboard/sigma-range-bar";
 import { formatBandWidth, formatCurrency, formatSigma } from "@/lib/format";
 import { STATUS_META, statusStyle } from "@/lib/sigma";
@@ -117,10 +118,17 @@ function IndexCard({
         </span>
       </div>
 
+      {/* The chart sits between the σ figure and the band range on purpose: the
+          two numbers around it are both weekly, and the session line is what
+          says whether today is what put the index there. */}
+      <div className="mt-2 -mr-1">
+        <PriceChart stock={stock} compact />
+      </div>
+
       <SigmaRangeBar
         zScore={stock.zScore}
         status={stock.status}
-        className="mt-3"
+        className="mt-2"
       />
 
       {/* Same pairing the watchlist cards use — the ±1σ prices on the left, the
