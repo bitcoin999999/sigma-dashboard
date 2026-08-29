@@ -187,11 +187,11 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
 
           <ExploreNav sessionDate={meta.sessionDate} className="mt-7" />
 
-          <DataBasis snapshot={meta} className="mt-7 max-w-4xl" />
+          <DataBasis snapshot={meta} className="mt-6 max-w-md" />
 
           <div
             className={cn(
-              "mt-9 transition-opacity duration-200",
+              "mt-8 transition-opacity duration-200",
               refreshing && "opacity-70",
             )}
             aria-busy={refreshing}

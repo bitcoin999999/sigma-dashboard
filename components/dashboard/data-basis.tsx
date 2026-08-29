@@ -26,33 +26,38 @@ export function DataBasis({
       term: "Adjustment",
       detail: "As supplied upstream; not re-adjusted here",
     },
-    { term: "Published", detail: formatEastern(snapshot.generatedAt) },
   ];
 
   return (
-    <div className={cn("glass p-4", className)}>
-      <p className="label-xs">Data basis</p>
+    <details className={cn("group text-[11px]", className)}>
+      <summary className="flex cursor-pointer list-none items-baseline gap-2 text-muted-foreground/70 [&::-webkit-details-marker]:hidden">
+        <span className="label-xs">Published</span>
+        <span className="num text-xs text-foreground/85">
+          {formatEastern(snapshot.generatedAt)}
+        </span>
+        <span className="ml-auto underline decoration-dotted underline-offset-4 group-open:no-underline">
+          <span className="group-open:hidden">Data basis</span>
+          <span className="hidden group-open:inline">Hide</span>
+        </span>
+      </summary>
 
-      <dl className="mt-3 grid grid-cols-1 gap-x-8 gap-y-2.5 sm:grid-cols-2 lg:grid-cols-3">
+      <dl className="mt-2 grid grid-cols-1 gap-x-8 gap-y-1 border-t border-border/40 pt-2 sm:grid-cols-2">
         {rows.map((row) => (
-          <div
-            key={row.term}
-            className="flex items-baseline justify-between gap-3 border-b border-border/40 pb-2 sm:border-0 sm:pb-0"
-          >
-            <dt className="text-[11px] whitespace-nowrap text-muted-foreground/80">
+          <div key={row.term} className="flex items-baseline justify-between gap-3">
+            <dt className="whitespace-nowrap text-muted-foreground/70">
               {row.term}
             </dt>
-            <dd className="num text-right text-[11px] text-foreground/85">
+            <dd className="num text-right text-muted-foreground/85">
               {row.detail}
             </dd>
           </div>
         ))}
       </dl>
 
-      <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/70">
+      <p className="mt-2 text-muted-foreground/60">
         A daily snapshot, not a live quote. Prices are taken as the upstream
         feed supplies them.
       </p>
-    </div>
+    </details>
   );
 }
