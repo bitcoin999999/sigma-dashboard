@@ -298,7 +298,7 @@ export function Dashboard({ quotes, sectorQuotes, snapshot }: DashboardProps) {
           <Section
             eyebrow="Sector map"
             title="Sector map"
-            description="The whole board at once. Tint intensity tracks distance from the anchor close; hue carries direction and stage."
+            description="The whole board at once, sized by dislocation. A symbol that has left its weekly range takes up room; one sitting on its anchor shrinks away. Sectors are ordered by how many of their names have gone."
           >
             <SectorTreemap
               stocks={stocks}

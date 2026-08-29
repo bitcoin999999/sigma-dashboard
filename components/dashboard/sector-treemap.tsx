@@ -3,7 +3,7 @@
 import * as React from "react";
 
 import { formatCurrency, formatPercent, formatSigma } from "@/lib/format";
-import { BAND_LIMIT, statusStyle } from "@/lib/sigma";
+import { BAND_LIMIT, SIGMA_1, groupBySector, statusStyle } from "@/lib/sigma";
 import { type Rect, type TreemapTile, inset, squarify } from "@/lib/treemap";
 import type { SectorEtfData, StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -16,13 +16,24 @@ const MODES: { key: TreemapMode; label: string }[] = [
 ];
 
 /** Height of a group's caption bar, in px. Matches the label's line box. */
-const GROUP_HEADER = 19;
+const GROUP_HEADER = 20;
 /** Gutter between tiles. Small on purpose — density is the point. */
 const GAP = 2;
 /** Breathing room between one group's frame and the next. */
 const GROUP_GAP = 3;
 /** Padding inside a group frame, below the caption. */
 const GROUP_PAD = 4;
+
+/**
+ * The area a symbol still gets when it sits exactly on its anchor.
+ *
+ * `squarify` drops non-positive weights rather than clamping them, so a raw
+ * |z| would make a symbol at the anchor disappear from the board entirely —
+ * and on the Saturday board, where every z is 0 by construction, that is the
+ * whole map. The floor keeps quiet names present but small, which is the point
+ * of the encoding.
+ */
+const AREA_FLOOR = 0.2;
 
 interface SectorTreemapProps {
   stocks: StockData[];
@@ -34,28 +45,35 @@ interface Group {
   key: string;
   label: string;
   members: StockData[];
+  /** Sum of member areas — the group's own share of the canvas. */
+  weight: number;
+  /** Members past ±1σ, and the sector's signed centre, for the caption. */
+  dislocated: number;
+  medianZ: number;
+}
+
+/** How much canvas one symbol earns: distance from the anchor, floored. */
+function tileWeight(zScore: number): number {
+  return Math.max(Math.abs(zScore), AREA_FLOOR);
 }
 
 /**
- * Groups stocks by their theme, largest group first.
+ * Groups stocks by their theme, most dislocated group first.
  *
- * Group order only affects tie-breaks inside the packer; `squarify` sorts by
- * weight itself.
+ * Both levels are weighted by distance from the anchor rather than by headcount.
+ * Counting members made the treemap's strongest channel — area — say only "how
+ * many names are in this bucket", so Semiconductors was always the biggest block
+ * on the board whether or not a single one of its names had moved.
  */
 function groupStocks(stocks: StockData[]): Group[] {
-  const buckets = new Map<string, StockData[]>();
-
-  for (const stock of stocks) {
-    const existing = buckets.get(stock.sector);
-    if (existing) existing.push(stock);
-    else buckets.set(stock.sector, [stock]);
-  }
-
-  return [...buckets.entries()].map(([label, members]) => ({
-    key: label,
-    label,
+  return groupBySector(stocks).map((group) => ({
+    key: group.sector,
+    label: group.sector,
     // Within a group the loudest dislocation reads first.
-    members: [...members].sort((a, b) => b.zScore - a.zScore),
+    members: [...group.stocks].sort((a, b) => b.zScore - a.zScore),
+    weight: group.stocks.reduce((sum, s) => sum + tileWeight(s.zScore), 0),
+    dislocated: group.dislocated,
+    medianZ: group.medianZ,
   }));
 }
 
@@ -111,6 +129,9 @@ export function SectorTreemap({
             key: etf.symbol,
             label: etf.sectorLabel,
             members: [etf],
+            weight: tileWeight(etf.zScore),
+            dislocated: Math.abs(etf.zScore) >= SIGMA_1 ? 1 : 0,
+            medianZ: etf.zScore,
           })),
     [mode, stocks, etfs],
   );
@@ -130,10 +151,7 @@ export function SectorTreemap({
     const groupTiles = squarify(
       groups.map((group) => ({
         key: group.key,
-        // Group area tracks how many symbols it holds. There is no market-cap
-        // field in the snapshot, and inventing one would make the map look
-        // more authoritative than the data behind it.
-        weight: group.members.length,
+        weight: group.weight,
         data: group,
       })),
       canvas,
@@ -150,8 +168,7 @@ export function SectorTreemap({
       const children = squarify(
         groupTile.data.members.map((member) => ({
           key: member.symbol,
-          // Equal weight inside a group — see the note above.
-          weight: 1,
+          weight: tileWeight(member.zScore),
           data: member,
         })),
         body,
@@ -188,8 +205,7 @@ export function SectorTreemap({
         </div>
 
         <span className="num text-xs text-muted-foreground">
-          {total} {isNested ? "symbols" : "funds"} · area ={" "}
-          {isNested ? "group size" : "equal"}
+          {total} {isNested ? "symbols" : "funds"} · area = distance from anchor
         </span>
       </div>
 
@@ -210,9 +226,25 @@ export function SectorTreemap({
                   height: frame.height,
                 }}
               >
-                <span className="block truncate px-1.5 text-[11px] leading-[19px] font-medium tracking-[0.08em] text-muted-foreground/80 uppercase">
-                  {group.data.label}
-                </span>
+                {/* The caption answers "is this sector stretched" so the
+                    tiles below it do not have to be counted by eye. It is
+                    dropped on a frame too narrow to hold both halves — a
+                    truncated sector name is worse than a bare one. */}
+                <div className="flex items-baseline gap-2 px-1.5 leading-[20px]">
+                  <span className="truncate text-[11px] font-medium tracking-[0.08em] text-muted-foreground/80 uppercase">
+                    {group.data.label}
+                  </span>
+                  {frame.width >= 150 && (
+                    <span className="num ml-auto shrink-0 text-[10px] text-muted-foreground/70">
+                      {group.data.dislocated > 0 && (
+                        <span className="mr-2 text-foreground/75">
+                          {group.data.dislocated} past 1σ
+                        </span>
+                      )}
+                      {formatSigma(group.data.medianZ, 1)}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
 
@@ -229,9 +261,10 @@ export function SectorTreemap({
       </div>
 
       <p className="text-xs leading-relaxed text-muted-foreground">
-        Tile colour is band position, not the daily move — the same scale used
-        everywhere else on this page. Area reflects how many symbols a group
-        holds, not market value.
+        Area is distance from the anchor, so a symbol that has left its range
+        takes the space and a quiet one shrinks out of the way — not market
+        value, which this snapshot does not carry. Colour is band position, the
+        same scale used everywhere else on this page.
       </p>
     </div>
   );
@@ -279,13 +312,19 @@ function TreemapCell({ tile, onSelect, showSector }: TreemapCellProps) {
   // glance. Capped so it never competes with the ticker above it.
   const labelSize = Math.max(11, Math.min(symbolSize * 0.42, 14));
 
+  // Ticker and σ are the tile's job; the change and the price are context the
+  // detail panel gives in full. Four values stacked at 8–10px turned every
+  // tile into a paragraph, so the last two now need a tile large enough that
+  // they read rather than merely fit.
   const showSigma = height >= symbolSize + sigmaSize + 12 && width >= 44;
   const showChange =
-    showSigma && height >= symbolSize + sigmaSize + changeSize + 18;
+    showSigma &&
+    width >= 84 &&
+    height >= symbolSize + sigmaSize + changeSize + 30;
   const showPrice =
     showChange &&
-    width >= 52 &&
-    height >= symbolSize + sigmaSize + changeSize + priceSize + 24;
+    width >= 110 &&
+    height >= symbolSize + sigmaSize + changeSize + priceSize + 44;
   const showLabel = showSector && height >= 96 && width >= 78;
 
   // A tile too narrow to hold its ticker even at the 8px floor gives up its
