@@ -22,6 +22,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.8,
     },
+    // The one page that is not a view of the snapshot: it explains the board.
+    {
+      url: `${SITE_URL}/guide`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.9,
+    },
     ...SCREENERS.map((screener) => ({
       url: `${SITE_URL}/screener/${screener.slug}`,
       lastModified,

@@ -19,6 +19,9 @@ function FooterNav({ sessionDate }: { sessionDate: string }) {
       <Link href="/my-sigma" className={FOOTER_LINK}>
         My Sigma
       </Link>
+      <Link href="/guide" className={FOOTER_LINK}>
+        Guide
+      </Link>
       {SCREENERS.map((screener) => (
         <Link
           key={screener.slug}

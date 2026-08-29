@@ -146,6 +146,12 @@ export function NavBar({
       current: pathname === "/my-sigma",
       anchor: false,
     },
+    {
+      href: "/guide",
+      label: "Guide",
+      current: pathname === "/guide",
+      anchor: false,
+    },
   ];
 
   return (
