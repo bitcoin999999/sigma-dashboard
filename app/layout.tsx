@@ -25,7 +25,24 @@ export const metadata: Metadata = {
   title: `${SITE_NAME} · ${SITE_TAGLINE}`,
   description:
     "A statistical view of the market — where every tracked symbol sits inside its own expected range.",
+  applicationName: SITE_NAME,
   alternates: { canonical: "/" },
+  // Named for what a reader would actually type. Left deliberately short: a
+  // long keyword list is ignored by every engine that matters and reads as
+  // stuffing to the ones that do not.
+  keywords: [
+    "implied volatility",
+    "expected move",
+    "weekly options range",
+    "1 sigma",
+    "standard deviation",
+    "market range monitor",
+  ],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large" },
+  },
   openGraph: {
     type: "website",
     siteName: SITE_NAME,

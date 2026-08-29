@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/dashboard/status-badge";
 import { ExploreNav } from "@/components/layout/explore-nav";
 import { NavBar } from "@/components/layout/nav-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { JsonLd } from "@/components/seo/json-ld";
 import { findStock, loadBoard } from "@/lib/board";
 import {
   directionClass,
@@ -127,15 +128,7 @@ export default async function SymbolPage({ params }: Params) {
       />
 
       <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 pt-10 pb-4 sm:px-6 sm:pt-14 lg:px-8">
-        <script
-          type="application/ld+json"
-          // Structured data has to be inlined as text for crawlers to read it.
-          // The payload is built above from snapshot fields only, and the
-          // escape keeps a stray "<" in a company name from closing the tag.
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
-          }}
-        />
+        <JsonLd data={jsonLd} />
 
         <div style={statusStyle(stock.status)} className="max-w-3xl">
           <p className="label-xs">

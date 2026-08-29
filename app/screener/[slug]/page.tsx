@@ -6,9 +6,10 @@ import { ScreenerResults } from "@/components/dashboard/screener-results";
 import { ExploreNav } from "@/components/layout/explore-nav";
 import { NavBar } from "@/components/layout/nav-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
+import { JsonLd } from "@/components/seo/json-ld";
 import { loadBoard } from "@/lib/board";
 import { findScreener } from "@/lib/screeners";
-import { SITE_NAME } from "@/lib/site";
+import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 /** The snapshot file is rewritten out of band by the daily job, so never cache it. */
 export const dynamic = "force-dynamic";
@@ -53,8 +54,31 @@ export default async function ScreenerPage({ params }: Params) {
   const { snapshot, all } = await loadBoard();
   const hits = screener.select(all);
 
+  // The list is the page. Naming its members lets the result carry the tickers
+  // it found, and each entry points at the symbol page that expands on it.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: screener.metaTitle,
+    description: screener.metaDescription,
+    url: `${SITE_URL}/screener/${screener.slug}`,
+    dateModified: snapshot.generatedAt,
+    isPartOf: { "@type": "WebSite", name: SITE_NAME, url: SITE_URL },
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: hits.length,
+      itemListElement: hits.map((stock, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: `${stock.symbol} — ${stock.name}`,
+        url: `${SITE_URL}/symbol/${stock.symbol}`,
+      })),
+    },
+  };
+
   return (
     <>
+      <JsonLd data={jsonLd} />
       <NavBar
         snapshot={snapshot}
         updatedAt={snapshot.updatedAt}
