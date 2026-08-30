@@ -62,7 +62,7 @@ export function SiteFooter({ snapshot }: { snapshot: MarketSnapshot }) {
 
           <FooterNav sessionDate={snapshot.sessionDate} />
 
-          <dl className="grid grid-cols-2 gap-x-10 gap-y-4 sm:grid-cols-3">
+          <dl className="grid grid-cols-2 gap-x-10 gap-y-4">
             <div>
               <dt className="label-xs">Band anchor</dt>
               <dd className="num mt-1.5 text-xs">{snapshot.bandAnchor}</dd>
@@ -71,17 +71,13 @@ export function SiteFooter({ snapshot }: { snapshot: MarketSnapshot }) {
               <dt className="label-xs">Band window</dt>
               <dd className="num mt-1.5 text-xs">{snapshot.bandWindow}</dd>
             </div>
-            <div>
-              <dt className="label-xs">Data source</dt>
-              <dd className="num mt-1.5 text-xs">Unusual Whales</dd>
-            </div>
           </dl>
         </div>
 
         <div className="mt-9 flex flex-col gap-2 border-t border-border/50 pt-6 text-[11px] text-muted-foreground/70 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            Settled regular-session closes and implied-move data from Unusual
-            Whales. Not investment advice.
+            Settled regular-session closes and option-implied move data. Not
+            investment advice.
           </p>
           <p className="num">1σ ≈ 68% of expected outcomes</p>
         </div>

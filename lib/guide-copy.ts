@@ -390,7 +390,11 @@ const en: GuideCopy = {
       },
       {
         q: "Where does the 1σ number come from?",
-        a: "From the option-implied move for the week ahead, published by Unusual Whales and converted upstream into a true 1σ. Nothing on this site derives a band from past price movement.",
+        a: "From the option-implied move for the week ahead, converted into a true 1σ before it reaches this site. Nothing here derives a band from past price movement.",
+      },
+      {
+        q: "What are the odds at each σ?",
+        a: "The ones from a statistics class. About 68% of outcomes land within ±1σ, 87% within ±1.5σ, 95% within ±2σ and 99.7% within ±3σ. One side is half of what is left over: past +1σ is roughly one week in six, past +1.5σ one in fifteen, past +2σ one in forty. Those are the odds the options market priced, not a law of nature — real returns have fatter tails than the bell curve, so the extremes show up somewhat more often than the table says.",
       },
       {
         q: "Why is this range wider than the expected move I see elsewhere?",
@@ -656,7 +660,11 @@ const ko: GuideCopy = {
       },
       {
         q: "1σ 숫자는 어디서 오나요?",
-        a: "Unusual Whales가 내놓는 다음 한 주 옵션 예상 변동폭을, 상위 단계에서 진짜 1σ로 바꾼 값이에요. 이 사이트의 어떤 밴드도 과거 주가 움직임에서 뽑아내지 않아요.",
+        a: "다음 한 주에 대한 옵션 내재 변동폭을, 이 사이트에 오기 전 단계에서 진짜 1σ로 바꾼 값이에요. 여기 있는 어떤 밴드도 과거 주가 움직임에서 뽑아내지 않아요.",
+      },
+      {
+        q: "1σ, 2σ는 각각 확률이 얼마인가요?",
+        a: "통계 시간에 배우는 그 숫자 그대로예요. ±1σ 안에 약 68%, ±1.5σ 안에 약 87%, ±2σ 안에 약 95%, ±3σ 안에 약 99.7%가 들어와요. 한쪽만 보려면 남은 걸 반으로 나누면 돼요 — +1σ 위로 나가는 건 여섯 주에 한 번, +1.5σ 위는 열다섯 주에 한 번, +2σ 위는 마흔 주에 한 번쯤이에요. 다만 이건 옵션시장이 매긴 확률이지 자연법칙이 아니에요. 실제 주가 수익률은 종 모양보다 꼬리가 두꺼워서, 극단값은 표에 적힌 것보다 조금 더 자주 나와요.",
       },
       {
         q: "다른 데서 본 예상 변동폭보다 범위가 넓은데요?",
