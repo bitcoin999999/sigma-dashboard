@@ -135,6 +135,20 @@
     letter-spacing: -0.011em;
   }
 
+  /* Geist carries no Hangul, so name the faces the fallback should use rather
+     than leaving the choice to the browser's default font. Latin still renders
+     in Geist — only the characters it lacks fall through. */
+  [lang="ko"] {
+    font-family:
+      var(--font-geist-sans), "Pretendard Variable", Pretendard,
+      "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+    letter-spacing: normal;
+    /* Hangul breaks between syllables by default, which splits words mid-air
+       in the headings. Break on spaces instead. */
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+
   /* Ambient field: two soft gradient pools + a faint grid, fixed so the
      page scrolls over a stable light source. */
   body::before {
@@ -244,8 +258,24 @@
   .num {
     font-family: var(--font-mono), ui-monospace, monospace;
     font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1, "zero" 1;
+    font-feature-settings:
+      "tnum" 1,
+      "zero" 1;
     letter-spacing: -0.02em;
+  }
+
+  /* Figures stay in Geist Mono; the Hangul beside them lands on a proportional
+     Korean face rather than the generic monospace, which sets it at a
+     typewriter's spacing. */
+  [lang="ko"] .num {
+    font-family:
+      var(--font-mono), "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic",
+      ui-monospace, monospace;
+    /* Geist Mono is listed first and owns U+0020, so the gaps between Hangul
+       words come out at a monospace advance — measured 0.60em against 0.26em
+       for the Korean faces. Claw back the difference; the figures keep their
+       mono glyphs, the prose beside them stops looking double-spaced. */
+    word-spacing: -0.34em;
   }
 
   .label-xs {

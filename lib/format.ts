@@ -69,12 +69,19 @@ export function formatCompact(value: number): string {
  * trading session, not instants; parsing them in the viewer's zone would slide
  * the label a day backwards for anyone west of Greenwich.
  */
-export function formatDay(iso: string): string {
-  return new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", {
+export function formatDay(iso: string, locale = "en-US"): string {
+  return new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale, {
     month: "short",
     day: "numeric",
     timeZone: "UTC",
   });
+}
+
+/** The band runs anchor close → next Friday close, so the window is anchor + 7d. */
+export function formatBandWindow(anchorDate: string, locale = "en-US"): string {
+  const end = new Date(`${anchorDate}T00:00:00Z`);
+  end.setUTCDate(end.getUTCDate() + 7);
+  return `${formatDay(anchorDate, locale)} – ${formatDay(end.toISOString().slice(0, 10), locale)}`;
 }
 
 const easternTimestamp = new Intl.DateTimeFormat("en-US", {

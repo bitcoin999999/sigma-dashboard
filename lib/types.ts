@@ -168,6 +168,8 @@ export interface MarketSnapshot {
   sessionDate: string;
   /** Anchor date of the σ band, i.e. the close the band was struck from. */
   bandAnchor: string;
+  /** Same anchor as an ISO calendar date, for surfaces that spell it themselves. */
+  bandAnchorDate: string;
   bandWindow: string;
   /**
    * Regular sessions elapsed since the anchor close.

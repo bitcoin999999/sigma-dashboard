@@ -1,4 +1,5 @@
 import { CASE } from "@/lib/guide";
+import { GUIDE_COPY, type Lang } from "@/lib/guide-copy";
 import { cn } from "@/lib/utils";
 
 const VIEW = { width: 640, height: 300 };
@@ -54,7 +55,15 @@ const price = new Intl.NumberFormat("en-US", {
  * to come off the same custom properties the live board reads so the −1σ edge
  * and the gamma floor are the blue and the purple a reader already knows.
  */
-export function CaseChart({ className }: { className?: string }) {
+export function CaseChart({
+  lang = "en",
+  className,
+}: {
+  lang?: Lang;
+  className?: string;
+}) {
+  const copy = GUIDE_COPY[lang].chart;
+
   return (
     /* Everything here is drawn in viewBox units, so the figure's type size is
        whatever the container makes it. Both bounds are about that: below 34rem
@@ -65,7 +74,10 @@ export function CaseChart({ className }: { className?: string }) {
         viewBox={`0 0 ${VIEW.width} ${VIEW.height}`}
         className="mx-auto h-auto w-full max-w-3xl min-w-[34rem]"
         role="img"
-        aria-label={`${CASE.symbol} daily candles for ${CASE.bandWindow}. Monday traded down to $1,416.56, below both the −1σ edge at $${price.format(CASE.sigma1Lower)} and the gamma strike at $${price.format(CASE.gex.strike)}, and closed back above them at $1,493.12. Tuesday reached $1,564.99.`}
+        aria-label={copy.ariaLabel(
+          CASE.symbol,
+          GUIDE_COPY[lang].caseStudy.bandWindow,
+        )}
       >
         {/* Anchor: where the band was struck, far above everything that followed. */}
         <line
@@ -84,7 +96,7 @@ export function CaseChart({ className }: { className?: string }) {
           fontSize={11}
           fill="var(--muted-foreground)"
         >
-          Anchor ${price.format(CASE.anchor)}
+          {copy.anchor} ${price.format(CASE.anchor)}
         </text>
 
         {/* The two levels the example is about. They are $2.32 apart, so on this
@@ -112,7 +124,7 @@ export function CaseChart({ className }: { className?: string }) {
           fontSize={11}
           fill="var(--sigma-lower)"
         >
-          −1σ ${price.format(CASE.sigma1Lower)}
+          {copy.lowerEdge} ${price.format(CASE.sigma1Lower)}
         </text>
         <text
           x={LABEL_X}
@@ -120,7 +132,7 @@ export function CaseChart({ className }: { className?: string }) {
           fontSize={11}
           fill="var(--gex-floor)"
         >
-          GEX ${price.format(CASE.gex.strike)}
+          {copy.gex} ${price.format(CASE.gex.strike)}
         </text>
 
         {CASE.sessions.map((session, index) => {
@@ -155,7 +167,7 @@ export function CaseChart({ className }: { className?: string }) {
                 textAnchor="middle"
                 fill="var(--muted-foreground)"
               >
-                {session.day}
+                {copy.days[session.day] ?? session.day}
               </text>
             </g>
           );

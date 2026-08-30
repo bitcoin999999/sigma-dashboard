@@ -1,4 +1,4 @@
-import { formatDay } from "@/lib/format";
+import { formatBandWindow, formatDay } from "@/lib/format";
 import type { MarketSnapshot, Quote, SectorEtfQuote } from "@/lib/types";
 
 import { blobSource } from "./sources/blob";
@@ -11,13 +11,6 @@ export interface SnapshotPayload {
   quotes: Quote[];
   sectorQuotes: SectorEtfQuote[];
   snapshot: MarketSnapshot;
-}
-
-/** The band runs anchor close → next Friday close, so the window is anchor + 7d. */
-function bandWindow(anchorDate: string): string {
-  const end = new Date(`${anchorDate}T00:00:00Z`);
-  end.setUTCDate(end.getUTCDate() + 7);
-  return `${formatDay(anchorDate)} – ${formatDay(end.toISOString().slice(0, 10))}`;
 }
 
 /**
@@ -76,7 +69,8 @@ export async function loadSnapshot(): Promise<SnapshotPayload> {
       generatedAt: file.generatedAt,
       sessionDate: file.band.sessionDate,
       bandAnchor: `${formatDay(file.band.anchorDate)} close`,
-      bandWindow: bandWindow(file.band.anchorDate),
+      bandAnchorDate: file.band.anchorDate,
+      bandWindow: formatBandWindow(file.band.anchorDate),
       bandElapsed: file.band.elapsedDays,
     },
   };
