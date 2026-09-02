@@ -147,6 +147,12 @@ export function NavBar({
       anchor: false,
     },
     {
+      href: "/calculator",
+      label: "Calculator",
+      current: pathname === "/calculator",
+      anchor: false,
+    },
+    {
       href: "/guide",
       label: "Guide",
       current: pathname === "/guide",

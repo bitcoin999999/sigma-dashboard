@@ -22,7 +22,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "daily",
       priority: 0.8,
     },
-    // The one page that is not a view of the snapshot: it explains the board.
+    // The two pages that are not views of the snapshot: one explains the
+    // board, the other prices leveraged funds off its own live feed.
+    {
+      url: `${SITE_URL}/calculator`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.8,
+    },
     {
       url: `${SITE_URL}/guide`,
       lastModified,

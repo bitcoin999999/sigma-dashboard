@@ -19,6 +19,9 @@ function FooterNav({ sessionDate }: { sessionDate: string }) {
       <Link href="/my-sigma" className={FOOTER_LINK}>
         My Sigma
       </Link>
+      <Link href="/calculator" className={FOOTER_LINK}>
+        Calculator
+      </Link>
       <Link href="/guide" className={FOOTER_LINK}>
         Guide
       </Link>
