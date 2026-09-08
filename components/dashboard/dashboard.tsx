@@ -165,50 +165,51 @@ export function Dashboard({
         className="mx-auto w-full max-w-[1600px] flex-1 px-4 pt-10 pb-4 sm:px-6 sm:pt-14 lg:px-8"
       >
         <section id="market" className="scroll-mt-24">
-          {/* The calendar takes the empty right half of the masthead rather
-              than a band of its own: what is scheduled this week is context for
-              the band copy beside it, not a separate section to scroll to. */}
-          <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(340px,400px)] lg:gap-12">
+          <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,42rem)_minmax(0,1fr)] lg:gap-12">
             <div className="min-w-0">
-              <div className="max-w-2xl">
-                <p className="label-xs">
-                  Band window · {meta.bandWindow} · anchored {meta.bandAnchor}
-                  {opening && " · opens Monday"}
-                </p>
-                <h1 className="mt-3 font-heading text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
-                  <span className="text-gradient">
-                    Where the market sits inside its own range.
-                  </span>
-                </h1>
-                <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                  {counts.total} symbols measured against their own implied
-                  volatility for the week.{" "}
-                  {opening ? (
-                    <>
-                      The band was struck at the {meta.updatedAt} and covers the
-                      week ahead, so every symbol sits at its anchor until
-                      Monday trades. What each card shows now is the range, not
-                      a result.
-                    </>
-                  ) : (
-                    <>
-                      Anything past ±1σ has left the range it normally trades in
-                      — and is surfaced first. Prices are the {meta.updatedAt};
-                      the band resets each Friday.
-                    </>
-                  )}
-                </p>
-              </div>
+              <p className="label-xs">
+                Band window · {meta.bandWindow} · anchored {meta.bandAnchor}
+                {opening && " · opens Monday"}
+              </p>
+              <h1 className="mt-3 font-heading text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
+                <span className="text-gradient">
+                  Where the market sits inside its own range.
+                </span>
+              </h1>
+              <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
+                {counts.total} symbols measured against their own implied
+                volatility for the week.{" "}
+                {opening ? (
+                  <>
+                    The band was struck at the {meta.updatedAt} and covers the
+                    week ahead, so every symbol sits at its anchor until Monday
+                    trades. What each card shows now is the range, not a result.
+                  </>
+                ) : (
+                  <>
+                    Anything past ±1σ has left the range it normally trades in —
+                    and is surfaced first. Prices are the {meta.updatedAt}; the
+                    band resets each Friday.
+                  </>
+                )}
+              </p>
 
               <ExploreNav sessionDate={meta.sessionDate} className="mt-7" />
-
-              <DataBasis snapshot={meta} className="mt-6 max-w-md" />
             </div>
 
-            {calendar && (
-              <WeekCalendar calendar={calendar} onSelect={setSelected} />
-            )}
+            {/* Sits level with the bottom of the band copy rather than in a
+                band of its own: what is scheduled this week is context for the
+                sentence beside it, not a separate section to scroll to. */}
+            <DataBasis snapshot={meta} className="max-w-md lg:justify-self-end" />
           </div>
+
+          {calendar && (
+            <WeekCalendar
+              calendar={calendar}
+              onSelect={setSelected}
+              className="mt-8"
+            />
+          )}
 
           <div
             className={cn(

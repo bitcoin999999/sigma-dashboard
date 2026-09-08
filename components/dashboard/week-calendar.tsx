@@ -25,10 +25,11 @@ const SESSION_LABEL: Record<EarningsEvent["session"], string> = {
  * What is scheduled to move the tape this week, next to which tracked names
  * report.
  *
- * Sits beside the band copy because it answers the question the band raises but
- * cannot answer: a symbol pinned at its anchor on Wednesday means one thing
- * with CPI behind it and another with CPI still to come. Every clock reading is
- * given twice — the exchange runs on New York, the reader does not.
+ * Laid out as five day columns rather than a stacked list: a week read across
+ * is the shape the question actually has — a symbol pinned at its anchor on
+ * Wednesday means one thing with CPI behind it and another with CPI still to
+ * come, and that is easier to see when the days sit side by side. Every clock
+ * reading is given twice — the exchange runs on New York, the reader does not.
  */
 export function WeekCalendar({
   calendar,
@@ -37,23 +38,21 @@ export function WeekCalendar({
 }: WeekCalendarProps) {
   return (
     <aside className={cn("glass p-4 sm:p-5", className)}>
-      <div className="flex items-baseline justify-between gap-3">
-        <div>
+      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <div className="flex items-baseline gap-3">
           <p className="label-xs">Week ahead</p>
-          <h2 className="mt-1 font-heading text-sm font-medium">
+          <h2 className="font-heading text-sm font-medium">
             Macro prints &amp; earnings
           </h2>
         </div>
-        <p className="num shrink-0 text-right text-[10px] leading-4 text-muted-foreground/70">
-          {formatRange(calendar.weekStart, calendar.weekEnd)}
-          <br />
-          ET / KST
+        <p className="num text-[10px] text-muted-foreground/70">
+          {formatRange(calendar.weekStart, calendar.weekEnd)} · ET / KST
         </p>
       </div>
 
-      <ol className="mt-4 space-y-1">
+      <ol className="mt-4 grid gap-x-4 gap-y-3 sm:grid-cols-2 lg:grid-cols-5">
         {calendar.days.map((day) => (
-          <DayRow
+          <DayColumn
             key={day.date}
             day={day}
             today={day.date === calendar.todayEt}
@@ -70,7 +69,7 @@ export function WeekCalendar({
   );
 }
 
-function DayRow({
+function DayColumn({
   day,
   today,
   onSelect,
@@ -84,16 +83,16 @@ function DayRow({
   return (
     <li
       className={cn(
-        "rounded-lg px-2 py-2",
-        // The marker is a tint rather than a border so the row keeps its
-        // baseline alignment with the four days around it.
+        "rounded-lg px-2.5 py-2",
+        // A tint rather than a rule: the columns already read as separate, and
+        // a border would break their shared header baseline.
         today && "bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)]",
       )}
     >
-      <div className="flex items-baseline gap-2">
+      <div className="flex items-baseline gap-2 border-b border-border/50 pb-1.5">
         <span
           className={cn(
-            "num w-8 shrink-0 text-[11px] font-semibold",
+            "num text-[11px] font-semibold",
             today ? "text-foreground" : "text-foreground/75",
           )}
         >
@@ -103,47 +102,52 @@ function DayRow({
           {monthDayOf(day.date)}
         </span>
         {today && (
-          <span className="label-xs text-[9px] tracking-[0.12em] text-foreground/60">
+          <span className="label-xs ml-auto text-[9px] tracking-[0.12em] text-foreground/60">
             Today
-          </span>
-        )}
-        {empty && (
-          <span className="ml-auto text-[10px] text-muted-foreground/50">
-            No scheduled prints
           </span>
         )}
       </div>
 
-      {day.events.length > 0 && (
-        <ul className="mt-1.5 space-y-1.5">
-          {day.events.map((event) => (
-            <EventRow key={`${event.name}-${event.timeEt}`} event={event} />
-          ))}
-        </ul>
-      )}
+      {empty ? (
+        <p className="mt-2 text-[10px] text-muted-foreground/50">
+          No scheduled prints
+        </p>
+      ) : (
+        <>
+          {day.events.length > 0 && (
+            <ul className="mt-2 space-y-2.5">
+              {day.events.map((event) => (
+                <EventRow key={`${event.name}-${event.timeEt}`} event={event} />
+              ))}
+            </ul>
+          )}
 
-      {day.earnings.length > 0 && (
-        <div className="mt-2 flex flex-wrap items-center gap-1.5">
-          <span className="label-xs text-[9px] tracking-[0.12em]">Earnings</span>
-          {day.earnings.map((entry) => (
-            <button
-              key={entry.symbol}
-              type="button"
-              onClick={() => onSelect(entry.symbol)}
-              title={
-                entry.epsForecast
-                  ? `${entry.name} · consensus EPS ${entry.epsForecast}`
-                  : entry.name
-              }
-              className="num rounded-md border border-border/70 px-1.5 py-0.5 text-[10px] font-semibold transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-            >
-              {entry.symbol}
-              <span className="ml-1 font-normal text-muted-foreground/70">
-                {SESSION_LABEL[entry.session]}
+          {day.earnings.length > 0 && (
+            <div className="mt-2.5 flex flex-wrap items-center gap-1">
+              <span className="label-xs w-full text-[9px] tracking-[0.12em]">
+                Earnings
               </span>
-            </button>
-          ))}
-        </div>
+              {day.earnings.map((entry) => (
+                <button
+                  key={entry.symbol}
+                  type="button"
+                  onClick={() => onSelect(entry.symbol)}
+                  title={
+                    entry.epsForecast
+                      ? `${entry.name} · consensus EPS ${entry.epsForecast}`
+                      : entry.name
+                  }
+                  className="num rounded-md border border-border/70 px-1.5 py-0.5 text-[10px] font-semibold transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  {entry.symbol}
+                  <span className="ml-1 font-normal text-muted-foreground/70">
+                    {SESSION_LABEL[entry.session]}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </li>
   );
@@ -151,37 +155,32 @@ function DayRow({
 
 function EventRow({ event }: { event: EconEvent }) {
   return (
-    <li className="flex gap-2.5">
-      <div className="w-10 shrink-0 pt-px">
-        <p className="num text-[11px] leading-tight text-foreground/85">
-          {event.timeEt || "—"}
-        </p>
+    <li>
+      <p className="num text-[10px] leading-tight text-muted-foreground/65">
+        {event.timeEt || "—"}
         {event.timeKst && (
-          <p className="num text-[10px] leading-tight text-muted-foreground/60">
+          <>
+            {" / "}
             {event.timeKst}
             {event.kstNextDay && <span className="ml-0.5">+1</span>}
-          </p>
+          </>
         )}
-      </div>
-
-      <div className="min-w-0 flex-1">
-        <p
-          className={cn(
-            "truncate text-[11.5px] leading-tight",
-            event.tier === 1
-              ? "font-medium text-foreground"
-              : "text-muted-foreground",
-          )}
-          title={event.name}
-        >
-          {event.name}
-        </p>
-        <p className="num mt-0.5 flex flex-wrap gap-x-2.5 text-[10px] leading-tight">
-          <Figure label="Act" value={event.actual} strong />
-          <Figure label="Est" value={event.forecast} />
-          <Figure label="Prev" value={event.previous} />
-        </p>
-      </div>
+      </p>
+      <p
+        className={cn(
+          "mt-0.5 text-[11.5px] leading-tight",
+          event.tier === 1
+            ? "font-medium text-foreground"
+            : "text-muted-foreground",
+        )}
+      >
+        {event.name}
+      </p>
+      <p className="num mt-1 flex flex-wrap gap-x-2 text-[10px] leading-tight">
+        <Figure label="Act" value={event.actual} strong />
+        <Figure label="Est" value={event.forecast} />
+        <Figure label="Prev" value={event.previous} />
+      </p>
     </li>
   );
 }
