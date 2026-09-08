@@ -241,23 +241,30 @@ const FILTER_PREDICATES: Record<FilterKey, (stock: StockData) => boolean> = {
   OVERSOLD: (s) => s.zScore <= -SIGMA_EXTREME,
 };
 
+/**
+ * What a typed query is allowed to hit: the ticker, the company name, or the
+ * sector. Sector counts because a reader who wants the semis does not
+ * necessarily know the group symbol by symbol.
+ */
+export function matchesQuery(stock: StockData, query: string): boolean {
+  const needle = query.trim().toUpperCase();
+  if (!needle) return true;
+  return (
+    stock.symbol.includes(needle) ||
+    stock.name.toUpperCase().includes(needle) ||
+    stock.sector.toUpperCase().includes(needle)
+  );
+}
+
 export function filterStocks(
   stocks: StockData[],
   filter: FilterKey,
   query: string,
 ): StockData[] {
-  const needle = query.trim().toUpperCase();
   const predicate = FILTER_PREDICATES[filter];
-
-  return stocks.filter((stock) => {
-    if (!predicate(stock)) return false;
-    if (!needle) return true;
-    return (
-      stock.symbol.includes(needle) ||
-      stock.name.toUpperCase().includes(needle) ||
-      stock.sector.toUpperCase().includes(needle)
-    );
-  });
+  return stocks.filter(
+    (stock) => predicate(stock) && matchesQuery(stock, query),
+  );
 }
 
 /**

@@ -1,11 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { ArrowDown, ArrowRight, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowUp, Search, X } from "lucide-react";
 
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { Input } from "@/components/ui/input";
 import { formatDay, formatSigma } from "@/lib/format";
-import { SIGMA_1, buildWeeklyBand, type WeeklyBandResult } from "@/lib/sigma";
+import {
+  SIGMA_1,
+  buildWeeklyBand,
+  matchesQuery,
+  type WeeklyBandResult,
+} from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +51,7 @@ interface WeeklyRecapTableProps {
 
 export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
   const [sort, setSort] = React.useState<RecapSort>("LAST_WEEK");
+  const [query, setQuery] = React.useState("");
 
   const rows = React.useMemo<RecapRow[]>(
     () =>
@@ -97,6 +104,14 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
     }
   }, [rows, sort]);
 
+  const visible = React.useMemo(
+    () => sorted.filter((row) => matchesQuery(row.stock, query)),
+    [sorted, query],
+  );
+
+  // Deliberately counted over every row, not the visible ones: the sentence is
+  // a claim about how the week went for the board, and narrowing it to whatever
+  // is typed in the box would turn it into a different, misleading statistic.
   const covered = rows.filter((row) => row.lastWeek !== null);
   const older = rows.filter((row) => row.weekBeforeLast !== null);
   const lastEnd = covered[0]?.lastWeek?.closeDate;
@@ -124,29 +139,55 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
           )}
         </p>
 
-        <div
-          role="group"
-          aria-label="Sort the weekly recap"
-          className="flex items-center gap-1 rounded-lg border border-border/70 p-0.5"
-        >
-          {SORTS.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() => setSort(option.key)}
-              aria-pressed={sort === option.key}
-              className={cn(
-                "cursor-pointer rounded-[6px] px-2.5 py-1 text-[11px] font-medium transition-colors",
-                "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
-                !option.narrow && "hidden sm:block",
-                sort === option.key
-                  ? "bg-[color-mix(in_oklch,var(--foreground)_9%,transparent)] text-foreground"
-                  : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {option.label}
-            </button>
-          ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-full sm:w-48">
+            <Search
+              className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
+              aria-hidden
+            />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search ticker"
+              aria-label="Search the weekly recap by ticker"
+              className="h-8 pr-8 pl-8 text-sm"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Clear search"
+                className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              >
+                <X className="size-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div
+            role="group"
+            aria-label="Sort the weekly recap"
+            className="flex items-center gap-1 rounded-lg border border-border/70 p-0.5"
+          >
+            {SORTS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setSort(option.key)}
+                aria-pressed={sort === option.key}
+                className={cn(
+                  "cursor-pointer rounded-[6px] px-2.5 py-1 text-[11px] font-medium transition-colors",
+                  "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
+                  !option.narrow && "hidden sm:block",
+                  sort === option.key
+                    ? "bg-[color-mix(in_oklch,var(--foreground)_9%,transparent)] text-foreground"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -188,12 +229,28 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((row) => (
+              {visible.map((row) => (
                 <Row key={row.stock.symbol} row={row} onSelect={onSelect} />
               ))}
             </tbody>
           </table>
         </div>
+
+        {visible.length === 0 && (
+          <div className="px-4 py-10 text-center">
+            <p className="text-[13px] text-muted-foreground">
+              No tracked symbol matches{" "}
+              <span className="num text-foreground/80">{query.trim()}</span>.
+            </p>
+            <button
+              type="button"
+              onClick={() => setQuery("")}
+              className="mt-3 cursor-pointer rounded-md border border-border/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            >
+              Clear search
+            </button>
+          </div>
+        )}
       </div>
 
       {missing > 0 && (
