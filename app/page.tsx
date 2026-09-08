@@ -1,5 +1,6 @@
 import { Dashboard } from "@/components/dashboard/dashboard";
 import { JsonLd } from "@/components/seo/json-ld";
+import { loadWeekCalendar } from "@/lib/econ-calendar";
 import { loadSnapshot } from "@/lib/snapshot";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
@@ -8,6 +9,14 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const { quotes, sectorQuotes, snapshot } = await loadSnapshot();
+
+  // Keyed off the band anchor so the week on the calendar is the week the board
+  // is scoring, and filtered to names actually on the board. Resolves to null
+  // when the vendor is unreachable — the board renders without it.
+  const calendar = await loadWeekCalendar(
+    snapshot.bandAnchorDate,
+    quotes.map((quote) => quote.symbol),
+  );
 
   // A Dataset rather than a WebPage: what the board publishes is a measured
   // series, and it is the type the per-symbol pages already declare. Saying the
@@ -38,6 +47,7 @@ export default async function Home() {
         quotes={quotes}
         sectorQuotes={sectorQuotes}
         snapshot={snapshot}
+        calendar={calendar}
       />
     </>
   );
