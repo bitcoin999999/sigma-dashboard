@@ -26,6 +26,14 @@ const TIMEOUT_MS = 8_000;
 const TTL_MS = 10 * 60_000;
 
 /**
+ * TTL for a week that came back with a day missing. A single failed day still
+ * renders — but caching that hole for the full {@link TTL_MS} once hid a CPI
+ * Friday behind "No scheduled prints" for ten minutes, so it expires fast
+ * enough that the next request refetches.
+ */
+const PARTIAL_TTL_MS = 30_000;
+
+/**
  * Nasdaq drops the connection mid-stream for anything that does not look like a
  * browser — a self-identifying agent string fails, and it fails as a transport
  * error rather than a status code, so it reads as the vendor being down.
@@ -382,9 +390,18 @@ function easternToday(): string {
 async function fetchCalendar(
   anchorDate: string,
   symbols: string[],
-): Promise<WeekCalendar> {
+): Promise<{ calendar: WeekCalendar; partial: boolean }> {
   const dates = weekOf(anchorDate);
   const tracked = new Set(symbols.map((symbol) => symbol.toUpperCase()));
+
+  // Recorded here rather than derived from the finished days: a day that failed
+  // and a day that genuinely has nothing scheduled produce the same empty list,
+  // so the catch is the only place the difference still exists.
+  let partial = false;
+  const blank = () => {
+    partial = true;
+    return [];
+  };
 
   const days = await Promise.all(
     dates.map(async (date): Promise<CalendarDay> => {
@@ -392,8 +409,8 @@ async function fetchCalendar(
       // upstream 404s on some holidays and occasionally rate-limits a single
       // request out of ten.
       const [events, earnings] = await Promise.all([
-        loadEconDay(date).catch(() => []),
-        loadEarningsDay(date, tracked).catch(() => []),
+        loadEconDay(date).catch(blank),
+        loadEarningsDay(date, tracked).catch(blank),
       ]);
       return { date, events, earnings };
     }),
@@ -404,17 +421,26 @@ async function fetchCalendar(
   }
 
   return {
-    weekStart: dates[0],
-    weekEnd: dates[dates.length - 1],
-    todayEt: easternToday(),
-    days,
+    calendar: {
+      weekStart: dates[0],
+      weekEnd: dates[dates.length - 1],
+      todayEt: easternToday(),
+      days,
+    },
+    partial,
   };
 }
 
-let memo: { key: string; at: number; calendar: WeekCalendar } | null = null;
+let memo: {
+  key: string;
+  at: number;
+  ttl: number;
+  calendar: WeekCalendar;
+} | null = null;
 
 /**
- * The week's calendar, shared across requests for {@link TTL_MS}.
+ * The week's calendar, shared across requests for {@link TTL_MS} — or only
+ * {@link PARTIAL_TTL_MS} when a day came back empty because its fetch threw.
  *
  * Resolves to null rather than throwing: this panel sits beside the board, and
  * a calendar vendor having a bad afternoon is not a reason to take the σ
@@ -425,13 +451,18 @@ export async function loadWeekCalendar(
   symbols: string[],
 ): Promise<WeekCalendar | null> {
   const key = `${anchorDate}|${symbols.length}`;
-  if (memo && memo.key === key && Date.now() - memo.at < TTL_MS) {
+  if (memo && memo.key === key && Date.now() - memo.at < memo.ttl) {
     return memo.calendar;
   }
 
   try {
-    const calendar = await fetchCalendar(anchorDate, symbols);
-    memo = { key, at: Date.now(), calendar };
+    const { calendar, partial } = await fetchCalendar(anchorDate, symbols);
+    memo = {
+      key,
+      at: Date.now(),
+      ttl: partial ? PARTIAL_TTL_MS : TTL_MS,
+      calendar,
+    };
     return calendar;
   } catch {
     return memo?.key === key ? memo.calendar : null;
