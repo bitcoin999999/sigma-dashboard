@@ -8,7 +8,7 @@ import { Section } from "@/components/layout/section";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { useStoredView } from "@/hooks/use-stored-view";
 
-import type { WeekCalendar as WeekCalendarData } from "@/lib/econ-calendar";
+import type { EarningsEvent, WeekCalendar as WeekCalendarData } from "@/lib/econ-calendar";
 import type { SnapshotPayload } from "@/lib/snapshot";
 import {
   FILTER_OPTIONS,
@@ -65,6 +65,7 @@ export function Dashboard({
   const [sort, setSort] = React.useState<SortKey>("ZSCORE");
   const [view, setView] = useStoredView();
   const [selected, setSelected] = React.useState<string | null>(null);
+  const [selectedEarnings, setSelectedEarnings] = React.useState<EarningsEvent | null>(null);
 
   const stocks = React.useMemo(() => buildStockList(liveQuotes), [liveQuotes]);
 
@@ -206,7 +207,8 @@ export function Dashboard({
           {calendar && (
             <WeekCalendar
               calendar={calendar}
-              onSelect={setSelected}
+              bandAnchorDate={snapshot.bandAnchorDate}
+              onSelect={(symbol, earnings) => { setSelectedEarnings(earnings); setSelected(symbol); }}
               className="mt-8"
             />
           )}
@@ -335,8 +337,9 @@ export function Dashboard({
 
       <StockDetailPanel
         stock={selectedStock}
+        earnings={selectedEarnings?.symbol === selected ? selectedEarnings : null}
         open={selected !== null}
-        onOpenChange={(open) => !open && setSelected(null)}
+        onOpenChange={(open) => { if (!open) { setSelected(null); setSelectedEarnings(null); } }}
       />
     </>
   );

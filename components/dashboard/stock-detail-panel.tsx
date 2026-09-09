@@ -14,6 +14,8 @@ import {
   formatSignedNumber,
 } from "@/lib/format";
 import { STATUS_META, statusStyle } from "@/lib/sigma";
+import type { EarningsEvent } from "@/lib/econ-calendar";
+import { SESSION_LABEL } from "@/lib/calendar-state";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -25,12 +27,14 @@ import { StatusBadge } from "./status-badge";
 
 interface StockDetailPanelProps {
   stock: StockData | null;
+  earnings?: EarningsEvent | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
 export function StockDetailPanel({
   stock,
+  earnings,
   open,
   onOpenChange,
 }: StockDetailPanelProps) {
@@ -51,7 +55,7 @@ export function StockDetailPanel({
           {/* Keyed on the symbol so switching tickers resets the view tab —
               a GEX ladder left over from the previous symbol would read as
               this one's. */}
-          {stock && <DetailContent key={stock.symbol} stock={stock} />}
+          {stock && <DetailContent key={stock.symbol} stock={stock} earnings={earnings} />}
         </DialogPrimitive.Popup>
       </DialogPortal>
     </Dialog>
@@ -60,7 +64,7 @@ export function StockDetailPanel({
 
 type DetailView = "GEX" | "BAND";
 
-function DetailContent({ stock }: { stock: StockData }) {
+function DetailContent({ stock, earnings }: { stock: StockData; earnings?: EarningsEvent | null }) {
   const meta = STATUS_META[stock.status];
   // GEX is the headline view when the options feed carried this symbol; the
   // price path stays one click away rather than being replaced outright.
@@ -88,6 +92,10 @@ function DetailContent({ stock }: { stock: StockData }) {
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
+        {earnings && <div lang="en" className="mb-5 rounded-xl border border-border p-3 text-sm">
+          <p className="font-semibold">Earnings schedule · {earnings.date} ET</p>
+          <p className="mt-1 text-xs text-muted-foreground">{SESSION_LABEL[earnings.session]}{earnings.epsForecast !== null && ` · Est EPS ${earnings.epsForecast}`}</p>
+        </div>}
         <div className="flex items-end justify-between gap-3">
           <span className="num text-3xl leading-none font-semibold tracking-tight">
             {formatCurrency(stock.price)}

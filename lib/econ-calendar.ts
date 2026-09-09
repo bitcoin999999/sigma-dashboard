@@ -1,3 +1,5 @@
+import { easternInstant, easternDate, partsIn, retainCalendar, eventKind } from "./calendar-state";
+
 /**
  * The week's scheduled catalysts: macro prints and, for tracked names, earnings.
  *
@@ -63,7 +65,8 @@ export interface EconEvent {
   name: string;
   /** 1 is a release that moves the whole tape; 2 is worth knowing about. */
   tier: 1 | 2;
-  /** Exactly as printed upstream, units included. Null until released. */
+  /** Null means no vendor value, not proof that the release is still ahead. */
+  kind: "print" | "event";
   actual: string | null;
   forecast: string | null;
   previous: string | null;
@@ -81,6 +84,10 @@ export interface CalendarDay {
   date: string;
   events: EconEvent[];
   earnings: EarningsEvent[];
+  macroStatus: "ok" | "error";
+  earningsStatus: "ok" | "error";
+  macroCheckedAt: string | null;
+  earningsCheckedAt: string | null;
 }
 
 export interface WeekCalendar {
@@ -90,6 +97,7 @@ export interface WeekCalendar {
   /** Today on an ET clock, so the client can mark the row without doing zone maths. */
   todayEt: string;
   days: CalendarDay[];
+  checkedAt: string;
 }
 
 /**
@@ -174,8 +182,17 @@ async function loadJson(url: string): Promise<unknown> {
 }
 
 function rowsOf<T>(body: unknown): T[] {
-  const data = (body as { data?: { rows?: unknown } } | null)?.data;
-  return Array.isArray(data?.rows) ? (data.rows as T[]) : [];
+  const payload = body as {
+    data?: { rows?: unknown } | null;
+    status?: { rCode?: number; bCodeMessage?: { code?: number; errorMessage?: string }[] };
+  } | null;
+  if (Array.isArray(payload?.data?.rows)) return payload.data.rows as T[];
+  // User policy: the vendor's explicit "No record found" means no scheduled
+  // events. Unexplained null payloads and transport failures remain errors.
+  if (payload?.status?.rCode === 200 && Array.isArray(payload.status.bCodeMessage) &&
+      payload.status.bCodeMessage.some(message => message.code === 1002 &&
+        /no records? found/i.test(message.errorMessage ?? ""))) return [];
+  throw new Error("Calendar rows unavailable.");
 }
 
 /** Upstream writes an empty cell as a single space, `N/A`, or nothing at all. */
@@ -189,63 +206,8 @@ function cell(value: string | undefined): string | null {
   const text = value
     ?.replace(/&nbsp;| /g, " ")
     .trim();
-  if (!text || text === "N/A" || text === "-") return null;
+  if (!text || /^(?:N\/A|[-—–])$/i.test(text)) return null;
   return text;
-}
-
-const zoneParts = new Map<string, Intl.DateTimeFormat>();
-
-function partsIn(timeZone: string, at: Date): Record<string, number> {
-  let formatter = zoneParts.get(timeZone);
-  if (!formatter) {
-    formatter = new Intl.DateTimeFormat("en-US", {
-      timeZone,
-      hourCycle: "h23",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    zoneParts.set(timeZone, formatter);
-  }
-
-  const out: Record<string, number> = {};
-  for (const part of formatter.formatToParts(at)) {
-    if (part.type !== "literal") out[part.type] = Number(part.value);
-  }
-  return out;
-}
-
-/** How far `timeZone` runs ahead of UTC at `at`, in milliseconds. */
-function zoneOffsetMs(timeZone: string, at: Date): number {
-  const p = partsIn(timeZone, at);
-  const wall = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute);
-  // `partsIn` formats to the minute, so compare against a minute-truncated
-  // instant or the seconds it dropped come back as offset error.
-  return wall - Math.floor(at.getTime() / 60_000) * 60_000;
-}
-
-/**
- * An ET wall-clock date and time as a real instant.
- *
- * Solved by iteration rather than a hardcoded −4/−5: the offset depends on the
- * date, and a DST slip would put every KST time on this panel an hour out for
- * half the year. Two passes is enough — the first guess is never more than an
- * hour off, so the second lands on the right offset.
- */
-function easternInstant(date: string, hhmm: string): Date | null {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
-  if (!match) return null;
-
-  const [y, m, d] = date.split("-").map(Number);
-  const naive = Date.UTC(y, m - 1, d, Number(match[1]), Number(match[2]));
-
-  let instant = new Date(naive);
-  for (let pass = 0; pass < 2; pass += 1) {
-    instant = new Date(naive - zoneOffsetMs(ET_ZONE, instant));
-  }
-  return instant;
 }
 
 function pad(value: number): string {
@@ -316,6 +278,7 @@ async function loadEconDay(date: string): Promise<EconEvent[]> {
       ...seoulTime(date, timeEt),
       name,
       tier,
+      kind: eventKind(name),
       actual: cell(row.actual),
       forecast: cell(row.consensus),
       previous: cell(row.previous),
@@ -382,11 +345,6 @@ function weekOf(anchorDate: string): string[] {
   });
 }
 
-function easternToday(): string {
-  const p = partsIn(ET_ZONE, new Date());
-  return `${p.year}-${pad(p.month)}-${pad(p.day)}`;
-}
-
 async function fetchCalendar(
   anchorDate: string,
   symbols: string[],
@@ -394,40 +352,27 @@ async function fetchCalendar(
   const dates = weekOf(anchorDate);
   const tracked = new Set(symbols.map((symbol) => symbol.toUpperCase()));
 
-  // Recorded here rather than derived from the finished days: a day that failed
-  // and a day that genuinely has nothing scheduled produce the same empty list,
-  // so the catch is the only place the difference still exists.
-  let partial = false;
-  const blank = () => {
-    partial = true;
-    return [];
-  };
-
-  const days = await Promise.all(
-    dates.map(async (date): Promise<CalendarDay> => {
-      // One bad day should cost that day's rows, not the whole panel — the
-      // upstream 404s on some holidays and occasionally rate-limits a single
-      // request out of ten.
-      const [events, earnings] = await Promise.all([
-        loadEconDay(date).catch(blank),
-        loadEarningsDay(date, tracked).catch(blank),
-      ]);
-      return { date, events, earnings };
-    }),
-  );
-
-  if (days.every((day) => day.events.length === 0 && day.earnings.length === 0)) {
-    throw new Error("Calendar feed returned nothing for the week.");
-  }
-
+  const days = await Promise.all(dates.map(async (date): Promise<CalendarDay> => {
+    const [macro, earnings] = await Promise.allSettled([
+      loadEconDay(date), loadEarningsDay(date, tracked),
+    ]);
+    const checkedAt = new Date().toISOString();
+    return {
+      date,
+      events: macro.status === "fulfilled" ? macro.value : [],
+      earnings: earnings.status === "fulfilled" ? earnings.value : [],
+      macroStatus: macro.status === "fulfilled" ? "ok" : "error",
+      earningsStatus: earnings.status === "fulfilled" ? "ok" : "error",
+      macroCheckedAt: macro.status === "fulfilled" ? checkedAt : null,
+      earningsCheckedAt: earnings.status === "fulfilled" ? checkedAt : null,
+    };
+  }));
   return {
     calendar: {
-      weekStart: dates[0],
-      weekEnd: dates[dates.length - 1],
-      todayEt: easternToday(),
-      days,
+      weekStart: dates[0], weekEnd: dates[dates.length - 1],
+      todayEt: easternDate(new Date()), days, checkedAt: new Date().toISOString(),
     },
-    partial,
+    partial: days.some(day => day.macroStatus === "error" || day.earningsStatus === "error"),
   };
 }
 
@@ -450,21 +395,25 @@ export async function loadWeekCalendar(
   anchorDate: string,
   symbols: string[],
 ): Promise<WeekCalendar | null> {
-  const key = `${anchorDate}|${symbols.length}`;
+  const key = `${anchorDate}|${[...new Set(symbols)].sort().join(",")}`;
   if (memo && memo.key === key && Date.now() - memo.at < memo.ttl) {
     return memo.calendar;
   }
 
   try {
     const { calendar, partial } = await fetchCalendar(anchorDate, symbols);
+    const retained = retainCalendar(calendar, memo?.key === key ? memo.calendar : undefined);
     memo = {
       key,
       at: Date.now(),
       ttl: partial ? PARTIAL_TTL_MS : TTL_MS,
-      calendar,
+      calendar: retained,
     };
-    return calendar;
+    return retained;
   } catch {
-    return memo?.key === key ? memo.calendar : null;
+    return memo?.key === key ? {
+      ...memo.calendar,
+      days: memo.calendar.days.map(day => ({ ...day, macroStatus: "error", earningsStatus: "error" })),
+    } : null;
   }
 }
