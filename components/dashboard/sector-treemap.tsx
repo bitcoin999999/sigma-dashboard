@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { useLocale } from "@/components/locale-provider";
 import { formatCurrency, formatPercent, formatSigma } from "@/lib/format";
 import { BAND_LIMIT, SIGMA_1, groupBySector, statusStyle } from "@/lib/sigma";
 import { type Rect, type TreemapTile, inset, squarify } from "@/lib/treemap";
@@ -10,9 +11,9 @@ import { cn } from "@/lib/utils";
 
 type TreemapMode = "STOCKS" | "SECTORS";
 
-const MODES: { key: TreemapMode; label: string }[] = [
-  { key: "STOCKS", label: "Stocks" },
-  { key: "SECTORS", label: "Sector ETFs" },
+const MODES: { key: TreemapMode }[] = [
+  { key: "STOCKS" },
+  { key: "SECTORS" },
 ];
 
 /** Height of a group's caption bar, in px. Matches the label's line box. */
@@ -98,6 +99,7 @@ export function SectorTreemap({
   etfs,
   onSelect,
 }: SectorTreemapProps) {
+  const { pick } = useLocale();
   const [mode, setMode] = React.useState<TreemapMode>("STOCKS");
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -199,13 +201,13 @@ export function SectorTreemap({
                   : "text-muted-foreground hover:text-foreground",
               )}
             >
-              {option.label}
+              {option.key === "STOCKS" ? pick("종목", "Stocks") : pick("섹터 ETF", "Sector ETFs")}
             </button>
           ))}
         </div>
 
         <span className="num text-xs text-muted-foreground">
-          {total} {isNested ? "symbols" : "funds"} · area = distance from anchor
+          {pick(`${total}개 ${isNested ? "종목" : "ETF"} · 면적 = 앵커와의 거리`, `${total} ${isNested ? "symbols" : "funds"} · area = distance from anchor`)}
         </span>
       </div>
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 
 import { ArrowUpRight, X } from "lucide-react";
 
+import { useLocale } from "@/components/locale-provider";
 import { Dialog, DialogClose, DialogPortal } from "@/components/ui/dialog";
 import { Dialog as DialogPrimitive } from "@base-ui/react/dialog";
 import {
@@ -13,7 +14,8 @@ import {
   formatSigma,
   formatSignedNumber,
 } from "@/lib/format";
-import { STATUS_META, statusStyle } from "@/lib/sigma";
+import { STATUS_COPY } from "@/lib/i18n";
+import { statusStyle } from "@/lib/sigma";
 import type { EarningsEvent } from "@/lib/econ-calendar";
 import { SESSION_LABEL } from "@/lib/calendar-state";
 import type { StockData } from "@/lib/types";
@@ -65,7 +67,8 @@ export function StockDetailPanel({
 type DetailView = "GEX" | "BAND";
 
 function DetailContent({ stock, earnings }: { stock: StockData; earnings?: EarningsEvent | null }) {
-  const meta = STATUS_META[stock.status];
+  const { locale, pick } = useLocale();
+  const meta = STATUS_COPY[locale][stock.status];
   // GEX is the headline view when the options feed carried this symbol; the
   // price path stays one click away rather than being replaced outright.
   const [view, setView] = React.useState<DetailView>(
@@ -84,7 +87,7 @@ function DetailContent({ stock, earnings }: { stock: StockData; earnings?: Earni
           </DialogPrimitive.Description>
         </div>
         <DialogClose
-          aria-label="Close details"
+          aria-label={pick("상세 닫기", "Close details")}
           className="-mt-1 -mr-1 rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
           <X className="size-4" />
@@ -92,9 +95,9 @@ function DetailContent({ stock, earnings }: { stock: StockData; earnings?: Earni
       </div>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
-        {earnings && <div lang="en" className="mb-5 rounded-xl border border-border p-3 text-sm">
-          <p className="font-semibold">Earnings schedule · {earnings.date} ET</p>
-          <p className="mt-1 text-xs text-muted-foreground">{SESSION_LABEL[earnings.session]}{earnings.epsForecast !== null && ` · Est EPS ${earnings.epsForecast}`}</p>
+        {earnings && <div className="mb-5 rounded-xl border border-border p-3 text-sm">
+          <p className="font-semibold">{pick("실적 일정", "Earnings schedule")} · {earnings.date} ET</p>
+          <p className="mt-1 text-xs text-muted-foreground">{earnings.session === "UNKNOWN" ? pick("시간 미제공", "Time not supplied") : SESSION_LABEL[earnings.session]}{earnings.epsForecast !== null && ` · ${pick("예상 EPS", "Est EPS")} ${earnings.epsForecast}`}</p>
         </div>}
         <div className="flex items-end justify-between gap-3">
           <span className="num text-3xl leading-none font-semibold tracking-tight">
@@ -103,14 +106,14 @@ function DetailContent({ stock, earnings }: { stock: StockData; earnings?: Earni
           <div className="flex flex-col items-end gap-1.5">
             <ChangePill value={stock.changePercent} />
             <span className="num text-[11px] text-muted-foreground">
-              {formatSignedNumber(stock.changeAbsolute)} today
+              {formatSignedNumber(stock.changeAbsolute)} {pick("오늘", "today")}
             </span>
           </div>
         </div>
 
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
-            <span className="label-xs">Position in band</span>
+            <span className="label-xs">{pick("밴드 위치", "Position in band")}</span>
             <span className="num state-tint text-sm font-semibold">
               {formatSigma(stock.zScore)}
             </span>
@@ -145,7 +148,7 @@ function DetailContent({ stock, earnings }: { stock: StockData; earnings?: Earni
                 onClick={() => setView("GEX")}
               />
               <ViewTab
-                label={stock.intraday ? "Price today" : "Price path"}
+                label={stock.intraday ? pick("오늘 가격", "Price today") : pick("가격 경로", "Price path")}
                 active={view === "BAND"}
                 onClick={() => setView("BAND")}
               />
@@ -153,8 +156,8 @@ function DetailContent({ stock, earnings }: { stock: StockData; earnings?: Earni
           ) : (
             <span className="label-xs">
               {stock.intraday
-                ? "Price today vs band"
-                : `Price path vs band · last ${stock.history.length} sessions`}
+                ? pick("오늘 가격 vs 밴드", "Price today vs band")
+                : pick(`가격 경로 vs 밴드 · 최근 ${stock.history.length}개 세션`, `Price path vs band · last ${stock.history.length} sessions`)}
             </span>
           )}
 
@@ -173,12 +176,12 @@ function DetailContent({ stock, earnings }: { stock: StockData; earnings?: Earni
           href={`/symbol/${stock.symbol}`}
           className="mt-5 inline-flex h-9 items-center gap-1.5 rounded-full border border-border/80 px-3.5 text-xs font-medium transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          Open {stock.symbol} page
+          {pick(`${stock.symbol} 페이지 열기`, `Open ${stock.symbol} page`)}
           <ArrowUpRight className="size-3.5" aria-hidden />
         </Link>
 
         <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-0 border-t border-border/70">
-          <Row label="Anchor" value={formatCurrency(stock.anchor)} />
+          <Row label={pick("앵커", "Anchor")} value={formatCurrency(stock.anchor)} />
           <Row
             label="1σ"
             value={`${formatCurrency(stock.standardDeviation)} · ${stock.sigmaPercent.toFixed(2)}%`}
@@ -187,8 +190,8 @@ function DetailContent({ stock, earnings }: { stock: StockData; earnings?: Earni
           <Row label="−1σ" value={formatCurrency(stock.sigma1Lower)} accent />
           <Row label="+1.5σ" value={formatCurrency(stock.sigmaExtremeUpper)} accent />
           <Row label="−1.5σ" value={formatCurrency(stock.sigmaExtremeLower)} accent />
-          <Row label="Previous close" value={formatCurrency(stock.previousClose)} />
-          <Row label="Day change" value={formatPercent(stock.changePercent)} />
+          <Row label={pick("전일 마감", "Previous close")} value={formatCurrency(stock.previousClose)} />
+          <Row label={pick("일일 등락", "Day change")} value={formatPercent(stock.changePercent)} />
         </dl>
       </div>
     </div>

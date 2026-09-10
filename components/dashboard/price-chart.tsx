@@ -12,6 +12,7 @@ import {
   type XAxisTickContentProps,
 } from "recharts";
 
+import { useLocale } from "@/components/locale-provider";
 import { formatCurrency, formatDay } from "@/lib/format";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -141,6 +142,7 @@ function SessionChart({
   stock: StockData;
   compact: boolean;
 }) {
+  const { pick } = useLocale();
   const gradientId = gradientKey(stock.symbol, compact, "session");
   const series = stock.intraday!;
   const data = series.points.map((point) => ({
@@ -169,7 +171,7 @@ function SessionChart({
     },
     {
       key: "anchor",
-      label: "Anchor",
+      label: pick("앵커", "Anchor"),
       value: stock.anchor,
       stroke: "var(--foreground)",
       strokeOpacity: 0.35,
@@ -304,9 +306,7 @@ function SessionChart({
           <OffAxisLevels levels={below} direction="down" />
 
           <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground/80">
-            {formatDay(series.date)} regular session · {series.candle} bars, ET.
-            The axis follows the day, not the week — levels the session never
-            reached are named at the edge they sit beyond.
+            {pick(`${formatDay(series.date)} 정규장 · ${series.candle} bars, ET. 축은 주간이 아닌 해당 거래일을 따릅니다. 세션 중 도달하지 않은 레벨은 축 밖의 해당 경계에 표시합니다.`, `${formatDay(series.date)} regular session · ${series.candle} bars, ET. The axis follows the day, not the week — levels the session never reached are named at the edge they sit beyond.`)}
           </p>
         </>
       )}
@@ -365,6 +365,7 @@ function BandPathChart({
   stock: StockData;
   compact: boolean;
 }) {
+  const { pick } = useLocale();
   const gradientId = gradientKey(stock.symbol, compact, "band");
   const data = stock.history.map((bar) => ({
     date: bar.date,
@@ -457,7 +458,7 @@ function BandPathChart({
               compact
                 ? undefined
                 : {
-                    value: `Anchor ${formatCurrency(stock.anchor)}`,
+                    value: `${pick("앵커", "Anchor")} ${formatCurrency(stock.anchor)}`,
                     position: "insideTopLeft",
                     fill: "var(--muted-foreground)",
                     fontSize: 10,

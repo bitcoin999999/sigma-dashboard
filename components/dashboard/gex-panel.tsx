@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { useLocale } from "@/components/locale-provider";
 import { formatCompact, formatCurrency } from "@/lib/format";
 import type { GexLevel, StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ const GUTTER = 44;
  * just sticky. Blue = cushion, red = acceleration.
  */
 export function GexPanel({ stock }: { stock: StockData }) {
+  const { pick } = useLocale();
   const gex = stock.gex;
   if (!gex) return null;
 
@@ -65,8 +67,8 @@ export function GexPanel({ stock }: { stock: StockData }) {
 
       <p className="mt-2.5 text-[11px] leading-relaxed text-muted-foreground">
         {longGamma
-          ? "Hedging leans against the move, so the strikes below tend to hold."
-          : "Hedging runs with the move, so levels break faster than they hold."}
+          ? pick("헤지가 가격 방향과 반대로 작용해 아래 행사가가 지지되는 경향이 있습니다.", "Hedging leans against the move, so the strikes below tend to hold.")
+          : pick("헤지가 가격 방향을 따라가 지지보다 이탈이 빨라질 수 있습니다.", "Hedging runs with the move, so levels break faster than they hold.")}
       </p>
 
       <div className="relative mt-4" style={{ height: profile.length * ROW }}>
@@ -95,26 +97,26 @@ export function GexPanel({ stock }: { stock: StockData }) {
         className="mt-2 flex items-center justify-between text-[10px] text-muted-foreground/80"
         style={{ marginLeft: GUTTER }}
       >
-        <span>← accelerates</span>
-        <span>cushions →</span>
+        <span>← {pick("가속", "accelerates")}</span>
+        <span>{pick("완충", "cushions")} →</span>
       </div>
 
       <dl className="mt-5 space-y-px border-t border-border/70 pt-1">
         <LevelRow
-          label="Resistance"
-          hint="+GEX above spot"
+          label={pick("저항", "Resistance")}
+          hint={pick("현재가 위 +GEX", "+GEX above spot")}
           levels={gex.resistance}
           tone="cushion"
         />
         <LevelRow
-          label="Support"
-          hint="+GEX below spot"
+          label={pick("지지", "Support")}
+          hint={pick("현재가 아래 +GEX", "+GEX below spot")}
           levels={gex.support}
           tone="cushion"
         />
         <LevelRow
-          label="Acceleration"
-          hint="−GEX, breaks fast"
+          label={pick("가속", "Acceleration")}
+          hint={pick("−GEX, 이탈 가속", "−GEX, breaks fast")}
           levels={gex.acceleration}
           tone="risk"
         />
@@ -122,7 +124,7 @@ export function GexPanel({ stock }: { stock: StockData }) {
           <dt className="num text-[11px] text-muted-foreground">Gamma flip</dt>
           <dd className="num text-xs font-medium">
             {gex.zeroGamma === null ? (
-              <span className="text-muted-foreground">none in range</span>
+              <span className="text-muted-foreground">{pick("범위 내 없음", "none in range")}</span>
             ) : (
               formatCurrency(gex.zeroGamma)
             )}
@@ -131,8 +133,7 @@ export function GexPanel({ stock }: { stock: StockData }) {
       </dl>
 
       <p className="mt-3 text-[10px] leading-relaxed text-muted-foreground/80">
-        All expirations, strikes within ±10% of spot. Open interest settles once
-        a day, so these levels move on the same cadence as the σ band.
+        {pick("전체 만기, 현재가 ±10% 내 행사가 기준입니다. Open interest는 하루에 한 번 확정되므로 이 레벨도 σ 밴드와 같은 주기로 변합니다.", "All expirations, strikes within ±10% of spot. Open interest settles once a day, so these levels move on the same cadence as the σ band.")}
       </p>
     </div>
   );

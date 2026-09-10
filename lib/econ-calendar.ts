@@ -1,4 +1,5 @@
 import { easternInstant, easternDate, partsIn, retainCalendar, eventKind } from "./calendar-state";
+import { applyBlsPpiFallback } from "./bls-ppi";
 
 /**
  * The week's scheduled catalysts: macro prints and, for tracked names, earnings.
@@ -68,6 +69,8 @@ export interface EconEvent {
   /** Null means no vendor value, not proof that the release is still ahead. */
   kind: "print" | "event";
   actual: string | null;
+  /** Present for diagnostics; Nasdaq stays primary and BLS only fills a blank PPI print. */
+  actualSource?: "nasdaq" | "bls";
   forecast: string | null;
   previous: string | null;
 }
@@ -271,6 +274,7 @@ async function loadEconDay(date: string): Promise<EconEvent[]> {
     // releases whose time is fixed by statute: payrolls print at 08:30 ET and
     // arrive here as "08:30". Non-clock values ("All Day") pass through empty.
     const timeEt = /^\d{1,2}:\d{2}$/.test(row.gmt ?? "") ? row.gmt! : "";
+    const actual = cell(row.actual);
 
     events.push({
       date,
@@ -279,7 +283,8 @@ async function loadEconDay(date: string): Promise<EconEvent[]> {
       name,
       tier,
       kind: eventKind(name),
-      actual: cell(row.actual),
+      actual,
+      actualSource: actual === null ? undefined : "nasdaq",
       forecast: cell(row.consensus),
       previous: cell(row.previous),
     });
@@ -289,7 +294,8 @@ async function loadEconDay(date: string): Promise<EconEvent[]> {
   // than the CPI print sitting in the same 08:30 slot.
   events.sort((a, b) => a.tier - b.tier || a.timeEt.localeCompare(b.timeEt));
 
-  return events
+  const enriched = await applyBlsPpiFallback(events);
+  return enriched
     .slice(0, EVENTS_PER_DAY)
     .sort((a, b) => a.timeEt.localeCompare(b.timeEt) || a.tier - b.tier);
 }

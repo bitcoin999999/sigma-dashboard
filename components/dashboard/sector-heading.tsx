@@ -1,3 +1,6 @@
+"use client";
+
+import { useLocale } from "@/components/locale-provider";
 import { formatSigma } from "@/lib/format";
 import type { SectorGroup } from "@/lib/sigma";
 import { cn } from "@/lib/utils";
@@ -16,6 +19,7 @@ export function SectorHeading({
   group: SectorGroup;
   className?: string;
 }) {
+  const { pick } = useLocale();
   const leaning = Math.abs(group.medianZ) >= 0.5;
 
   return (
@@ -35,7 +39,7 @@ export function SectorHeading({
       <span className="num ml-auto flex items-baseline gap-3 text-[11px]">
         {group.dislocated > 0 && (
           <span className="text-foreground/80">
-            {group.dislocated} past ±1σ
+            {pick(`±1σ 이탈 ${group.dislocated}개`, `${group.dislocated} past ±1σ`)}
           </span>
         )}
         <span
@@ -47,7 +51,7 @@ export function SectorHeading({
               : "text-muted-foreground/70",
           )}
         >
-          median {formatSigma(group.medianZ, 2)}
+          {pick("중앙값", "median")} {formatSigma(group.medianZ, 2)}
         </span>
       </span>
     </div>

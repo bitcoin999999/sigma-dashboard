@@ -1,4 +1,8 @@
-import { STATUS_META, statusStyle } from "@/lib/sigma";
+"use client";
+
+import { useLocale } from "@/components/locale-provider";
+import { STATUS_COPY } from "@/lib/i18n";
+import { statusStyle } from "@/lib/sigma";
 import type { SigmaStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -13,7 +17,8 @@ export function StatusBadge({
   size = "sm",
   className,
 }: StatusBadgeProps) {
-  const meta = STATUS_META[status];
+  const { locale } = useLocale();
+  const meta = STATUS_COPY[locale][status];
   const isExtreme = status === "OVERHEATED" || status === "OVERSOLD";
 
   return (

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 
+import { useLocale } from "@/components/locale-provider";
 import {
   BAND_LIMIT,
   SIGMA_EXTREME,
@@ -52,6 +53,7 @@ export function SigmaRangeBar({
   prices,
   className,
 }: SigmaRangeBarProps) {
+  const { pick } = useLocale();
   const position = bandPosition(zScore);
   const clipped = isBeyondBand(zScore);
   const isExtreme = status === "OVERHEATED" || status === "OVERSOLD";
@@ -81,7 +83,7 @@ export function SigmaRangeBar({
       <div
         className={cn("relative", detailed ? "h-2.5" : "h-1.5")}
         role="img"
-        aria-label={`Position within expected range: ${formatSigma(zScore)} from the anchor close, between ${BAND_LIMIT} sigma bounds.`}
+        aria-label={pick(`Expected range 내 위치: 앵커 마감에서 ${formatSigma(zScore)}, ±${BAND_LIMIT} sigma 범위.`, `Position within expected range: ${formatSigma(zScore)} from the anchor close, between ${BAND_LIMIT} sigma bounds.`)}
       >
         {/* Track: neutral outside, faintly lit inside the ±1σ core. */}
         <div className="absolute inset-0 overflow-hidden rounded-full bg-[color-mix(in_oklch,var(--foreground)_8%,transparent)]">
@@ -163,7 +165,7 @@ export function SigmaRangeBar({
                   className={placement}
                   style={{ left: `${tick.at}%` }}
                 >
-                  {tick.label}
+                {tick.key === "anchor" ? pick("앵커", "Anchor") : tick.label}
                 </span>
               );
             }
@@ -190,7 +192,7 @@ export function SigmaRangeBar({
                 style={{ left: `${tick.at}%` }}
                 onClick={() => toggle(tick.key)}
                 aria-pressed={held}
-                aria-label={`${tick.label}: ${formatCurrency(price)}`}
+                aria-label={`${tick.key === "anchor" ? pick("앵커", "Anchor") : tick.label}: ${formatCurrency(price)}`}
               >
                 {/* Each state picks exactly one opacity utility rather than
                     layering `opacity-100` over `opacity-0`. Two utilities from

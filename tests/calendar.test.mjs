@@ -9,7 +9,7 @@ import ts from 'typescript';
 // Compile the actual modules; no duplicated status/date implementation in tests.
 const folder = mkdtempSync(join(tmpdir(), 'sigma-calendar-tests-'));
 writeFileSync(join(folder, 'package.json'), '{"type":"commonjs"}');
-for (const name of ['calendar-state', 'econ-calendar']) {
+for (const name of ['calendar-state', 'bls-ppi', 'econ-calendar']) {
   const source = readFileSync(new URL(`../lib/${name}.ts`, import.meta.url), 'utf8');
   writeFileSync(join(folder, `${name}.js`), ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },

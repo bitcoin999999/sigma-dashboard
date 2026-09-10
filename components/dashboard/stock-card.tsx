@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { Anchor } from "lucide-react";
 
+import { useLocale } from "@/components/locale-provider";
 import { formatBandWidth, formatCurrency, formatSigma } from "@/lib/format";
 import { findGexFloor } from "@/lib/gex-floor";
-import { STATUS_META, statusStyle } from "@/lib/sigma";
+import { STATUS_COPY } from "@/lib/i18n";
+import { statusStyle } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +39,7 @@ export function StockCard({
   href,
   showSector = true,
 }: StockCardProps) {
+  const { locale, pick } = useLocale();
   const isExtreme =
     stock.status === "OVERHEATED" || stock.status === "OVERSOLD";
 
@@ -46,9 +49,9 @@ export function StockCard({
   // snapshot this card was handed.
   const floor = findGexFloor(stock);
 
-  const label = `${stock.symbol}, ${stock.name}. ${STATUS_META[stock.status].longLabel}.${
-    floor ? " GEX floor on the −1σ edge." : ""
-  } ${href ? "Open page." : "Open details."}`;
+  const label = `${stock.symbol}, ${stock.name}. ${STATUS_COPY[locale][stock.status].longLabel}.${
+    floor ? pick(" −1σ 하단에 GEX floor.", " GEX floor on the −1σ edge.") : ""
+  } ${href ? pick("페이지 열기.", "Open page.") : pick("상세 열기.", "Open details.")}`;
 
   const className = cn(
     "glass glass-interactive group block w-full cursor-pointer p-4 text-left",

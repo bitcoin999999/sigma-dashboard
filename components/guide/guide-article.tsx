@@ -1,9 +1,9 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 
+import { useLocale } from "@/components/locale-provider";
 import { BandDiagram } from "@/components/guide/band-diagram";
 import { CaseChart } from "@/components/guide/case-chart";
 import { Section } from "@/components/layout/section";
@@ -17,41 +17,9 @@ import {
 import { CASE, CASE_GAP_PERCENT, caseZ } from "@/lib/guide";
 import {
   GUIDE_COPY,
-  LANGS,
-  LANG_STORAGE_KEY,
   type Lang,
-  isLang,
 } from "@/lib/guide-copy";
 import { STATUS_META, STATUS_ORDER, statusStyle } from "@/lib/sigma";
-import { cn } from "@/lib/utils";
-
-/**
- * The chosen language, kept in `localStorage` and read through
- * `useSyncExternalStore` so the server renders English and the client
- * re-renders once, without a hydration mismatch.
- */
-const listeners = new Set<() => void>();
-
-function subscribe(listener: () => void) {
-  listeners.add(listener);
-  // Another tab switching language fires `storage` here, never in the tab
-  // that wrote it — hence the explicit notify in `setStoredLang`.
-  window.addEventListener("storage", listener);
-  return () => {
-    listeners.delete(listener);
-    window.removeEventListener("storage", listener);
-  };
-}
-
-function getStoredLang(): Lang {
-  const saved = window.localStorage.getItem(LANG_STORAGE_KEY);
-  return isLang(saved) ? saved : "en";
-}
-
-function setStoredLang(next: Lang) {
-  window.localStorage.setItem(LANG_STORAGE_KEY, next);
-  listeners.forEach((listener) => listener());
-}
 
 /** The order the reference cards appear in, and the routes they link to. */
 const SURFACE_HREFS = [
@@ -86,40 +54,6 @@ function Fact({
   );
 }
 
-function LangToggle({
-  lang,
-  onChange,
-}: {
-  lang: Lang;
-  onChange: (next: Lang) => void;
-}) {
-  return (
-    <div className="inline-flex shrink-0 rounded-full border border-border/70 p-0.5">
-      {LANGS.map((option) => {
-        const copy = GUIDE_COPY[option];
-        const active = option === lang;
-        return (
-          <button
-            key={option}
-            type="button"
-            onClick={() => onChange(option)}
-            aria-label={copy.switchAria}
-            aria-pressed={active}
-            className={cn(
-              "rounded-full px-3 py-1 text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
-              active
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            {copy.switchLabel}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 interface GuideArticleProps {
   /** ISO anchor date. Spelled here rather than upstream so the month name
    * follows the language the reader picked. */
@@ -131,18 +65,14 @@ interface GuideArticleProps {
 const LOCALE: Record<Lang, string> = { en: "en-US", ko: "ko-KR" };
 
 /**
- * The guide, in whichever language the reader picked.
- *
- * The page around it stays a server component: metadata, the JSON-LD and the
- * snapshot read all belong there, and search engines should keep seeing the
- * English article. Only the body swaps, and the choice is remembered in
- * `localStorage` rather than the URL so the nav and footer links stay simple.
+ * The guide follows the site-wide locale. The server chooses the first-visit
+ * locale and the flag control persists later choices in the shared cookie.
  */
 export function GuideArticle({
   bandAnchorDate,
   symbolCount,
 }: GuideArticleProps) {
-  const lang = useSyncExternalStore(subscribe, getStoredLang, (): Lang => "en");
+  const { locale: lang } = useLocale();
   const t = GUIDE_COPY[lang];
   const locale = LOCALE[lang];
 
@@ -168,7 +98,6 @@ export function GuideArticle({
             {t.intro}
           </p>
         </div>
-        <LangToggle lang={lang} onChange={setStoredLang} />
       </div>
 
       <div className="glass mt-9 max-w-4xl px-5 py-7 sm:px-8 sm:py-8">

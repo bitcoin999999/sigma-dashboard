@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Anchor } from "lucide-react";
 
+import { useLocale } from "@/components/locale-provider";
 import {
   formatBandWidth,
   formatCurrency,
@@ -11,7 +12,8 @@ import {
   formatSigma,
 } from "@/lib/format";
 import { findGexFloor } from "@/lib/gex-floor";
-import { STATUS_META, statusStyle, type SectorGroup } from "@/lib/sigma";
+import { STATUS_COPY } from "@/lib/i18n";
+import { statusStyle, type SectorGroup } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -62,27 +64,27 @@ export function StockTable({
   onSelect,
   hrefFor,
 }: StockTableProps) {
+  const { pick } = useLocale();
   return (
     <div className="glass overflow-hidden p-0">
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left">
           <caption className="sr-only">
-            Every symbol matching the current filter, with its price, daily
-            change, ±1σ band and current position inside it.
+            {pick("현재 필터에 맞는 종목의 가격, 일일 등락, ±1σ 밴드와 현재 위치", "Every symbol matching the current filter, with its price, daily change, ±1σ band and current position inside it.")}
           </caption>
           <thead>
             <tr className="border-b border-border/60">
-              <Th className="pl-4">Symbol</Th>
+              <Th className="pl-4">{pick("종목", "Symbol")}</Th>
               <Th align="right" className="hidden sm:table-cell">
-                Price
+                {pick("가격", "Price")}
               </Th>
-              <Th align="right">Change</Th>
+              <Th align="right">{pick("등락", "Change")}</Th>
               <Th align="right" className="hidden lg:table-cell">
-                ±1σ range
+                ±1σ {pick("범위", "range")}
               </Th>
               {/* The bar is the one cell that should absorb slack as the table
                   widens, so it is the only one without a natural width. */}
-              <Th className="hidden w-[26%] pl-6 md:table-cell">Band</Th>
+              <Th className="hidden w-[26%] pl-6 md:table-cell">{pick("밴드", "Band")}</Th>
               {/* Matches the cell's gutter exactly — the status column takes it
                   over at xl, and until then a bare header sits flush to the
                   card edge while the numbers under it are inset.
@@ -95,7 +97,7 @@ export function StockTable({
                 σ
               </Th>
               <Th align="right" className="hidden pr-4 xl:table-cell">
-                Status
+                {pick("상태", "Status")}
               </Th>
             </tr>
           </thead>
@@ -154,14 +156,15 @@ function Row({
   href?: string;
   showSector?: boolean;
 }) {
+  const { locale, pick } = useLocale();
   const router = useRouter();
   const isExtreme =
     stock.status === "OVERHEATED" || stock.status === "OVERSOLD";
   const floor = findGexFloor(stock);
 
-  const label = `${stock.symbol}, ${stock.name}. ${STATUS_META[stock.status].longLabel}.${
-    floor ? " GEX floor on the −1σ edge." : ""
-  } ${href ? "Open page." : "Open details."}`;
+  const label = `${stock.symbol}, ${stock.name}. ${STATUS_COPY[locale][stock.status].longLabel}.${
+    floor ? pick(" −1σ 하단에 GEX floor.", " GEX floor on the −1σ edge.") : ""
+  } ${href ? pick("페이지 열기.", "Open page.") : pick("상세 열기.", "Open details.")}`;
 
   // Whichever tag the symbol cell wears, the rest of the row is dead space
   // otherwise — a σ reading is not something you can click, and readers aim at

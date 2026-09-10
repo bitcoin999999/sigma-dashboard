@@ -3,9 +3,6 @@ import type { SigmaStatus } from "@/lib/types";
 export const LANGS = ["en", "ko"] as const;
 export type Lang = (typeof LANGS)[number];
 
-/** Where the reader's choice is kept between visits. */
-export const LANG_STORAGE_KEY = "sigma-guide-lang";
-
 export function isLang(value: unknown): value is Lang {
   return value === "en" || value === "ko";
 }
@@ -38,16 +35,15 @@ interface StatusCopy {
 /**
  * Every word on the guide page, in both languages.
  *
- * The board itself stays English — the status labels a reader meets on a card
- * are `OVERHEATED` and `NORMAL` whatever language they read the guide in, so
- * only the long label and the explanation are translated.
+ * Status shorthand such as `OVERHEATED`, `NORMAL`, and GEX remains intact in
+ * Korean because those are the terms readers use on the board itself.
  *
  * Anything interpolated from live or case-study figures is a function rather
  * than a template with placeholders: Korean puts the number in a different
  * place in the sentence, and a `{0}` scheme would hide that.
  */
 export interface GuideCopy {
-  /** Label on the button that switches *to* this language. */
+  /** Retained for the copy contract; the site-wide flag control owns switching. */
   switchLabel: string;
   switchAria: string;
   eyebrow: string;

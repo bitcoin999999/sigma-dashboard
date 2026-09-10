@@ -3,6 +3,7 @@
 import * as React from "react";
 
 import { ExploreNav } from "@/components/layout/explore-nav";
+import { useLocale } from "@/components/locale-provider";
 import { NavBar } from "@/components/layout/nav-bar";
 import { Section } from "@/components/layout/section";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -55,6 +56,7 @@ export function Dashboard({
   snapshot,
   calendar,
 }: DashboardProps) {
+  const { pick } = useLocale();
   const [liveQuotes, setLiveQuotes] = React.useState(quotes);
   const [liveSectorQuotes, setLiveSectorQuotes] = React.useState(sectorQuotes);
   const [meta, setMeta] = React.useState(snapshot);
@@ -169,28 +171,32 @@ export function Dashboard({
           <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,42rem)_minmax(0,1fr)] lg:gap-12">
             <div className="min-w-0">
               <p className="label-xs">
-                Band window · {meta.bandWindow} · anchored {meta.bandAnchor}
-                {opening && " · opens Monday"}
+                {pick("밴드 기간", "Band window")} · {meta.bandWindow} · {pick("앵커", "anchored")} {meta.bandAnchor}
+                {opening && pick(" · 월요일 개장", " · opens Monday")}
               </p>
               <h1 className="mt-3 font-heading text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
                 <span className="text-gradient">
-                  Where the market sits inside its own range.
+                  {pick("각 종목의 이번주 예상 주가 범위와 현재 위치", "Each stock’s expected price range this week and current position")}
                 </span>
               </h1>
               <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-                {counts.total} symbols measured against their own implied
-                volatility for the week.{" "}
+                {pick(
+                  `${counts.total}개 종목을 각각의 주간 implied volatility 기준으로 측정합니다. `,
+                  `${counts.total} symbols measured against their own implied volatility for the week. `,
+                )}
                 {opening ? (
                   <>
-                    The band was struck at the {meta.updatedAt} and covers the
-                    week ahead, so every symbol sits at its anchor until Monday
-                    trades. What each card shows now is the range, not a result.
+                    {pick(
+                      `밴드는 ${meta.updatedAt}에 설정되어 다음 한 주를 커버합니다. 월요일 거래 전이라 모든 종목이 앵커에 있으며, 현재 카드는 결과가 아닌 범위를 보여줍니다.`,
+                      `The band was struck at the ${meta.updatedAt} and covers the week ahead, so every symbol sits at its anchor until Monday trades. What each card shows now is the range, not a result.`,
+                    )}
                   </>
                 ) : (
                   <>
-                    Anything past ±1σ has left the range it normally trades in —
-                    and is surfaced first. Prices are the {meta.updatedAt}; the
-                    band resets each Friday.
+                    {pick(
+                      `±1σ를 넘은 종목은 통상 거래 범위를 벗어난 것으로 분류해 먼저 보여줍니다. 가격은 ${meta.updatedAt} 기준이며 밴드는 매주 금요일 리셋됩니다.`,
+                      `Anything past ±1σ has left the range it normally trades in — and is surfaced first. Prices are the ${meta.updatedAt}; the band resets each Friday.`,
+                    )}
                   </>
                 )}
               </p>
@@ -224,7 +230,7 @@ export function Dashboard({
                 dozen names past +1σ reads very differently depending on whether
                 the index went with them or not. */}
             <div className="mb-6">
-              <p className="label-xs mb-3">Benchmarks</p>
+              <p className="label-xs mb-3">{pick("벤치마크", "Benchmarks")}</p>
               <IndexStrip stocks={stocks} onSelect={setSelected} />
             </div>
 
@@ -248,12 +254,12 @@ export function Dashboard({
         <div className="mt-16 space-y-16 sm:mt-20 sm:space-y-20">
           <Section
             id="watchlist"
-            eyebrow="Watchlist"
-            title="Sigma monitor"
-            description="Every tracked symbol with its live position on the band. Overheated and oversold names float to the top. With no filter applied the list breaks out by sector, the sector holding the most dislocated names first."
+            eyebrow={pick("워치리스트", "Watchlist")}
+            title={pick("Sigma 모니터", "Sigma monitor")}
+            description={pick("모든 추적 종목의 현재 밴드 위치입니다. Overheated와 oversold 종목이 위에 배치됩니다. 필터가 없으면 섹터별로 나누고, 범위 이탈 종목이 많은 섹터부터 보여줍니다.", "Every tracked symbol with its live position on the band. Overheated and oversold names float to the top. With no filter applied the list breaks out by sector, the sector holding the most dislocated names first.")}
             action={
               <span className="num text-xs text-muted-foreground">
-                {visible.length} of {counts.total} symbols
+                {pick(`${counts.total}개 중 ${visible.length}개`, `${visible.length} of ${counts.total} symbols`)}
               </span>
             }
           >
@@ -290,12 +296,12 @@ export function Dashboard({
 
           <Section
             id="lastweek"
-            eyebrow="Last two weeks"
-            title="Weekly band recap"
-            description="Where each symbol closed out the two weeks that have already settled, next to where it sits in the band running now. Every column is scored against its own week's anchor and its own σ, so the row reads as a direction rather than three unrelated numbers."
+            eyebrow={pick("최근 2주", "Last two weeks")}
+            title={pick("주간 밴드 리캡", "Weekly band recap")}
+            description={pick("종료된 지난 2주의 마감 위치와 현재 주간 밴드 위치를 함께 보여줍니다. 각 열은 해당 주의 앵커와 σ로 계산되어, 서로 다른 숫자 3개가 아니라 방향성으로 읽을 수 있습니다.", "Where each symbol closed out the two weeks that have already settled, next to where it sits in the band running now. Every column is scored against its own week's anchor and its own σ, so the row reads as a direction rather than three unrelated numbers.")}
             action={
               <span className="num text-xs text-muted-foreground">
-                {stocks.length} symbols
+                {pick(`${stocks.length}개 종목`, `${stocks.length} symbols`)}
               </span>
             }
           >
@@ -312,17 +318,17 @@ export function Dashboard({
 
           <Section
             id="sectors"
-            eyebrow="Sectors"
-            title="Sector ETF monitor"
-            description="The eleven SPDR sector funds on the same band, for a read on where the dislocation is concentrated."
+            eyebrow={pick("섹터", "Sectors")}
+            title={pick("섹터 ETF 모니터", "Sector ETF monitor")}
+            description={pick("11개 SPDR 섹터 ETF를 같은 밴드에서 비교해 범위 이탈이 어디에 집중되는지 보여줍니다.", "The eleven SPDR sector funds on the same band, for a read on where the dislocation is concentrated.")}
           >
             <SectorEtfMonitor etfs={etfs} onSelect={setSelected} />
           </Section>
 
           <Section
-            eyebrow="Sector map"
-            title="Sector map"
-            description="The whole board at once, sized by dislocation. A symbol that has left its weekly range takes up room; one sitting on its anchor shrinks away. Sectors are ordered by how many of their names have gone."
+            eyebrow={pick("섹터 맵", "Sector map")}
+            title={pick("섹터 맵", "Sector map")}
+            description={pick("전체 보드를 범위 이탈 크기로 표시합니다. 주간 범위를 벗어난 종목은 커지고, 앵커 근처의 종목은 작아집니다. 섹터는 범위 이탈 종목 수순으로 정렬됩니다.", "The whole board at once, sized by dislocation. A symbol that has left its weekly range takes up room; one sitting on its anchor shrinks away. Sectors are ordered by how many of their names have gone.")}
           >
             <SectorTreemap
               stocks={stocks}

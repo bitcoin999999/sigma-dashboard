@@ -48,3 +48,24 @@ Vercel 팀 `centme-9969`, 프로젝트명 `sigma-dashboard`에 배포돼 있다.
 사용자가 명시적으로 일정 없음 표시 및 운영 배포를 요청했다. Nasdaq의 rCode=200, bCodeMessage code=1002 및 No record found 메시지가 확인되는 응답은 정상 빈 배열로 처리하며 `No scheduled events`를 표시한다. 과거의 모든 data:null 실패 처리 지침보다 이 사용자 결정이 우선한다. 원인 불명의 null, HTTP 오류, 타임아웃은 여전히 조회 실패로 구분한다. 정상 빈 응답은 이전 자료를 대체하고 정상 TTL 10분을 적용한다.
 
 2026-09-09 운영 배포 완료: `dpl_38Wmb4HD4nnbtNYtWVrWc6xL224c`, https://sigma-dashboard-five.vercel.app. 영어 일정 UI/자동 확인/명시적 No record found 정상 빈 일정 처리를 함께 배포했다. 테스트 7개·린트·로컬 및 Vercel 빌드 통과. 운영 화면에서 `No scheduled events`와 영어 UI를 확인했다. 위의 미배포 표기는 당시 상태이며 이 배포로 대체된다.
+
+
+## 2026-09-10 사용자 확정: 한국어·영어 전역 UI (운영 배포 완료)
+
+- 홈페이지 전체를 한국어/영어 2개 언어로 제공한다. 한국 접속자의 최초 기본은 한국어이고, 한국·미국 국기 버튼으로 전환한다.
+- 사용자가 선택한 언어는 `sigma-locale` 쿠키에 1년간 저장하며, 저장된 선택이 접속 국가와 브라우저 언어보다 우선한다. 최초 판별은 Vercel `x-vercel-ip-country=KR`, 로컬 환경은 `Accept-Language: ko` 순서로 한국어를 선택한다.
+- 한국어 UI에서도 1σ, GEX, gamma, implied volatility, expected move, overheated/oversold 등 실제 판독에 쓰는 전문용어는 억지로 번역하지 않는다. 설명·버튼·상태·접근성 문구 위주로 번역한다.
+- 기존 가이드 전용 localStorage 언어 토글은 전역 언어 설정으로 통합했다. 메타데이터·JSON-LD·`html lang`도 요청 언어를 따른다.
+- 새 언어 선택 테스트 2개를 추가했고 기존 일정 테스트 7개와 함께 통과했다.
+- 2026-09-10 운영 배포 완료: `https://sigma-dashboard-c42ey99ya-svpk1.vercel.app`, 대표 주소 `https://sigma-dashboard-five.vercel.app`. 운영 주소에서 한국어·영어 요청 모두 HTTP 200과 확정 문구 노출을 확인했다.
+- 사용자가 메인 헤드라인을 한국어 **"각 종목의 이번주 예상 주가 범위와 현재 위치"**, 영어 **"Each stock’s expected price range this week and current position"**으로 확정했다.
+
+
+### 2026-09-10 사용자 확정: PPI actual BLS fallback (운영 배포 완료)
+
+- Nasdaq 경제일정 피드가 발표 후에도 PPI/Core PPI의 actual을 `&nbsp;`로 반환하는 지연을 확인했다. 같은 시각 BLS 공식 API에는 최신월 지수가 반영돼 있었다.
+- Nasdaq actual이 비어 있고 발표 시각이 지난 당일 PPI/Core PPI에만 BLS 공식 시계열 fallback을 적용한다. Nasdaq 값이 있으면 절대 덮어쓰지 않는다.
+- 사용 시계열은 계절조정 Final demand `WPSFD4`와 Final demand less foods and energy `WPSFD49104`다. 전월 대비 actual 산식은 `lib/bls-ppi.ts` 한 곳에만 둔다.
+- 최신 BLS 관측월이 발표 대상월(발표월의 직전 달)과 일치하고 `latest=true`일 때만 사용한다. 따라서 발표 전의 지난달 값을 오늘 actual로 오인하지 않는다.
+- 2026-09-10 실데이터 기준 PPI `(157.411 / 156.784 - 1) = 0.4%`, Core PPI `(154.842 / 154.592 - 1) = 0.2%`를 확인했다. 테스트 12개, ESLint, TypeScript, 프로덕션 빌드가 통과했다.
+- 2026-09-10 운영 배포 완료: `https://sigma-dashboard-i9fl4pjhs-svpk1.vercel.app`, 대표 주소 `https://sigma-dashboard-five.vercel.app`. 운영 `/api/calendar`에서 두 값 모두 `actualSource: "bls"`로 반환되는 것을 확인했다.

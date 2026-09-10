@@ -18,7 +18,9 @@ import {
   formatSigma,
 } from "@/lib/format";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
-import { STATUS_META, statusStyle } from "@/lib/sigma";
+import { STATUS_COPY, pick, type Locale } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n-server";
+import { statusStyle } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +29,10 @@ export const dynamic = "force-dynamic";
 
 type Params = { params: Promise<{ symbol: string }> };
 
-function describe(stock: StockData, updatedAt: string): string {
+function describe(stock: StockData, updatedAt: string, locale: Locale): string {
+  if (locale === "ko") {
+    return `${stock.symbol} (${stock.name})은 ${updatedAt} 기준 ${formatCurrency(stock.price)}에 마감했고, 주간 앵커에서 ${formatSigma(stock.zScore)} 위치입니다. 이번 주 1σ expected move는 ${formatCurrency(stock.sigma1Lower)}~${formatCurrency(stock.sigma1Upper)} (${formatBandWidth(stock.sigmaPercent)})입니다.`;
+  }
   return (
     `${stock.symbol} (${stock.name}) closed at ${formatCurrency(stock.price)} ` +
     `at the ${updatedAt}, ${formatSigma(stock.zScore)} from its weekly anchor. ` +
@@ -40,14 +45,15 @@ function describe(stock: StockData, updatedAt: string): string {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { symbol } = await params;
   const stock = await findStock(symbol);
+  const locale = await getRequestLocale();
 
   if (!stock) {
-    return { title: `Symbol not found · ${SITE_NAME}` };
+    return { title: `${pick(locale, "종목을 찾을 수 없습니다", "Symbol not found")} · ${SITE_NAME}` };
   }
 
   const { snapshot } = await loadBoard();
-  const title = `${stock.symbol} Expected Move This Week · ${SITE_NAME}`;
-  const description = describe(stock, snapshot.updatedAt);
+  const title = `${stock.symbol} ${pick(locale, "이번 주 Expected Move", "Expected Move This Week")} · ${SITE_NAME}`;
+  const description = describe(stock, snapshot.updatedAt, locale);
   const url = `/symbol/${stock.symbol}`;
 
   return {
@@ -65,32 +71,33 @@ export default async function SymbolPage({ params }: Params) {
 
   if (!stock) notFound();
 
+  const locale = await getRequestLocale();
   const { snapshot } = await loadBoard();
-  const meta = STATUS_META[stock.status];
+  const meta = STATUS_COPY[locale][stock.status];
 
   const stats: { term: string; detail: string; className?: string }[] = [
-    { term: "Last close", detail: formatCurrency(stock.price) },
+    { term: pick(locale, "최종 마감", "Last close"), detail: formatCurrency(stock.price) },
     {
-      term: "Session change",
+      term: pick(locale, "세션 등락", "Session change"),
       detail: formatPercent(stock.changePercent),
       className: directionClass(stock.changePercent),
     },
-    { term: "Position on band", detail: formatSigma(stock.zScore) },
+    { term: pick(locale, "밴드 위치", "Position on band"), detail: formatSigma(stock.zScore) },
     {
       // Not "1σ expected range": the label style uppercases, and an uppercased
       // sigma is a different symbol entirely.
-      term: "Expected range",
+      term: pick(locale, "Expected range", "Expected range"),
       detail: `${formatCurrency(stock.sigma1Lower)} – ${formatCurrency(stock.sigma1Upper)}`,
     },
-    { term: "Band width", detail: formatBandWidth(stock.sigmaPercent) },
-    { term: "Anchor close", detail: formatCurrency(stock.anchor) },
+    { term: pick(locale, "밴드 너비", "Band width"), detail: formatBandWidth(stock.sigmaPercent) },
+    { term: pick(locale, "앵커 마감", "Anchor close"), detail: formatCurrency(stock.anchor) },
   ];
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Dataset",
     name: `${stock.symbol} weekly 1σ expected move`,
-    description: describe(stock, snapshot.updatedAt),
+    description: describe(stock, snapshot.updatedAt, locale),
     url: `${SITE_URL}/symbol/${stock.symbol}`,
     dateModified: snapshot.generatedAt,
     temporalCoverage: snapshot.bandWindow,
@@ -132,7 +139,7 @@ export default async function SymbolPage({ params }: Params) {
 
         <div style={statusStyle(stock.status)} className="max-w-3xl">
           <p className="label-xs">
-            {stock.sector} · band window {snapshot.bandWindow}
+            {stock.sector} · {pick(locale, "밴드 기간", "band window")} {snapshot.bandWindow}
           </p>
 
           <div className="mt-3 flex flex-wrap items-center gap-3">
@@ -173,13 +180,13 @@ export default async function SymbolPage({ params }: Params) {
               href={`/my-sigma?s=${stock.symbol}`}
               className="inline-flex h-9 items-center rounded-full border border-border/80 px-3.5 text-xs font-medium transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              Open in My Sigma
+              {pick(locale, "My Sigma에서 열기", "Open in My Sigma")}
             </Link>
             <Link
               href="/"
               className="inline-flex h-9 items-center rounded-full border border-border/80 px-3.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              See the whole board
+              {pick(locale, "전체 보드 보기", "See the whole board")}
             </Link>
           </div>
         </div>

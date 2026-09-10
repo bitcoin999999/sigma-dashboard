@@ -2,6 +2,7 @@
 
 import { SearchX } from "lucide-react";
 
+import { useLocale } from "@/components/locale-provider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { groupBySector } from "@/lib/sigma";
 import type { StockData, ViewMode } from "@/lib/types";
@@ -116,15 +117,16 @@ export function StockGridSkeleton({ count = 8 }: { count?: number }) {
 }
 
 function EmptyState({ onReset }: { onReset?: () => void }) {
+  const { pick } = useLocale();
   return (
     <div className="glass flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
       <span className="flex size-11 items-center justify-center rounded-xl border border-border/70 bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)]">
         <SearchX className="size-5 text-muted-foreground" aria-hidden />
       </span>
       <div>
-        <p className="text-sm font-medium">No symbols match</p>
+        <p className="text-sm font-medium">{pick("조건에 맞는 종목이 없습니다", "No symbols match")}</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Try a different ticker, or widen the sigma filter.
+          {pick("다른 티커를 검색하거나 sigma 필터를 넓혀보세요.", "Try a different ticker, or widen the sigma filter.")}
         </p>
       </div>
       {onReset && (
@@ -133,7 +135,7 @@ function EmptyState({ onReset }: { onReset?: () => void }) {
           onClick={onReset}
           className="mt-1 rounded-full border border-border/80 px-3 py-1.5 text-xs font-medium transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          Reset filters
+          {pick("필터 초기화", "Reset filters")}
         </button>
       )}
     </div>

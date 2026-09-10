@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ArrowUpDown, Search, X } from "lucide-react";
 
+import { useLocale } from "@/components/locale-provider";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -12,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { FILTER_OPTIONS, SORT_OPTIONS } from "@/lib/sigma";
+import { FILTER_LABELS, SORT_LABELS } from "@/lib/i18n";
 import type { FilterKey, SortKey, ViewMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +42,7 @@ export function ControlsBar({
   onViewChange,
   filterCounts,
 }: ControlsBarProps) {
+  const { locale, pick } = useLocale();
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   // "/" jumps to search the way a terminal would.
@@ -68,7 +71,7 @@ export function ControlsBar({
       <div
         className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1 lg:mx-0 lg:flex-wrap lg:px-0 lg:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="group"
-        aria-label="Filter by sigma status"
+        aria-label={pick("Sigma 상태 필터", "Filter by sigma status")}
       >
         {FILTER_OPTIONS.map((option) => {
           const active = option.key === filter;
@@ -86,7 +89,7 @@ export function ControlsBar({
                   : "border-border/80 text-muted-foreground hover:border-border hover:text-foreground",
               )}
             >
-              {option.label}
+              {FILTER_LABELS[locale][option.key]}
               <span
                 className={cn(
                   "num text-[10px]",
@@ -110,15 +113,15 @@ export function ControlsBar({
             ref={inputRef}
             value={query}
             onChange={(event) => onQueryChange(event.target.value)}
-            placeholder="Search ticker"
-            aria-label="Search ticker"
+            placeholder={pick("티커 검색", "Search ticker")}
+            aria-label={pick("티커 검색", "Search ticker")}
             className="h-8 pr-8 pl-8 text-sm"
           />
           {query ? (
             <button
               type="button"
               onClick={() => onQueryChange("")}
-              aria-label="Clear search"
+              aria-label={pick("검색 초기화", "Clear search")}
               className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               <X className="size-3.5" />
@@ -135,11 +138,11 @@ export function ControlsBar({
           onValueChange={(value) => onSortChange(value as SortKey)}
           items={SORT_OPTIONS.map((option) => ({
             value: option.key,
-            label: option.label,
+            label: SORT_LABELS[locale][option.key],
           }))}
         >
           <SelectTrigger
-            aria-label="Sort stocks"
+            aria-label={pick("종목 정렬", "Sort stocks")}
             className="h-8 min-w-[9.5rem] gap-2"
           >
             <ArrowUpDown
@@ -151,7 +154,7 @@ export function ControlsBar({
           <SelectContent>
             {SORT_OPTIONS.map((option) => (
               <SelectItem key={option.key} value={option.key}>
-                {option.label}
+                {SORT_LABELS[locale][option.key]}
               </SelectItem>
             ))}
           </SelectContent>

@@ -3,7 +3,9 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { LocaleProvider } from "@/components/locale-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { getRequestLocale } from "@/lib/i18n-server";
 import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
 import "./globals.css";
@@ -18,7 +20,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
+const BASE_METADATA: Metadata = {
   // Without this, every relative canonical and generated OG image URL below
   // resolves against localhost at build time and ships that way.
   metadataBase: new URL(SITE_URL),
@@ -59,6 +61,19 @@ export const metadata: Metadata = {
   },
 };
 
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale();
+  if (locale === "en") return BASE_METADATA;
+
+  const description = "각 종목이 자신의 주간 expected range 안에서 어디에 있는지 보여주는 통계적 시장 뷰.";
+  return {
+    ...BASE_METADATA,
+    description,
+    openGraph: { ...BASE_METADATA.openGraph, description },
+    twitter: { ...BASE_METADATA.twitter, description },
+  };
+}
+
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#12151d" },
@@ -66,10 +81,12 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getRequestLocale();
+
   return (
     <html
-      lang="en"
+      lang={locale}
       suppressHydrationWarning
       // `scroll-smooth` is for the in-page section links. Without this,
       // navigating between routes animates the scroll to the top as well.
@@ -83,7 +100,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           enableSystem={false}
           disableTransitionOnChange
         >
-          <TooltipProvider>{children}</TooltipProvider>
+          <LocaleProvider initialLocale={locale}>
+            <TooltipProvider>{children}</TooltipProvider>
+          </LocaleProvider>
         </ThemeProvider>
         <Analytics />
       </body>

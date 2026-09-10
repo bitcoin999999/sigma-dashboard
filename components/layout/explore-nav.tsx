@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
 
+import { useLocale } from "@/components/locale-provider";
 import { SCREENERS } from "@/lib/screeners";
 import { cn } from "@/lib/utils";
 
@@ -37,9 +40,11 @@ export function ExploreNav({
   current,
   className,
 }: ExploreNavProps) {
+  const { locale, pick } = useLocale();
+
   return (
     <nav
-      aria-label="Lists"
+      aria-label={pick("탐색", "Lists")}
       className={cn("flex flex-wrap items-center gap-2", className)}
     >
       {SCREENERS.map((screener) => (
@@ -49,7 +54,7 @@ export function ExploreNav({
           aria-current={screener.slug === current ? "page" : undefined}
           className={pillClass(screener.slug === current)}
         >
-          {screener.title}
+          {screener.copy[locale].title}
         </Link>
       ))}
 
@@ -59,7 +64,7 @@ export function ExploreNav({
         className={pillClass(current === "daily")}
       >
         <CalendarDays className="size-3.5" aria-hidden />
-        Today&rsquo;s card
+        {pick("오늘의 카드", "Today’s card")}
       </Link>
     </nav>
   );

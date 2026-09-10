@@ -1,10 +1,11 @@
 "use client";
 
+import { useLocale } from "@/components/locale-provider";
 import { formatSigma } from "@/lib/format";
+import { STATUS_COPY } from "@/lib/i18n";
 import {
   BAND_LIMIT,
   SIGMA_EXTREME,
-  STATUS_META,
   STATUS_ORDER,
   bandPosition,
   buildWeeklyBand,
@@ -38,6 +39,7 @@ export function SigmaOverview({
   onSelect,
   opening,
 }: SigmaOverviewProps) {
+  const { pick } = useLocale();
   /**
    * Before the week's first session closes there is nothing to distribute: all
    * 75 dots stack on the anchor, average z is 0, and "inside ±1σ" reads 75/75.
@@ -58,23 +60,21 @@ export function SigmaOverview({
     return (
       <div className="glass p-5 sm:p-6">
         <h2 className="font-heading text-base font-medium">
-          Where last week ended
+          {pick("지난주 마감 위치", "Where last week ended")}
         </h2>
         <p className="mt-1 text-xs text-muted-foreground">
-          The new band was struck at Friday&apos;s close, so every symbol sits at
-          its anchor until Monday trades. These are the extremes of the week that
-          just settled, scored at its own close.
+          {pick("새 밴드는 금요일 마감가에서 설정되어 월요일 거래 전까지 모든 종목이 앵커에 있습니다. 아래는 방금 종료된 주간의 극단값을 해당 주 마감 기준으로 계산한 결과입니다.", "The new band was struck at Friday’s close, so every symbol sits at its anchor until Monday trades. These are the extremes of the week that just settled, scored at its own close.")}
         </p>
 
         <div className="mt-6 grid gap-6 sm:grid-cols-2 sm:gap-10">
           <ExtremeList
-            title="Last week's most overheated"
+            title={pick("지난주 최대 overheated", "Last week's most overheated")}
             status="OVERHEATED"
             entries={settled.overheated}
             onSelect={onSelect}
           />
           <ExtremeList
-            title="Last week's most oversold"
+            title={pick("지난주 최대 oversold", "Last week's most oversold")}
             status="OVERSOLD"
             entries={settled.oversold}
             onSelect={onSelect}
@@ -96,10 +96,10 @@ export function SigmaOverview({
         <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
           <div>
             <h2 className="font-heading text-base font-medium">
-              Distribution across the band
+              {pick("밴드 분포", "Distribution across the band")}
             </h2>
             <p className="mt-1 text-xs text-muted-foreground">
-              Every tracked symbol placed by how far it sits from its own anchor close.
+              {pick("모든 추적 종목을 각자의 앵커 마감가에서 떨어진 거리로 표시합니다.", "Every tracked symbol placed by how far it sits from its own anchor close.")}
             </p>
           </div>
           <Legend />
@@ -123,7 +123,7 @@ export function SigmaOverview({
                   bottom: AXIS_HEIGHT + row * ROW_PITCH,
                 }}
                 className="group absolute -translate-x-1/2 rounded-full focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ring"
-                aria-label={`${stock.symbol} at ${formatSigma(stock.zScore)}`}
+                aria-label={pick(`${stock.symbol} ${formatSigma(stock.zScore)} 위치`, `${stock.symbol} at ${formatSigma(stock.zScore)}`)}
               >
                 <span
                   className={cn(
@@ -143,29 +143,29 @@ export function SigmaOverview({
         </div>
 
         <dl className="mt-6 grid grid-cols-3 gap-3 border-t border-border/70 pt-5">
-          <Stat label="Average z-score" value={formatSigma(counts.averageZ)} />
+          <Stat label={pick("평균 z-score", "Average z-score")} value={formatSigma(counts.averageZ)} />
           <Stat
-            label={<>Inside ±1{SIGMA}</>}
+            label={<>{pick("내부", "Inside")} ±1{SIGMA}</>}
             value={`${insideBand} / ${counts.total}`}
-            hint={`${Math.round((insideBand / counts.total) * 100)}% of universe`}
+            hint={pick(`전체의 ${Math.round((insideBand / counts.total) * 100)}%`, `${Math.round((insideBand / counts.total) * 100)}% of universe`)}
           />
           <Stat
-            label="Approaching an edge"
+            label={pick("밴드 경계 근접", "Approaching an edge")}
             value={String(counts.approaching)}
-            hint="|z| ≥ 0.85, still normal"
+            hint={pick("|z| ≥ 0.85, 아직 normal", "|z| ≥ 0.85, still normal")}
           />
         </dl>
       </div>
 
       <div className="flex min-w-0 flex-col gap-5 border-t border-border/70 pt-6 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-8">
         <ExtremeList
-          title="Most overheated"
+          title={pick("최대 overheated", "Most overheated")}
           status="OVERHEATED"
           entries={overheated}
           onSelect={onSelect}
         />
         <ExtremeList
-          title="Most oversold"
+          title={pick("최대 oversold", "Most oversold")}
           status="OVERSOLD"
           entries={oversold}
           onSelect={onSelect}
@@ -176,6 +176,7 @@ export function SigmaOverview({
 }
 
 function Axis() {
+  const { pick } = useLocale();
   // ±2σ is where `bandPosition` clamps, so those ticks sit exactly on the ends
   // of the track — they label the edge of the plot rather than a point inside
   // it. `dropped` alternates from there inward so no two neighbours share a row.
@@ -183,7 +184,7 @@ function Axis() {
     { z: -BAND_LIMIT, label: "−2σ", dropped: false },
     { z: -SIGMA_EXTREME, label: "−1.5σ", dropped: true },
     { z: -1, label: "−1σ", dropped: false },
-    { z: 0, label: "Anchor", dropped: false },
+    { z: 0, label: pick("앵커", "Anchor"), dropped: false },
     { z: 1, label: "+1σ", dropped: false },
     { z: SIGMA_EXTREME, label: "+1.5σ", dropped: true },
     { z: BAND_LIMIT, label: "+2σ", dropped: false },
@@ -225,6 +226,7 @@ function Axis() {
 }
 
 function Legend() {
+  const { locale } = useLocale();
   return (
     <ul className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
       {STATUS_ORDER.map((status) => (
@@ -240,7 +242,7 @@ function Legend() {
               status === "NORMAL" && "opacity-55",
             )}
           />
-          {STATUS_META[status].longLabel}
+          {STATUS_COPY[locale][status].longLabel}
         </li>
       ))}
     </ul>

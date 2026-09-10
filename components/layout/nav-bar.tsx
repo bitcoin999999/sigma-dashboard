@@ -4,24 +4,14 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 
+import { LocaleToggle } from "@/components/locale-toggle";
+import { useLocale } from "@/components/locale-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useActiveSection } from "@/hooks/use-active-section";
 import type { MarketSnapshot } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const LINKS = [
-  { id: "market", label: "Market" },
-  { id: "watchlist", label: "Watchlist" },
-  { id: "lastweek", label: "Last week" },
-  { id: "sectors", label: "Sectors" },
-];
-
-const SESSION_LABEL: Record<MarketSnapshot["session"], string> = {
-  PRE: "Pre-market",
-  OPEN: "Market open",
-  AFTER: "After hours",
-  CLOSED: "Market closed",
-};
+const LINK_IDS = ["market", "watchlist", "lastweek", "sectors"];
 
 interface NavBarProps {
   snapshot: MarketSnapshot;
@@ -127,19 +117,32 @@ export function NavBar({
   refreshing = false,
   sections = true,
 }: NavBarProps) {
-  const active = useActiveSection(sections ? LINKS.map((link) => link.id) : []);
+  const { pick } = useLocale();
+  const sectionLinks = [
+    { id: "market", label: pick("시장", "Market") },
+    { id: "watchlist", label: pick("워치리스트", "Watchlist") },
+    { id: "lastweek", label: pick("지난주", "Last week") },
+    { id: "sectors", label: pick("섹터", "Sectors") },
+  ];
+  const sessionLabel: Record<MarketSnapshot["session"], string> = {
+    PRE: pick("프리마켓", "Pre-market"),
+    OPEN: pick("장 중", "Market open"),
+    AFTER: pick("애프터마켓", "After hours"),
+    CLOSED: pick("장 마감", "Market closed"),
+  };
+  const active = useActiveSection(sections ? LINK_IDS : []);
   const pathname = usePathname();
   const isOpen = snapshot.session === "OPEN";
 
   const links: NavLink[] = [
     ...(sections
-      ? LINKS.map((link) => ({
+      ? sectionLinks.map((link) => ({
           href: `#${link.id}`,
           label: link.label,
           current: active === link.id,
           anchor: true,
         }))
-      : [{ href: "/", label: "Board", current: false, anchor: false }]),
+      : [{ href: "/", label: pick("보드", "Board"), current: false, anchor: false }]),
     {
       href: "/my-sigma",
       label: "My Sigma",
@@ -148,13 +151,13 @@ export function NavBar({
     },
     {
       href: "/calculator",
-      label: "Calculator",
+      label: pick("계산기", "Calculator"),
       current: pathname === "/calculator",
       anchor: false,
     },
     {
       href: "/guide",
-      label: "Guide",
+      label: pick("가이드", "Guide"),
       current: pathname === "/guide",
       anchor: false,
     },
@@ -176,7 +179,7 @@ export function NavBar({
         )}
 
         <nav
-          aria-label="Sections"
+          aria-label={pick("주요 메뉴", "Sections")}
           className="hidden flex-1 justify-center md:flex"
         >
           <ul className="flex items-center gap-1">
@@ -206,12 +209,12 @@ export function NavBar({
               />
             </span>
             <span className="text-[11px] font-medium whitespace-nowrap">
-              {SESSION_LABEL[snapshot.session]}
+              {sessionLabel[snapshot.session]}
             </span>
           </span>
 
           <span className="num hidden text-[11px] whitespace-nowrap text-muted-foreground lg:inline">
-            Updated {updatedAt}
+            {pick("업데이트", "Updated")} {updatedAt}
           </span>
 
           {onRefresh && (
@@ -219,7 +222,7 @@ export function NavBar({
               type="button"
               onClick={onRefresh}
               disabled={refreshing}
-              aria-label="Refresh quotes"
+              aria-label={pick("시세 새로고침", "Refresh quotes")}
               className="flex size-8 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
             >
               <RefreshCw
@@ -229,12 +232,13 @@ export function NavBar({
             </button>
           )}
 
+          <LocaleToggle />
           <ThemeToggle />
         </div>
       </div>
 
       <nav
-        aria-label="Sections"
+        aria-label={pick("주요 메뉴", "Sections")}
         className="flex items-center gap-1 overflow-x-auto border-t border-border/50 px-3 py-1 md:hidden"
       >
         {links.map((link) => (

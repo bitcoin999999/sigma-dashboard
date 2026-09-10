@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ArrowDown, ArrowRight, ArrowUp, Search, X } from "lucide-react";
 
+import { useLocale } from "@/components/locale-provider";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { Input } from "@/components/ui/input";
 import { formatDay, formatSigma } from "@/lib/format";
@@ -37,11 +38,11 @@ type RecapSort = "LAST_WEEK" | "SWING" | "CURRENT" | "SYMBOL";
  * `narrow: false` marks a sort whose column is hidden on a phone. Offering it
  * there would reorder the table by a number the reader cannot see.
  */
-const SORTS: { key: RecapSort; label: string; narrow: boolean }[] = [
-  { key: "LAST_WEEK", label: "Last week", narrow: true },
-  { key: "SWING", label: "Biggest swing", narrow: false },
-  { key: "CURRENT", label: "This week", narrow: true },
-  { key: "SYMBOL", label: "Symbol", narrow: true },
+const SORTS: { key: RecapSort; narrow: boolean }[] = [
+  { key: "LAST_WEEK", narrow: true },
+  { key: "SWING", narrow: false },
+  { key: "CURRENT", narrow: true },
+  { key: "SYMBOL", narrow: true },
 ];
 
 interface WeeklyRecapTableProps {
@@ -50,6 +51,7 @@ interface WeeklyRecapTableProps {
 }
 
 export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
+  const { pick } = useLocale();
   const [sort, setSort] = React.useState<RecapSort>("LAST_WEEK");
   const [query, setQuery] = React.useState("");
 
@@ -127,15 +129,15 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
         <p className="text-[13px] text-muted-foreground">
           {lastEnd ? (
             <>
-              Two settled weeks, each scored at its own Friday close
-              {olderEnd ? <> — {formatDay(olderEnd)}, then {formatDay(lastEnd)}</> : null}.{" "}
+              {pick("종료된 2개 주간을 각각의 금요일 마감 기준으로 계산", "Two settled weeks, each scored at its own Friday close")}
+              {olderEnd ? <> — {formatDay(olderEnd)}, {pick("그다음", "then")} {formatDay(lastEnd)}</> : null}.{" "}
               <span className="text-foreground/80">
-                {breached} of {covered.length}
+                {pick(`${covered.length}개 중 ${breached}개`, `${breached} of ${covered.length}`)}
               </span>{" "}
-              closed last week outside their ±1σ range.
+              {pick("종목이 지난주 ±1σ 범위 밖에서 마감했습니다.", "closed last week outside their ±1σ range.")}
             </>
           ) : (
-            <>No settled band available for the previous week yet.</>
+            <>{pick("지난주의 종료된 밴드가 아직 없습니다.", "No settled band available for the previous week yet.")}</>
           )}
         </p>
 
@@ -148,15 +150,15 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
             <Input
               value={query}
               onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search ticker"
-              aria-label="Search the weekly recap by ticker"
+              placeholder={pick("티커 검색", "Search ticker")}
+              aria-label={pick("주간 리캡 티커 검색", "Search the weekly recap by ticker")}
               className="h-8 pr-8 pl-8 text-sm"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                aria-label="Clear search"
+                aria-label={pick("검색 초기화", "Clear search")}
                 className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 <X className="size-3.5" />
@@ -166,7 +168,7 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
 
           <div
             role="group"
-            aria-label="Sort the weekly recap"
+            aria-label={pick("주간 리캡 정렬", "Sort the weekly recap")}
             className="flex items-center gap-1 rounded-lg border border-border/70 p-0.5"
           >
             {SORTS.map((option) => (
@@ -184,7 +186,7 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
                     : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {option.label}
+                {{ LAST_WEEK: pick("지난주", "Last week"), SWING: pick("최대 변화", "Biggest swing"), CURRENT: pick("이번 주", "This week"), SYMBOL: pick("종목", "Symbol") }[option.key]}
               </button>
             ))}
           </div>
@@ -200,31 +202,29 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-left sm:min-w-[42rem]">
             <caption className="sr-only">
-              Each tracked symbol&apos;s z-score at the close of the two weeks
-              that have already settled, and its z-score in the band running
-              now.
+              {pick("각 종목의 지난 2주 마감 z-score와 현재 밴드의 z-score", "Each tracked symbol’s z-score at the close of the two weeks that have already settled, and its z-score in the band running now.")}
             </caption>
             <thead>
               <tr className="border-b border-border/60">
-                <Th className="pl-4">Symbol</Th>
+                <Th className="pl-4">{pick("종목", "Symbol")}</Th>
                 <Th align="right" className="hidden sm:table-cell">
-                  Two weeks ago
+                  {pick("2주 전", "Two weeks ago")}
                   <Sub>
-                    {olderEnd ? `${formatDay(olderEnd)} close` : "at the close"}
+                    {olderEnd ? `${formatDay(olderEnd)} ${pick("마감", "close")}` : pick("마감 기준", "at the close")}
                   </Sub>
                 </Th>
                 <Th align="right">
-                  Last week
+                  {pick("지난주", "Last week")}
                   <Sub>
-                    {lastEnd ? `${formatDay(lastEnd)} close` : "at the close"}
+                    {lastEnd ? `${formatDay(lastEnd)} ${pick("마감", "close")}` : pick("마감 기준", "at the close")}
                   </Sub>
                 </Th>
                 <Th align="right" className="pr-4 md:pr-0">
-                  This week
-                  <Sub>current</Sub>
+                  {pick("이번 주", "This week")}
+                  <Sub>{pick("현재", "current")}</Sub>
                 </Th>
                 <Th className="hidden pr-4 md:table-cell" align="right">
-                  Now
+                  {pick("현재", "Now")}
                 </Th>
               </tr>
             </thead>
@@ -239,7 +239,7 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
         {visible.length === 0 && (
           <div className="px-4 py-10 text-center">
             <p className="text-[13px] text-muted-foreground">
-              No tracked symbol matches{" "}
+              {pick("조건에 맞는 추적 종목이 없습니다:", "No tracked symbol matches")}{" "}
               <span className="num text-foreground/80">{query.trim()}</span>.
             </p>
             <button
@@ -247,7 +247,7 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
               onClick={() => setQuery("")}
               className="mt-3 cursor-pointer rounded-md border border-border/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              Clear search
+              {pick("검색 초기화", "Clear search")}
             </button>
           </div>
         )}
@@ -255,11 +255,7 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
 
       {missing > 0 && (
         <p className="text-xs text-muted-foreground/80">
-          {missing} symbol{missing === 1 ? "" : "s"} have no settled band for
-          last week — they joined the universe after that Friday&apos;s anchor
-          was struck. Their weekly σ is never back-filled from current implied
-          volatility, so the column stays empty rather than showing a figure
-          measured on a different ruler.
+          {pick(`${missing}개 종목은 지난주 밴드가 없습니다. 해당 금요일 앵커 설정 후 추적 대상에 포함됐습니다. 주간 σ를 현재 implied volatility로 소급 채우지 않으므로, 다른 기준으로 측정한 값 대신 빈칸으로 남겁니다.`, `${missing} symbol${missing === 1 ? "" : "s"} have no settled band for last week — they joined the universe after that Friday’s anchor was struck. Their weekly σ is never back-filled from current implied volatility, so the column stays empty rather than showing a figure measured on a different ruler.`)}
         </p>
       )}
     </div>
@@ -343,6 +339,7 @@ function Row({
  * pointed up there would invert the story the column exists to tell.
  */
 function Step({ from, to }: { from: number; to: number }) {
+  const { pick } = useLocale();
   const delta = to - from;
   // Under a tenth of a σ is inside the rounding the columns themselves print;
   // drawing an arrow for it would claim a direction the numbers do not show.
@@ -350,7 +347,7 @@ function Step({ from, to }: { from: number; to: number }) {
     return (
       <ArrowRight
         className="size-3 text-muted-foreground/40"
-        aria-label="flat versus the week before"
+        aria-label={pick("전주 대비 변화 없음", "flat versus the week before")}
       />
     );
   }
@@ -358,7 +355,7 @@ function Step({ from, to }: { from: number; to: number }) {
   return (
     <Icon
       className={cn("size-3", delta > 0 ? "text-up" : "text-down")}
-      aria-label={`${formatSigma(delta)} versus the week before`}
+      aria-label={pick(`전주 대비 ${formatSigma(delta)}`, `${formatSigma(delta)} versus the week before`)}
     />
   );
 }
@@ -415,10 +412,11 @@ function SigmaText({
 }
 
 function Empty() {
+  const { pick } = useLocale();
   return (
     <span
       className="text-[13px] text-muted-foreground/40"
-      title="No settled band for this symbol that week"
+      title={pick("해당 주의 종료된 밴드 없음", "No settled band for this symbol that week")}
     >
       —
     </span>

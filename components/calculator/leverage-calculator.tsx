@@ -3,6 +3,7 @@
 import * as React from "react";
 import { RotateCcw, TriangleAlert } from "lucide-react";
 
+import { useLocale } from "@/components/locale-provider";
 import { NavBar } from "@/components/layout/nav-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { Input } from "@/components/ui/input";
@@ -67,6 +68,7 @@ export function LeverageCalculator({
   snapshot,
   initialQuotes,
 }: LeverageCalculatorProps) {
+  const { pick } = useLocale();
   const [quotes, setQuotes] = React.useState(initialQuotes);
   const [refreshing, setRefreshing] = React.useState(false);
   const [baseSymbol, setBaseSymbol] = React.useState(LEVERAGE_FAMILIES[0].base);
@@ -142,19 +144,15 @@ export function LeverageCalculator({
           {/* The tab bar already says Calculator, so the eyebrow is the first
               thing to go when the phone needs the pixels. */}
           <p className="label-xs hidden sm:block">
-            Leverage calculator · live prices
+            {pick("레버리지 계산기 · 실시간 가격", "Leverage calculator · live prices")}
           </p>
           <h1 className="font-heading text-[1.3rem] leading-[1.15] font-semibold tracking-[-0.03em] text-balance sm:mt-3 sm:text-4xl">
             <span className="text-gradient">
-              Chart the ETF, price the leverage.
+              {pick("ETF 차트로 레버리지 가격을 계산하세요.", "Chart the ETF, price the leverage.")}
             </span>
           </h1>
           <p className="mt-4 hidden text-sm leading-relaxed text-muted-foreground sm:block">
-            Take a level off the plain fund you actually chart — QQQ at 700 —
-            and read where its 2× and 3× cousins trade when it gets there.
-            Leveraged funds track a daily <em>return</em>, not a price, so the
-            move is applied to each fund&rsquo;s own last print rather than
-            converted through a ratio.
+            {pick("QQQ 700처럼 직접 보는 기초 ETF의 레벨을 입력하면, 해당 시점의 2×·3× ETF 가격을 보여줍니다. 레버리지 ETF는 가격이 아닌 일일 ", "Take a level off the plain fund you actually chart — QQQ at 700 — and read where its 2× and 3× cousins trade when it gets there. Leveraged funds track a daily ")}<em>{pick("수익률", "return")}</em>{pick("을 추적하므로, 비율로 환산하지 않고 각 ETF의 직전 가격에 등락률을 적용합니다.", ", not a price, so the move is applied to each fund’s own last print rather than converted through a ratio.")}
           </p>
         </div>
 
@@ -188,18 +186,18 @@ export function LeverageCalculator({
               <section>
                 <div className="mb-2 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 sm:mb-4">
                   <h2 className="font-heading text-[15px] font-semibold tracking-[-0.02em] sm:text-xl">
-                    Where {family.base}&rsquo;s ladder lands
+                    {pick(`${family.base} 레버리지 가격`, `Where ${family.base}’s ladder lands`)}
                   </h2>
                   <p className="hidden text-[11px] text-muted-foreground sm:block sm:text-[13px]">
                     {movePercent === null ? (
-                      "Enter a price or a move above."
+                      pick("위에 가격 또는 등락률을 입력하세요.", "Enter a price or a move above.")
                     ) : (
                       <>
-                        Each fund carried by{" "}
+                        {pick("각 ETF에 적용된 변화:", "Each fund carried by")}{" "}
                         <span className="num">
                           {formatPercent(movePercent)}
                         </span>{" "}
-                        on {family.base}, times its multiple.
+                        {pick(`${family.base} 등락률 × 배수.`, `on ${family.base}, times its multiple.`)}
                       </>
                     )}
                   </p>
@@ -252,10 +250,11 @@ function FamilyTabs({
   current: string;
   onSelect: (symbol: string) => void;
 }) {
+  const { pick } = useLocale();
   return (
     <div
       role="tablist"
-      aria-label="Base ETF"
+      aria-label={pick("기초 ETF", "Base ETF")}
       // One scrolling row on a phone rather than three wrapped ones: the
       // vertical space it saves is a whole row of cards.
       className="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden"
@@ -311,6 +310,7 @@ function BasePanel({
   onReset,
   refreshing,
 }: BasePanelProps) {
+  const { pick } = useLocale();
   return (
     <div className="glass p-3.5 sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-x-8 gap-y-3 sm:gap-y-4">
@@ -328,7 +328,7 @@ function BasePanel({
           {/* Without dropping the prefix, a four-figure base like SOXX pushes
               this onto its own line and the header grows a row. */}
           <p className="label-xs whitespace-nowrap">
-            <span className="hidden sm:inline">Last price · </span>
+            <span className="hidden sm:inline">{pick("최종 가격", "Last price")} · </span>
             {formatEastern(asOf)}
           </p>
           <p
@@ -353,8 +353,8 @@ function BasePanel({
       <div className="mt-3 grid grid-cols-2 gap-2.5 sm:mt-6 sm:gap-5">
         <label className="block">
           <span className="label-xs">
-            <span className="sm:hidden">{family.base} at</span>
-            <span className="hidden sm:inline">If {family.base} trades at</span>
+            <span className="sm:hidden">{family.base} {pick("가격", "at")}</span>
+            <span className="hidden sm:inline">{pick(`${family.base} 목표 가격`, `If ${family.base} trades at`)}</span>
           </span>
           <span className="relative mt-1 block sm:mt-2">
             <span
@@ -368,7 +368,7 @@ function BasePanel({
               onChange={(event) => onPrice(event.target.value)}
               inputMode="decimal"
               autoComplete="off"
-              aria-label={`Target price for ${family.base}`}
+              aria-label={pick(`${family.base} 목표 가격`, `Target price for ${family.base}`)}
               className="num h-11 pl-7 text-base font-semibold sm:h-12 sm:pl-8 sm:text-lg"
             />
           </span>
@@ -376,8 +376,8 @@ function BasePanel({
 
         <label className="block">
           <span className="label-xs">
-            <span className="sm:hidden">Move</span>
-            <span className="hidden sm:inline">Which is a move of</span>
+            <span className="sm:hidden">{pick("등락률", "Move")}</span>
+            <span className="hidden sm:inline">{pick("등락률", "Which is a move of")}</span>
           </span>
           <span className="relative mt-1 block sm:mt-2">
             <Input
@@ -385,7 +385,7 @@ function BasePanel({
               onChange={(event) => onPercent(event.target.value)}
               inputMode="decimal"
               autoComplete="off"
-              aria-label={`Move in percent for ${family.base}`}
+              aria-label={pick(`${family.base} 등락률`, `Move in percent for ${family.base}`)}
               className={cn(
                 "num h-11 pr-7 text-base font-semibold sm:h-12 sm:pr-8 sm:text-lg",
                 movePercent !== null && directionClass(movePercent),
@@ -420,7 +420,7 @@ function BasePanel({
           className="inline-flex h-7 shrink-0 items-center gap-1.5 rounded-full border border-border/80 px-2.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:h-8 sm:px-3"
         >
           <RotateCcw className="size-3" aria-hidden />
-          At spot
+          {pick("현재가", "At spot")}
         </button>
       </div>
     </div>
@@ -436,6 +436,7 @@ function FundCard({
   quote: LiveQuote;
   movePercent: number | null;
 }) {
+  const { pick } = useLocale();
   const projected =
     movePercent === null
       ? null
@@ -492,21 +493,20 @@ function FundCard({
                 </span>
               </>
             ) : (
-              <span className="text-muted-foreground">Enter a level</span>
+              <span className="text-muted-foreground">{pick("레벨 입력", "Enter a level")}</span>
             )}
           </div>
         </div>
 
         {wipeout && (
           <p className="mt-2 flex items-center gap-1.5 text-[11px] text-down">
-            <TriangleAlert className="size-3 shrink-0" aria-hidden />A move this
-            large wipes the fund out.
+            <TriangleAlert className="size-3 shrink-0" aria-hidden />{pick("이 크기의 변동은 ETF 가치를 0으로 만듭니다.", "A move this large wipes the fund out.")}
           </p>
         )}
       </div>
 
       <div className="mt-auto flex items-baseline justify-between gap-2 border-t border-border/50 pt-1.5 text-[11px] sm:pt-3">
-        <span className="text-muted-foreground">Now</span>
+        <span className="text-muted-foreground">{pick("현재", "Now")}</span>
         <span className="num">
           {formatCurrency(quote.price)}
           <span className={cn("ml-2", directionClass(quote.changePercent))}>
@@ -519,18 +519,15 @@ function FundCard({
 }
 
 function DailyResetNote() {
+  const { pick } = useLocale();
   return (
     <p className="mt-4 max-w-3xl text-[11px] leading-relaxed text-muted-foreground sm:mt-5 sm:text-xs">
-      These funds reset every day, so the figures above are exact for a single
-      move off the prices they were read at and nothing more.
+      {pick("이 ETF들은 매일 리셋되므로 위 값은 현재 가격에서 하루 동안 한 번 움직이는 경우에만 정확합니다.", "These funds reset every day, so the figures above are exact for a single move off the prices they were read at and nothing more.")}
       <span className="hidden sm:inline">
         {" "}
-        Held across sessions the multiple compounds: a round trip that leaves{" "}
-        <span className="num">QQQ</span> flat still leaves a 3× fund lower, and
-        the wider the swings on the way the larger that gap. Fees, borrowing
-        cost and tracking error are not modelled here.
+        {pick(" 여러 세션을 보유하면 배수가 복리로 적용됩니다. 왕복 후 ", " Held across sessions the multiple compounds: a round trip that leaves ")}<span className="num">QQQ</span>{pick("가 보합이어도 3× ETF는 하락할 수 있고, 중간 변동폭이 클수록 격차가 커집니다. 수수료, 차입비용, 추적오차는 반영하지 않습니다.", " flat still leaves a 3× fund lower, and the wider the swings on the way the larger that gap. Fees, borrowing cost and tracking error are not modelled here.")}
       </span>{" "}
-      Not investment advice.
+      {pick(" 투자 조언이 아닙니다.", " Not investment advice.")}
     </p>
   );
 }
@@ -542,16 +539,15 @@ function QuoteFeedDown({
   onRetry: () => void;
   retrying: boolean;
 }) {
+  const { pick } = useLocale();
   return (
     <div className="glass flex flex-col items-start gap-4 p-6">
       <div className="flex items-center gap-2.5">
         <TriangleAlert className="size-4 text-down" aria-hidden />
-        <p className="text-sm font-medium">Live quotes are unavailable.</p>
+        <p className="text-sm font-medium">{pick("실시간 시세를 사용할 수 없습니다.", "Live quotes are unavailable.")}</p>
       </div>
       <p className="max-w-lg text-xs leading-relaxed text-muted-foreground">
-        This page prices both legs off the same intraday feed, and it did not
-        answer. Nothing is shown rather than a conversion built on stale prices,
-        which would be wrong in exactly the way that costs money.
+        {pick("이 페이지는 두 ETF를 같은 intraday 피드로 계산하는데 피드가 응답하지 않았습니다. 오래된 가격으로 잘못된 값을 만드는 대신 결과를 표시하지 않습니다.", "This page prices both legs off the same intraday feed, and it did not answer. Nothing is shown rather than a conversion built on stale prices, which would be wrong in exactly the way that costs money.")}
       </p>
       <button
         type="button"
@@ -563,7 +559,7 @@ function QuoteFeedDown({
           className={cn("size-3.5", retrying && "animate-spin")}
           aria-hidden
         />
-        {retrying ? "Retrying…" : "Try again"}
+        {retrying ? pick("재시도 중…", "Retrying…") : pick("다시 시도", "Try again")}
       </button>
     </div>
   );

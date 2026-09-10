@@ -13,6 +13,8 @@ import { loadBoard } from "@/lib/board";
 import { buildDailyDigest, isCalendarDate } from "@/lib/daily";
 import { formatDay, formatEastern } from "@/lib/format";
 import { SITE_NAME } from "@/lib/site";
+import { pick, type Locale } from "@/lib/i18n";
+import { getRequestLocale } from "@/lib/i18n-server";
 
 /** The snapshot file is rewritten out of band by the daily job, so never cache it. */
 export const dynamic = "force-dynamic";
@@ -27,7 +29,7 @@ type Params = { params: Promise<{ date: string }> };
  * current board wearing that date's label — an old link that silently renders
  * today's numbers is the one failure mode worth refusing outright.
  */
-async function resolveDaily(date: string) {
+async function resolveDaily(date: string, locale: Locale = "en") {
   if (!isCalendarDate(date)) return null;
 
   const board = await loadBoard();
@@ -35,16 +37,17 @@ async function resolveDaily(date: string) {
 
   return {
     ...board,
-    digest: buildDailyDigest(board.all, board.snapshot.bandElapsed),
+    digest: buildDailyDigest(board.all, board.snapshot.bandElapsed, locale),
   };
 }
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { date } = await params;
-  const daily = await resolveDaily(date);
+  const locale = await getRequestLocale();
+  const daily = await resolveDaily(date, locale);
 
   if (!daily) {
-    return { title: `No board for that date · ${SITE_NAME}` };
+    return { title: `${pick(locale, "해당 날짜의 보드가 없습니다", "No board for that date")} · ${SITE_NAME}` };
   }
 
   const title = `${daily.digest.heading} · ${formatDay(date)} · ${SITE_NAME}`;
@@ -66,7 +69,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function DailyPage({ params }: Params) {
   const { date } = await params;
-  const daily = await resolveDaily(date);
+  const locale = await getRequestLocale();
+  const daily = await resolveDaily(date, locale);
 
   if (!daily) notFound();
 
@@ -83,13 +87,13 @@ export default async function DailyPage({ params }: Params) {
       <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 pt-10 pb-4 sm:px-6 sm:pt-14 lg:px-8">
         <div className="max-w-2xl">
           <p className="label-xs">
-            Daily card · {formatDay(date)} regular-session close
+            {pick(locale, "일일 카드", "Daily card")} · {formatDay(date)} {pick(locale, "정규장 마감", "regular-session close")}
           </p>
           <h1 className="mt-3 font-heading text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
             <span className="text-gradient">{digest.heading}</span>
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-            {digest.subheading}. Published {formatEastern(snapshot.generatedAt)}
+            {digest.subheading}. {pick(locale, "발행", "Published")} {formatEastern(snapshot.generatedAt)}
             .
           </p>
         </div>
@@ -101,13 +105,13 @@ export default async function DailyPage({ params }: Params) {
             className="inline-flex h-9 items-center gap-2 rounded-full border border-border/80 px-3.5 text-xs font-medium transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
             <Download className="size-3.5" aria-hidden />
-            Download share card
+            {pick(locale, "공유 카드 다운로드", "Download share card")}
           </a>
           <Link
             href="/"
             className="inline-flex h-9 items-center rounded-full border border-border/80 px-3.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
           >
-            See the whole board
+            {pick(locale, "전체 보드 보기", "See the whole board")}
           </Link>
         </div>
 

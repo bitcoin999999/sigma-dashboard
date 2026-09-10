@@ -3,8 +3,10 @@
 import { ChangePill } from "@/components/dashboard/change-pill";
 import { PriceChart } from "@/components/dashboard/price-chart";
 import { SigmaRangeBar } from "@/components/dashboard/sigma-range-bar";
+import { useLocale } from "@/components/locale-provider";
 import { formatBandWidth, formatCurrency, formatSigma } from "@/lib/format";
-import { STATUS_META, statusStyle } from "@/lib/sigma";
+import { STATUS_COPY } from "@/lib/i18n";
+import { statusStyle } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -63,7 +65,8 @@ function IndexCard({
   stock: StockData;
   onSelect: (symbol: string) => void;
 }) {
-  const meta = STATUS_META[stock.status];
+  const { locale } = useLocale();
+  const meta = STATUS_COPY[locale][stock.status];
   const isExtreme =
     stock.status === "OVERHEATED" || stock.status === "OVERSOLD";
 

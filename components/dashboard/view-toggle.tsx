@@ -2,12 +2,13 @@
 
 import { LayoutGrid, List } from "lucide-react";
 
+import { useLocale } from "@/components/locale-provider";
 import type { ViewMode } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const VIEWS: { key: ViewMode; label: string; Icon: typeof LayoutGrid }[] = [
-  { key: "CARD", label: "Card view", Icon: LayoutGrid },
-  { key: "LIST", label: "List view", Icon: List },
+const VIEWS: { key: ViewMode; Icon: typeof LayoutGrid }[] = [
+  { key: "CARD", Icon: LayoutGrid },
+  { key: "LIST", Icon: List },
 ];
 
 interface ViewToggleProps {
@@ -24,17 +25,19 @@ interface ViewToggleProps {
  * than the controls next to it.
  */
 export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
+  const { pick } = useLocale();
   return (
     <div
       role="group"
-      aria-label="Watchlist layout"
+      aria-label={pick("워치리스트 레이아웃", "Watchlist layout")}
       className={cn(
         "flex shrink-0 items-center gap-0.5 rounded-lg border border-border/70 p-0.5",
         className,
       )}
     >
-      {VIEWS.map(({ key, label, Icon }) => {
+      {VIEWS.map(({ key, Icon }) => {
         const active = key === value;
+        const label = key === "CARD" ? pick("카드 뷰", "Card view") : pick("리스트 뷰", "List view");
         return (
           <button
             key={key}

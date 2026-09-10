@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/components/locale-provider";
 import { useStoredView } from "@/hooks/use-stored-view";
 import type { StockData } from "@/lib/types";
 
@@ -26,17 +27,18 @@ interface ScreenerResultsProps {
  * keeps a crawlable link per symbol in either view.
  */
 export function ScreenerResults({ stocks, total }: ScreenerResultsProps) {
+  const { pick } = useLocale();
   const [view, setView] = useStoredView();
 
   return (
     <>
       <div className="mb-5 flex items-end justify-between gap-4">
         <h2 className="font-heading text-xl font-semibold tracking-[-0.02em]">
-          Results
+          {pick("결과", "Results")}
         </h2>
         <div className="flex items-center gap-3">
           <span className="num text-xs text-muted-foreground">
-            {stocks.length} of {total} symbols
+            {pick(`${total}개 중 ${stocks.length}개`, `${stocks.length} of ${total} symbols`)}
           </span>
           <ViewToggle value={view} onChange={setView} />
         </div>

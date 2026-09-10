@@ -1,8 +1,12 @@
+"use client";
+
 import { Activity, Flame, Snowflake, TrendingUp } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { SIGMA } from "@/components/dashboard/sigma-glyph";
-import { STATUS_META, STATUS_ORDER, statusStyle } from "@/lib/sigma";
+import { useLocale } from "@/components/locale-provider";
+import { STATUS_COPY } from "@/lib/i18n";
+import { STATUS_ORDER, statusStyle } from "@/lib/sigma";
 import type { SigmaStatus, StockData } from "@/lib/types";
 import type { StatusCounts } from "@/lib/sigma";
 import { cn } from "@/lib/utils";
@@ -18,6 +22,7 @@ export function SummaryCards({
   previousCounts,
   stocks,
 }: SummaryCardsProps) {
+  const { pick } = useLocale();
   const distribution = STATUS_ORDER.map((status) => ({
     status,
     value: stocks.filter((stock) => stock.status === status).length,
@@ -27,10 +32,10 @@ export function SummaryCards({
     <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <SummaryCard
         icon={Activity}
-        label="Market Status"
+        label={pick("시장 상태", "Market Status")}
         value={counts.total}
-        unit="Stocks"
-        caption="Tracked universe"
+        unit={pick("종목", "Stocks")}
+        caption={pick("추적 종목", "Tracked universe")}
       >
         <DistributionRail distribution={distribution} total={counts.total} />
       </SummaryCard>
@@ -39,8 +44,8 @@ export function SummaryCards({
         icon={TrendingUp}
         label={<>Upper 1{SIGMA}</>}
         value={counts.beyondUpper1}
-        unit="Stocks"
-        caption="Above the +1σ edge"
+        unit={pick("종목", "Stocks")}
+        caption={pick("+1σ 상단 이상", "Above the +1σ edge")}
         delta={counts.beyondUpper1 - previousCounts.beyondUpper1}
         status="UPPER_1SIGMA"
       />
@@ -49,8 +54,8 @@ export function SummaryCards({
         icon={Flame}
         label={<>Above +1.5{SIGMA}</>}
         value={counts.overheated}
-        unit="Stocks"
-        caption="Statistically overheated"
+        unit={pick("종목", "Stocks")}
+        caption={pick("통계적 overheated", "Statistically overheated")}
         delta={counts.overheated - previousCounts.overheated}
         status="OVERHEATED"
       />
@@ -59,8 +64,8 @@ export function SummaryCards({
         icon={Snowflake}
         label={<>Below −1.5{SIGMA}</>}
         value={counts.oversold}
-        unit="Stocks"
-        caption="Statistically oversold"
+        unit={pick("종목", "Stocks")}
+        caption={pick("통계적 oversold", "Statistically oversold")}
         delta={counts.oversold - previousCounts.oversold}
         status="OVERSOLD"
       />
@@ -89,6 +94,7 @@ function SummaryCard({
   status,
   children,
 }: SummaryCardProps) {
+  const { pick } = useLocale();
   return (
     <div
       style={status ? statusStyle(status) : undefined}
@@ -128,7 +134,7 @@ function SummaryCard({
         <p className="mt-2 text-xs text-muted-foreground">
           {caption}
           {delta !== undefined && delta !== 0 && (
-            <span className="text-muted-foreground/60"> · vs prior session</span>
+            <span className="text-muted-foreground/60"> {pick("· 직전 세션 대비", "· vs prior session")}</span>
           )}
         </p>
 
@@ -145,6 +151,7 @@ function DistributionRail({
   distribution: { status: SigmaStatus; value: number }[];
   total: number;
 }) {
+  const { locale } = useLocale();
   return (
     <div className="mt-3 flex h-1.5 gap-0.5 overflow-hidden rounded-full">
       {distribution.map(({ status, value }) => (
@@ -154,7 +161,7 @@ function DistributionRail({
             ...statusStyle(status),
             width: `${total ? (value / total) * 100 : 0}%`,
           }}
-          title={`${STATUS_META[status].longLabel}: ${value}`}
+          title={`${STATUS_COPY[locale][status].longLabel}: ${value}`}
           className={cn(
             "h-full rounded-full bg-[var(--state)]",
             status === "NORMAL" && "opacity-30",

@@ -1,5 +1,6 @@
 "use client";
 
+import { useLocale } from "@/components/locale-provider";
 import { formatBandWidth, formatCurrency, formatSigma } from "@/lib/format";
 import { statusStyle } from "@/lib/sigma";
 import type { SectorEtfData } from "@/lib/types";
@@ -16,23 +17,24 @@ interface SectorEtfMonitorProps {
 }
 
 export function SectorEtfMonitor({ etfs, onSelect }: SectorEtfMonitorProps) {
+  const { pick } = useLocale();
   return (
     <div className="glass overflow-hidden">
       {/* Dense table on wide screens — this section is reference data. */}
       <table className="hidden w-full border-collapse text-sm md:table">
         <thead>
           <tr className="border-b border-border/70">
-            <Th className="pl-5 text-left">Symbol</Th>
-            <Th className="text-right">Price</Th>
-            <Th className="text-right">Change</Th>
-            <Th className="text-right">Anchor</Th>
+            <Th className="pl-5 text-left">{pick("종목", "Symbol")}</Th>
+            <Th className="text-right">{pick("가격", "Price")}</Th>
+            <Th className="text-right">{pick("등락", "Change")}</Th>
+            <Th className="text-right">{pick("앵커", "Anchor")}</Th>
             <Th className="hidden text-right lg:table-cell">−1.5{SIGMA}</Th>
             <Th className="hidden text-right lg:table-cell">−1{SIGMA}</Th>
             <Th className="hidden text-right lg:table-cell">+1{SIGMA}</Th>
             <Th className="hidden text-right lg:table-cell">+1.5{SIGMA}</Th>
-            <Th className="w-40 text-left">Position</Th>
+            <Th className="w-40 text-left">{pick("위치", "Position")}</Th>
             <Th className="text-right">Z-Score</Th>
-            <Th className="pr-5 text-right">Status</Th>
+            <Th className="pr-5 text-right">{pick("상태", "Status")}</Th>
           </tr>
         </thead>
         <tbody>

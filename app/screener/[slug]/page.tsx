@@ -9,6 +9,8 @@ import { SiteFooter } from "@/components/layout/site-footer";
 import { JsonLd } from "@/components/seo/json-ld";
 import { loadBoard } from "@/lib/board";
 import { findScreener } from "@/lib/screeners";
+import { getRequestLocale } from "@/lib/i18n-server";
+import { pick } from "@/lib/i18n";
 import { SITE_NAME, SITE_URL } from "@/lib/site";
 
 /** The snapshot file is rewritten out of band by the daily job, so never cache it. */
@@ -19,28 +21,30 @@ type Params = { params: Promise<{ slug: string }> };
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const screener = findScreener(slug);
+  const locale = await getRequestLocale();
 
   if (!screener) {
-    return { title: `Screener not found · ${SITE_NAME}` };
+    return { title: `${pick(locale, "Screener를 찾을 수 없습니다", "Screener not found")} · ${SITE_NAME}` };
   }
 
-  const title = `${screener.metaTitle} · ${SITE_NAME}`;
+  const copy = screener.copy[locale];
+  const title = `${copy.metaTitle} · ${SITE_NAME}`;
   const url = `/screener/${screener.slug}`;
 
   return {
     title,
-    description: screener.metaDescription,
+    description: copy.metaDescription,
     alternates: { canonical: url },
     openGraph: {
       type: "website",
       url,
       title,
-      description: screener.metaDescription,
+      description: copy.metaDescription,
     },
     twitter: {
       card: "summary_large_image",
       title,
-      description: screener.metaDescription,
+      description: copy.metaDescription,
     },
   };
 }
@@ -50,6 +54,9 @@ export default async function ScreenerPage({ params }: Params) {
   const screener = findScreener(slug);
 
   if (!screener) notFound();
+
+  const locale = await getRequestLocale();
+  const copy = screener.copy[locale];
 
   const { snapshot, all } = await loadBoard();
   const hits = screener.select(all);
@@ -88,13 +95,13 @@ export default async function ScreenerPage({ params }: Params) {
       <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 pt-10 pb-4 sm:px-6 sm:pt-14 lg:px-8">
         <div className="max-w-2xl">
           <p className="label-xs">
-            Screener · band window {snapshot.bandWindow}
+            Screener · {pick(locale, "밴드 기간", "band window")} {snapshot.bandWindow}
           </p>
           <h1 className="mt-3 font-heading text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
-            <span className="text-gradient">{screener.title}</span>
+            <span className="text-gradient">{copy.title}</span>
           </h1>
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-            {screener.blurb}
+            {copy.blurb}
           </p>
         </div>
 
@@ -114,16 +121,16 @@ export default async function ScreenerPage({ params }: Params) {
                   looks broken. */}
               <div className="mb-5 flex items-end justify-between gap-4">
                 <h2 className="font-heading text-xl font-semibold tracking-[-0.02em]">
-                  Results
+                  {pick(locale, "결과", "Results")}
                 </h2>
                 <span className="num text-xs text-muted-foreground">
-                  0 of {all.length} symbols
+                  {pick(locale, `${all.length}개 중 0개`, `0 of ${all.length} symbols`)}
                 </span>
               </div>
               <div className="glass flex flex-col items-center justify-center gap-2 px-6 py-16 text-center">
-                <p className="text-sm font-medium">{screener.empty}</p>
+                <p className="text-sm font-medium">{copy.empty}</p>
                 <p className="text-xs text-muted-foreground">
-                  Measured at the {snapshot.updatedAt}.
+                  {pick(locale, `${snapshot.updatedAt} 기준.`, `Measured at the ${snapshot.updatedAt}.`)}
                 </p>
               </div>
             </>
