@@ -1,6 +1,8 @@
-import type { EconEvent, WeekCalendar } from "./econ-calendar";
+import type { CalendarDay, EarningsEvent, EconEvent, WeekCalendar } from "./econ-calendar";
+import type { Locale } from "./i18n";
 
 const ET_ZONE = "America/New_York";
+const KST_ZONE = "Asia/Seoul";
 const zoneParts = new Map<string, Intl.DateTimeFormat>();
 
 export function partsIn(timeZone: string, at: Date): Record<string, number> {
@@ -58,8 +60,79 @@ export function easternInstant(date: string, hhmm: string): Date | null {
 
 
 export function easternDate(at: Date): string {
-  const p = partsIn(ET_ZONE, at);
+  return calendarDate(at, "en");
+}
+
+export function calendarZone(locale: Locale): string {
+  return locale === "ko" ? KST_ZONE : ET_ZONE;
+}
+
+export function calendarZoneLabel(locale: Locale): "KST" | "ET" {
+  return locale === "ko" ? "KST" : "ET";
+}
+
+export function calendarDate(at: Date, locale: Locale): string {
+  const p = partsIn(calendarZone(locale), at);
   return `${p.year}-${String(p.month).padStart(2, "0")}-${String(p.day).padStart(2, "0")}`;
+}
+
+/** Display-only conversion: keep the provider's ET date for release scoring. */
+export function eventDisplayTime(event: EconEvent, locale: Locale) {
+  const instant = easternInstant(event.date, event.timeEt);
+  // A date without a time cannot be converted to one unambiguous Korean date.
+  if (!instant) return { date: event.date, time: "", zone: "ET" as const };
+  const p = partsIn(calendarZone(locale), instant);
+  return {
+    date: calendarDate(instant, locale),
+    time: `${String(p.hour).padStart(2, "0")}:${String(p.minute).padStart(2, "0")}`,
+    zone: calendarZoneLabel(locale),
+  };
+}
+
+export function earningsDisplayDate(event: EarningsEvent, locale: Locale) {
+  if (locale === "en" || event.session === "UNKNOWN") return { date: event.date, zone: "ET" as const };
+  // US pre-market is the same Korean date; after-market is the following one.
+  // Session boundaries resolve the date only, never invent a release time.
+  const boundary = easternInstant(event.date, event.session === "AFTER" ? "16:00" : "09:30")!;
+  return { date: calendarDate(boundary, locale), zone: "KST" as const };
+}
+
+export interface CalendarDisplayDay {
+  date: string;
+  events: EconEvent[];
+  earnings: EarningsEvent[];
+  /** Original ET feed status, including the prior ET day that overlaps KST. */
+  sources: CalendarDay[];
+}
+
+export function calendarDisplayDays(calendar: WeekCalendar, locale: Locale): CalendarDisplayDay[] {
+  const days = new Map<string, CalendarDisplayDay>();
+  const getDay = (date: string) => {
+    let day = days.get(date);
+    if (!day) {
+      day = { date, events: [], earnings: [], sources: [] };
+      days.set(date, day);
+    }
+    return day;
+  };
+  const followingDate = (date: string) => calendarDate(easternInstant(date, "16:00")!, "ko");
+
+  for (const source of calendar.days) {
+    getDay(source.date);
+    for (const event of source.events) getDay(eventDisplayTime(event, locale).date).events.push(event);
+    for (const event of source.earnings) getDay(earningsDisplayDate(event, locale).date).earnings.push(event);
+    // Unknown missing events may fall on the following Korean morning too.
+    if (locale === "ko" && (source.macroStatus === "error" || source.earningsStatus === "error")) {
+      getDay(followingDate(source.date));
+    }
+  }
+  for (const day of days.values()) {
+    day.sources = calendar.days.filter(source => source.date === day.date ||
+      (locale === "ko" && followingDate(source.date) === day.date));
+    day.events.sort((a, b) => eventDisplayTime(a, locale).time.localeCompare(eventDisplayTime(b, locale).time));
+    day.earnings.sort((a, b) => a.symbol.localeCompare(b.symbol));
+  }
+  return [...days.values()].sort((a, b) => a.date.localeCompare(b.date));
 }
 
 export type ReleaseState = "scheduled" | "received" | "unconfirmed" | "elapsed" | "all-day";

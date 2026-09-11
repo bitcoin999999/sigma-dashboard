@@ -1,11 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronDown, RefreshCw } from "lucide-react";
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
-import type { CalendarDay, EarningsEvent, EconEvent, WeekCalendar as CalendarData } from "@/lib/econ-calendar";
-import { easternDate, keySchedule, releaseState, retainCalendar, SESSION_LABEL, type ReleaseState } from "@/lib/calendar-state";
+import type { EarningsEvent, EconEvent, WeekCalendar as CalendarData } from "@/lib/econ-calendar";
+import { calendarDate, calendarDisplayDays, calendarZone, calendarZoneLabel, earningsDisplayDate, eventDisplayTime, keySchedule, releaseState, retainCalendar, SESSION_LABEL, type CalendarDisplayDay, type ReleaseState } from "@/lib/calendar-state";
 import { cn } from "@/lib/utils";
 
 interface WeekCalendarProps {
@@ -20,25 +20,28 @@ const focus = "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visi
 export function WeekCalendar({ calendar: initial, bandAnchorDate, onSelect, className }: WeekCalendarProps) {
   const { locale, pick } = useLocale();
   const [calendar, setCalendar] = React.useState(initial);
+  const [weekOffset, setWeekOffset] = React.useState<0 | 1>(0);
   const [now, setNow] = React.useState(() => Date.parse(initial.checkedAt));
   const [showPrevious, setShowPrevious] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const pending = React.useRef<AbortController | null>(null);
-  const refresh = React.useCallback(async () => {
+  const refresh = React.useCallback(async (targetWeek: 0 | 1 = weekOffset) => {
     if (pending.current) return;
     const controller = new AbortController();
     pending.current = controller;
     const timeout = window.setTimeout(() => controller.abort(), 20_000);
     setRefreshing(true);
     try {
-      const response = await fetch(`/api/calendar?anchor=${encodeURIComponent(bandAnchorDate)}`, {
+      const response = await fetch(`/api/calendar?anchor=${encodeURIComponent(bandAnchorDate)}&week=${targetWeek}`, {
         cache: "no-store", signal: controller.signal,
       });
       if (response.status === 409) throw new Error(pick("밴드 주간이 바뀌었습니다. 페이지를 새로고침하세요.", "The band week has changed. Reload the page."));
       if (!response.ok) throw new Error(pick("일정 새로고침 실패 · 이전 데이터를 표시합니다.", "Calendar refresh failed · showing previous data."));
       const next = await response.json() as CalendarData;
+      if (pending.current !== controller) return;
       setCalendar(old => retainCalendar(next, old));
+      setWeekOffset(targetWeek);
       setError(null);
     } catch (cause) {
       if (pending.current === controller) {
@@ -51,33 +54,46 @@ export function WeekCalendar({ calendar: initial, bandAnchorDate, onSelect, clas
         setRefreshing(false);
       }
     }
-  }, [bandAnchorDate, pick]);
+  }, [bandAnchorDate, pick, weekOffset]);
 
   React.useEffect(() => {
+    // A cached feed timestamp can belong to yesterday. Sync on hydration,
+    // without making the server/client's first render disagree.
+    const frame = window.requestAnimationFrame(() => setNow(Date.now()));
     const tick = window.setInterval(() => setNow(Date.now()), 15_000);
     const poll = window.setInterval(() => { if (document.visibilityState === "visible") void refresh(); }, 60_000);
     const resume = () => { if (document.visibilityState === "visible") { setNow(Date.now()); void refresh(); } };
     document.addEventListener("visibilitychange", resume);
     return () => {
+      window.cancelAnimationFrame(frame);
       window.clearInterval(tick); window.clearInterval(poll);
       document.removeEventListener("visibilitychange", resume);
       const controller = pending.current; pending.current = null; controller?.abort();
     };
   }, [refresh]);
 
-  const today = easternDate(new Date(now));
+  const today = calendarDate(new Date(now), locale);
+  const zone = calendarZoneLabel(locale);
+  const days = React.useMemo(() => calendarDisplayDays(calendar, locale), [calendar, locale]);
   const key = keySchedule(calendar, now);
   const partial = calendar.days.some(day => day.macroStatus === "error" || day.earningsStatus === "error");
   const timestamps = calendar.days.flatMap(day => [day.macroCheckedAt, day.earningsCheckedAt]).filter((value): value is string => value !== null);
   const oldest = timestamps.sort()[0];
   const next = key.next[0];
+  const nextDisplay = next ? eventDisplayTime(next, locale) : null;
 
   return (
-    <aside id="week-calendar" aria-label={pick("이번 주 거시경제 및 실적 일정", "This week’s macro and earnings calendar")} className={cn("glass scroll-mt-28 p-4 sm:p-5", className)}>
+    <aside id="week-calendar" aria-busy={refreshing} aria-label={weekOffset === 0 ? pick("이번 주 거시경제 및 실적 일정", "This week’s macro and earnings calendar") : pick("다음 주 거시경제 및 실적 일정", "Next week’s macro and earnings calendar")} className={cn("glass scroll-mt-28 p-4 sm:p-5", className)}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <h2 className="text-sm font-semibold">{pick("이번 주", "This week")}</h2>
-          <span className="num text-xs text-muted-foreground">{dateLabel(calendar.weekStart)} – {dateLabel(calendar.weekEnd)} · {pick("날짜는 ET 기준", "Dates in ET")}</span>
+          <h2 className="text-sm font-semibold">{weekOffset === 0 ? pick("이번 주", "This week") : pick("다음 주", "Next week")}</h2>
+          <span className="num text-xs text-muted-foreground">{dateLabel(days[0]?.date ?? calendar.weekStart)} – {dateLabel(days.at(-1)?.date ?? calendar.weekEnd)} · {pick("날짜는 KST 기준", "Dates in ET")}</span>
+          <button type="button" onClick={() => void refresh(weekOffset === 0 ? 1 : 0)} disabled={refreshing}
+            className={cn("inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-border px-3 text-xs font-medium hover:bg-muted disabled:opacity-60 min-[1180px]:min-h-8", focus)}>
+            {weekOffset === 1 && <ArrowLeft aria-hidden className="size-3.5" />}
+            {weekOffset === 0 ? pick("다음 주 보기", "View next week") : pick("이번 주 보기", "View this week")}
+            {weekOffset === 0 && <ArrowRight aria-hidden className="size-3.5" />}
+          </button>
         </div>
         <div className="flex items-center gap-2">
         <button type="button" aria-pressed={showPrevious} onClick={() => setShowPrevious(!showPrevious)} className={cn("min-h-11 rounded-lg px-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground min-[1180px]:min-h-8", focus)}>{showPrevious ? pick("이전치 숨기기", "Hide previous") : pick("이전치 보기", "Show previous")}</button>
@@ -94,7 +110,7 @@ export function WeekCalendar({ calendar: initial, bandAnchorDate, onSelect, clas
           <span className={cn("shrink-0 text-xs font-semibold", next ? "text-primary" : "text-muted-foreground")}>{pick("다음 주요 일정", "Next key event")}</span>
           {next ? <>
             <p className="text-base leading-6 font-semibold">{key.next.map(event => event.name).join(" / ")}</p>
-            <p className="num text-xs text-muted-foreground">{weekday(next.date, locale)} {dateLabel(next.date)} · {kstLabel(next, locale)}</p>
+            <p className="num text-xs text-muted-foreground">{weekday(nextDisplay!.date, locale)} {dateLabel(nextDisplay!.date)} · {nextDisplay!.time} {nextDisplay!.zone}</p>
             <span className="text-xs text-primary">{pick("예정", "Scheduled")}{key.incomplete || error ? pick(" · 확인 가능한 데이터", " · available data") : ""}</span>
           </> : <p className="text-sm font-medium">{key.incomplete || error ? pick("주요 일정 데이터가 불완전합니다", "Key event coverage is incomplete") : key.allDay.length ? `${pick("시간 미지정", "Time unspecified")} · ${key.allDay.map(event => event.name).join(" / ")}` : pick("확인 가능한 데이터에 예정된 주요 일정이 없습니다", "No upcoming key events in available data")}</p>}
         </div>
@@ -103,30 +119,35 @@ export function WeekCalendar({ calendar: initial, bandAnchorDate, onSelect, clas
         {(partial || error) && <p className="mt-2 text-xs font-medium">{error ?? pick("일부 피드를 사용할 수 없습니다 · 일자별 데이터 상태를 확인하세요.", "Some feeds are unavailable · check each day’s data status.")}</p>}
       </div>
 
-      <ol className="mt-4 grid grid-cols-1 gap-x-5 gap-y-3 min-[1180px]:grid-cols-5">
-        {calendar.days.map(day => <DayColumn key={day.date} day={day} now={now} today={today} onSelect={onSelect} showPrevious={showPrevious} />)}
+      <ol className={cn("mt-4 grid grid-cols-1 gap-x-5 gap-y-3", days.length > 5 ? "min-[1180px]:grid-cols-6" : "min-[1180px]:grid-cols-5")}>
+        {days.map(day => <DayColumn key={`${locale}-${day.date}`} day={day} now={now} today={today} onSelect={onSelect} showPrevious={showPrevious} />)}
       </ol>
       <footer className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
-        <p>{pick("선별된 macro · 하루 최대 5개 · 시간은 예정 기준", "Selected macro · up to 5 per day · times are scheduled")}</p>
-        <p className="num">{oldest ? `${pick("데이터 기준", "Data as of")} ${checkedLabel(oldest, locale)} KST` : pick("수신된 데이터 없음", "No data received")} · {pick("자동 확인", "Auto-check")}</p>
+        <p>{pick("선별된 macro · ET 일자당 최대 5개 · 시각 미제공은 ET 날짜", "Selected macro · up to 5 per day · times are scheduled")}</p>
+        <p className="num">{oldest ? `${pick("데이터 기준", "Data as of")} ${checkedLabel(oldest, locale)} ${zone}` : pick("수신된 데이터 없음", "No data received")} · {pick("자동 확인", "Auto-check")}</p>
       </footer>
     </aside>
   );
 }
 
 function DayColumn({ day, now, today, onSelect, showPrevious }: {
-  day: CalendarDay; now: number; today: string; showPrevious: boolean; onSelect: WeekCalendarProps["onSelect"];
+  day: CalendarDisplayDay; now: number; today: string; showPrevious: boolean; onSelect: WeekCalendarProps["onSelect"];
 }) {
   const { locale, pick } = useLocale();
   const [expanded, setExpanded] = React.useState<boolean | null>(null);
   const uncertain = day.events.some(event => event.tier === 1 && releaseState(event, now) === "unconfirmed");
-  const failed = day.macroStatus === "error" || day.earningsStatus === "error";
+  const macroFailures = day.sources.filter(source => source.macroStatus === "error");
+  const earningsFailures = day.sources.filter(source => source.earningsStatus === "error");
+  const failed = macroFailures.length > 0 || earningsFailures.length > 0;
   const hasRows = day.events.length > 0 || day.earnings.length > 0 || failed;
   const open = expanded ?? (day.date >= today || uncertain || failed);
   const groups = new Map<string, EconEvent[]>();
-  for (const event of day.events) groups.set(event.timeEt, [...(groups.get(event.timeEt) ?? []), event]);
+  for (const event of day.events) {
+    const time = eventDisplayTime(event, locale).time;
+    groups.set(time, [...(groups.get(time) ?? []), event]);
+  }
   const received = day.events.filter(event => releaseState(event, now) === "received").length;
-  const title = <><span className={cn("num text-sm font-semibold", day.date === today && "rounded bg-foreground px-1.5 py-0.5 text-background")}>{weekday(day.date, locale)} {dateLabel(day.date)}</span>{day.date === today && <span className="ml-auto text-xs font-medium">{pick("오늘", "Today")} · ET</span>}</>;
+  const title = <><span className={cn("num text-sm font-semibold", day.date === today && "rounded bg-foreground px-1.5 py-0.5 text-background")}>{weekday(day.date, locale)} {dateLabel(day.date)}</span>{day.date === today && <span className="ml-auto text-xs font-medium">{pick("오늘", "Today")} · {calendarZoneLabel(locale)}</span>}</>;
   return (
     <li className="min-w-0 border-b border-border pb-3 last:border-b-0 min-[1180px]:row-span-3 min-[1180px]:grid min-[1180px]:grid-rows-subgrid min-[1180px]:border-b-0 min-[1180px]:pb-0">
       <div>
@@ -136,32 +157,32 @@ function DayColumn({ day, now, today, onSelect, showPrevious }: {
           className={cn("flex min-h-11 w-full items-center gap-2 text-left min-[1180px]:hidden", focus)}>
           {title}{hasRows && <ChevronDown aria-hidden className={cn("ml-auto size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />}
         </button>
-        {!open && hasRows && <p className="pb-1 text-xs leading-5 text-muted-foreground min-[1180px]:hidden">{day.macroStatus === "error" ? pick("Macro 피드 사용 불가", "Macro feed unavailable") : received > 0 ? pick(`${received}개 발표`, `${received} released`) : `${day.events.length} macro`} · {day.earningsStatus === "error" ? pick("실적 피드 사용 불가", "Earnings feed unavailable") : pick(`실적 ${day.earnings.length}개`, `${day.earnings.length} earnings`)}{day.events.some(event => event.tier === 1) && ` · ${day.events.filter(event => event.tier === 1).map(event => event.name).join(" / ")}`}</p>}
+        {!open && hasRows && <p className="pb-1 text-xs leading-5 text-muted-foreground min-[1180px]:hidden">{macroFailures.length > 0 ? pick("Macro 피드 사용 불가", "Macro feed unavailable") : received > 0 ? pick(`${received}개 발표`, `${received} released`) : `${day.events.length} macro`} · {earningsFailures.length > 0 ? pick("실적 피드 사용 불가", "Earnings feed unavailable") : pick(`실적 ${day.earnings.length}개`, `${day.earnings.length} earnings`)}{day.events.some(event => event.tier === 1) && ` · ${day.events.filter(event => event.tier === 1).map(event => event.name).join(" / ")}`}</p>}
       </div>
       <div id={`day-${day.date}`} className={cn(!open && hasRows ? "hidden" : "block", "min-[1180px]:block")}>
-        {day.macroStatus === "error" && <FeedError name="Macro" at={day.macroCheckedAt} />}
-        {day.events.length === 0 && day.macroStatus === "ok" && <p className="py-1 text-xs text-muted-foreground">{pick("예정된 일정 없음", "No scheduled events")}</p>}
+        {macroFailures.map(source => <FeedError key={source.date} name="Macro" at={source.macroCheckedAt} sourceDate={source.date} />)}
+        {day.events.length === 0 && macroFailures.length === 0 && <p className="py-1 text-xs text-muted-foreground">{pick("예정된 일정 없음", "No scheduled events")}</p>}
         <div className="space-y-4">
           {[...groups].map(([time, events]) => {
             const states = [...new Set(events.map(event => releaseState(event, now)))];
             return <section key={time} aria-label={`${time || pick("종일", "All day")} Macro`}>
               <div className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <p className="num text-xs leading-4 text-muted-foreground">{time ? <><span className="whitespace-nowrap">{kstLabel(events[0], locale)}</span><span className="ml-2 whitespace-nowrap">{time} ET</span></> : pick("종일", "All day")}</p>
+                <p className="num text-xs leading-4 text-muted-foreground">{time ? <EventClock event={events[0]} /> : `${pick("종일 · 시각 미제공", "All day")} · ${dateLabel(events[0].date)} ET`}</p>
                 {states.length === 1 && <StateLabel state={states[0]} important={events.some(event => event.tier === 1)} />}
               </div>
-              <ul className="space-y-3">{events.map(event => <EventRow key={event.name} event={event} now={now} showPrevious={showPrevious} showState={states.length > 1} />)}</ul>
+              <ul className="space-y-3">{events.map(event => <EventRow key={`${event.date}-${event.timeEt}-${event.name}`} event={event} now={now} showPrevious={showPrevious} showState={states.length > 1} />)}</ul>
             </section>;
           })}
         </div>
       </div>
       <div id={`earnings-${day.date}`} className={cn(!open ? "hidden" : "block", "min-[1180px]:block")}>
-        {(day.earnings.length > 0 || day.earningsStatus === "error") && <div className="mt-3 border-t border-border pt-3 min-[1180px]:mt-0">
+        {(day.earnings.length > 0 || earningsFailures.length > 0) && <div className="mt-3 border-t border-border pt-3 min-[1180px]:mt-0">
           <p className="mb-2 text-xs font-medium text-muted-foreground">{pick("추적 종목 실적", "Tracked earnings")}</p>
-          {day.earningsStatus === "error" && <FeedError name={pick("실적", "Earnings")} at={day.earningsCheckedAt} />}
-          <div className="flex flex-wrap gap-2">{day.earnings.map(entry => <button key={entry.symbol} type="button"
+          {earningsFailures.map(source => <FeedError key={source.date} name={pick("실적", "Earnings")} at={source.earningsCheckedAt} sourceDate={source.date} />)}
+          <div className="flex flex-wrap gap-2">{day.earnings.map(entry => <button key={`${entry.date}-${entry.symbol}`} type="button"
             onClick={() => onSelect(entry.symbol, entry)} aria-label={`${entry.symbol} ${SESSION_LABEL[entry.session]} ${pick("실적 상세", "earnings details")}`}
             className={cn("num inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-2.5 text-sm font-semibold hover:bg-muted min-[1180px]:min-h-9", focus)}>
-            {entry.symbol}{entry.session !== "UNKNOWN" && <span className="text-xs font-normal text-muted-foreground">{SESSION_LABEL[entry.session]}</span>}
+            {entry.symbol}{entry.session !== "UNKNOWN" ? <span className="text-xs font-normal text-muted-foreground">{locale === "ko" ? (entry.session === "AFTER" ? "미국 장후" : "미국 장전") : SESSION_LABEL[entry.session]}</span> : locale === "ko" && <span className="text-xs font-normal text-muted-foreground">{dateLabel(earningsDisplayDate(entry, locale).date)} ET · 시각 미제공</span>}
           </button>)}</div>
         </div>}
       </div>
@@ -195,11 +216,16 @@ function StateLabel({ state, important }: { state: ReleaseState; important: bool
   };
   return <span className={cn("text-xs leading-4", state === "scheduled" && important ? "font-medium text-primary" : state === "unconfirmed" ? "font-medium text-foreground" : "text-muted-foreground")}>{labels[locale][state]}</span>;
 }
-function FeedError({ name, at }: { name: string; at: string | null }) {
+function EventClock({ event }: { event: EconEvent }) {
+  const { locale } = useLocale();
+  const primary = eventDisplayTime(event, locale);
+  const secondary = eventDisplayTime(event, locale === "ko" ? "en" : "ko");
+  return <><span className="whitespace-nowrap">{primary.time} {primary.zone}</span><span className="ml-2 whitespace-nowrap">{secondary.date !== primary.date && `${dateLabel(secondary.date)} `}{secondary.time} {secondary.zone}</span></>;
+}
+function FeedError({ name, at, sourceDate }: { name: string; at: string | null; sourceDate: string }) {
   const { locale, pick } = useLocale();
-  return <p className="mb-2 text-xs leading-5 font-medium">{name} {pick("피드 사용 불가", "feed unavailable")}{at && <span className="block font-normal text-muted-foreground">{pick("이전 데이터", "Previous data")} · {checkedLabel(at, locale)} KST</span>}</p>;
+  return <p className="mb-2 text-xs leading-5 font-medium">{name} {pick("피드 사용 불가", "feed unavailable")}{locale === "ko" && ` · ${dateLabel(sourceDate)} ET`}{at && <span className="block font-normal text-muted-foreground">{pick("이전 데이터", "Previous data")} · {checkedLabel(at, locale)} {calendarZoneLabel(locale)}</span>}</p>;
 }
 function weekday(date: string, locale: Locale) { return new Date(`${date}T00:00:00Z`).toLocaleDateString(locale === "ko" ? "ko-KR" : "en-US", { weekday: "short", timeZone: "UTC" }); }
 function dateLabel(date: string) { const [, month, day] = date.split("-"); return `${Number(month)}/${Number(day)}`; }
-function kstLabel(event: EconEvent, locale: Locale) { return `${event.kstNextDay ? (locale === "ko" ? "익일 " : "Next day ") : ""}${event.timeKst} KST`; }
-function checkedLabel(at: string, locale: Locale) { return new Date(at).toLocaleString(locale === "ko" ? "ko-KR" : "en-US", { timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }); }
+function checkedLabel(at: string, locale: Locale) { return new Date(at).toLocaleString(locale === "ko" ? "ko-KR" : "en-US", { timeZone: calendarZone(locale), month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }); }

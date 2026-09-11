@@ -17,7 +17,7 @@ import {
 import { STATUS_COPY } from "@/lib/i18n";
 import { statusStyle } from "@/lib/sigma";
 import type { EarningsEvent } from "@/lib/econ-calendar";
-import { SESSION_LABEL } from "@/lib/calendar-state";
+import { earningsDisplayDate, SESSION_LABEL } from "@/lib/calendar-state";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -69,6 +69,7 @@ type DetailView = "GEX" | "BAND";
 function DetailContent({ stock, earnings }: { stock: StockData; earnings?: EarningsEvent | null }) {
   const { locale, pick } = useLocale();
   const meta = STATUS_COPY[locale][stock.status];
+  const earningsDate = earnings ? earningsDisplayDate(earnings, locale) : null;
   // GEX is the headline view when the options feed carried this symbol; the
   // price path stays one click away rather than being replaced outright.
   const [view, setView] = React.useState<DetailView>(
@@ -96,8 +97,8 @@ function DetailContent({ stock, earnings }: { stock: StockData; earnings?: Earni
 
       <div className="min-h-0 flex-1 overflow-y-auto px-5 pb-5">
         {earnings && <div className="mb-5 rounded-xl border border-border p-3 text-sm">
-          <p className="font-semibold">{pick("실적 일정", "Earnings schedule")} · {earnings.date} ET</p>
-          <p className="mt-1 text-xs text-muted-foreground">{earnings.session === "UNKNOWN" ? pick("시간 미제공", "Time not supplied") : SESSION_LABEL[earnings.session]}{earnings.epsForecast !== null && ` · ${pick("예상 EPS", "Est EPS")} ${earnings.epsForecast}`}</p>
+          <p className="font-semibold">{pick("실적 일정", "Earnings schedule")} · {earningsDate!.date} {earningsDate!.zone}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{earnings.session === "UNKNOWN" ? pick("시간 미제공 · 한국 날짜 미확정", "Time not supplied") : locale === "ko" ? `${earnings.date} ET · ${earnings.session === "AFTER" ? "미국 장후" : "미국 장전"} · 정확한 시각 미제공` : SESSION_LABEL[earnings.session]}{earnings.epsForecast !== null && ` · ${pick("예상 EPS", "Est EPS")} ${earnings.epsForecast}`}</p>
         </div>}
         <div className="flex items-end justify-between gap-3">
           <span className="num text-3xl leading-none font-semibold tracking-tight">

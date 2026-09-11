@@ -336,13 +336,14 @@ function dayAfter(date: string): string {
 }
 
 /** The five weekdays of the week `anchorDate`'s Friday close opened. */
-function weekOf(anchorDate: string): string[] {
+function weekOf(anchorDate: string, weekOffset: 0 | 1): string[] {
   const start = new Date(`${anchorDate}T00:00:00Z`);
   // Walk to the next Monday. The anchor is a Friday close, so the band's first
   // traded session is the Monday after it — which is the week this panel covers.
   do {
     start.setUTCDate(start.getUTCDate() + 1);
   } while (start.getUTCDay() !== 1);
+  start.setUTCDate(start.getUTCDate() + weekOffset * 7);
 
   return Array.from({ length: 5 }, (_, i) => {
     const day = new Date(start);
@@ -354,8 +355,9 @@ function weekOf(anchorDate: string): string[] {
 async function fetchCalendar(
   anchorDate: string,
   symbols: string[],
+  weekOffset: 0 | 1,
 ): Promise<{ calendar: WeekCalendar; partial: boolean }> {
-  const dates = weekOf(anchorDate);
+  const dates = weekOf(anchorDate, weekOffset);
   const tracked = new Set(symbols.map((symbol) => symbol.toUpperCase()));
 
   const days = await Promise.all(dates.map(async (date): Promise<CalendarDay> => {
@@ -382,12 +384,11 @@ async function fetchCalendar(
   };
 }
 
-let memo: {
-  key: string;
+const calendars = new Map<string, {
   at: number;
   ttl: number;
   calendar: WeekCalendar;
-} | null = null;
+}>();
 
 /**
  * The week's calendar, shared across requests for {@link TTL_MS} — or only
@@ -400,24 +401,27 @@ let memo: {
 export async function loadWeekCalendar(
   anchorDate: string,
   symbols: string[],
+  weekOffset: 0 | 1 = 0,
 ): Promise<WeekCalendar | null> {
-  const key = `${anchorDate}|${[...new Set(symbols)].sort().join(",")}`;
-  if (memo && memo.key === key && Date.now() - memo.at < memo.ttl) {
+  const key = `${anchorDate}|${weekOffset}|${[...new Set(symbols)].sort().join(",")}`;
+  const memo = calendars.get(key);
+  if (memo && Date.now() - memo.at < memo.ttl) {
     return memo.calendar;
   }
 
   try {
-    const { calendar, partial } = await fetchCalendar(anchorDate, symbols);
-    const retained = retainCalendar(calendar, memo?.key === key ? memo.calendar : undefined);
-    memo = {
-      key,
+    const { calendar, partial } = await fetchCalendar(anchorDate, symbols, weekOffset);
+    const retained = retainCalendar(calendar, memo?.calendar);
+    calendars.set(key, {
       at: Date.now(),
       ttl: partial ? PARTIAL_TTL_MS : TTL_MS,
       calendar: retained,
-    };
+    });
+    // Keep both visible weeks without accumulating old anchors/universes forever.
+    if (calendars.size > 8) calendars.delete(calendars.keys().next().value!);
     return retained;
   } catch {
-    return memo?.key === key ? {
+    return memo ? {
       ...memo.calendar,
       days: memo.calendar.days.map(day => ({ ...day, macroStatus: "error", earningsStatus: "error" })),
     } : null;
