@@ -36,6 +36,26 @@ export interface SnapshotSource {
   /** Identifies the driver in error messages, e.g. `blob` or `file`. */
   readonly name: string;
   load(): Promise<SnapshotFile>;
+  loadCalendarContext?(): Promise<SnapshotCalendarContext>;
+}
+
+export interface SnapshotCalendarContext {
+  schemaVersion: 1;
+  generatedAt: string;
+  anchorDate: string;
+  symbols: string[];
+}
+
+export function assertCalendarContext(value: unknown): asserts value is SnapshotCalendarContext {
+  const data = value as Partial<SnapshotCalendarContext> | null;
+  if (!data || data.schemaVersion !== 1 ||
+      typeof data.generatedAt !== "string" || !Number.isFinite(Date.parse(data.generatedAt)) ||
+      typeof data.anchorDate !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(data.anchorDate) ||
+      !Number.isFinite(Date.parse(data.anchorDate)) ||
+      !Array.isArray(data.symbols) || data.symbols.length === 0 ||
+      data.symbols.some(symbol => typeof symbol !== "string" || !symbol.trim())) {
+    throw new Error("Invalid snapshot calendar context.");
+  }
 }
 
 /** Bumped only when a field's meaning changes; adding fields stays on 1. */

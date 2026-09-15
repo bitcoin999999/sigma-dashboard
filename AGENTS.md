@@ -39,13 +39,25 @@ vercel --prod --scope svpk1
 
 ```
 oi_shock/tools/dashboard_snapshot.py   (UW API + sigma_core → 로컬 JSON)
-  → vercel blob put                    (고정 pathname 덮어쓰기)
+  → tools/publish_static_snapshot.py   (sigma-snapshot-data에 JSON만 정적 배포)
   → 이 대시보드가 읽음
 ```
 
 발행은 `oi_shock/tools/publish_snapshot.sh`가 담당하고
-`com.oi-shock.dashboard-snapshot` launchd 잡이 **화~토 07:00 KST**에 돌린다.
+`com.oi-shock.dashboard-snapshot` launchd 잡이 **화~금 EDT 05:35 / EST 06:35 KST,
+토 07:00 KST**에 돌린다. 평일 07:00에는 종가를 재검증하고 바뀐 경우에만 정정 발행한다.
 숫자가 이상하면 이 저장소가 아니라 스냅샷 생성 쪽부터 볼 것.
+
+**2026-09-15부터 Blob을 사용하지 않는다.** 사용량 한도 초과로 공개 읽기가 403이 되어
+사용자가 추가 결제 없는 정적 파일 배포를 선택했다. 운영은 `SNAPSHOT_SOURCE=http`,
+`SNAPSHOT_URL=https://sigma-snapshot-data.vercel.app/snapshot/latest.json`을 사용한다.
+데이터 배포는 이 저장소를 업로드하지 않으며, 임시 디렉터리에 JSON/robots/config만 담는다.
+발행 성공 조건은 커버리지 검사 + 배포 READY + 공개 파일과 홈페이지 API의 원본 일치다.
+옛 Blob 환경변수/드라이버는 이력·명시적 롤백용이며 임의로 다시 활성화하지 말 것.
+
+`/api/calendar`는 같은 배포의 `snapshot/calendar-context.json`(기준일·96종목명, 현재736B)을
+읽는다. 일정 폴링마다 시장 전체 파일(987,612B)을 다시 읽던 구조로 되돌리지 말 것.
+UI 60초 확인·서버 정상10분/부분실패30초 TTL·ko/en 시간대·주 전환 규칙은 유지한다.
 
 ## 방문자·트래픽 데이터
 

@@ -3,7 +3,8 @@ import type { MarketSnapshot, Quote, SectorEtfQuote } from "@/lib/types";
 
 import { blobSource } from "./sources/blob";
 import { fileSource } from "./sources/file";
-import type { SnapshotFile, SnapshotSource } from "./types";
+import { httpSource } from "./sources/http";
+import type { SnapshotCalendarContext, SnapshotFile, SnapshotSource } from "./types";
 
 export type { SnapshotFile, SnapshotSource } from "./types";
 
@@ -21,8 +22,14 @@ export interface SnapshotPayload {
  */
 function resolveSource(): SnapshotSource {
   const requested = process.env.SNAPSHOT_SOURCE?.trim().toLowerCase();
+  const httpUrl = process.env.SNAPSHOT_URL?.trim();
   const url = process.env.SNAPSHOT_BLOB_URL?.trim();
   const isProduction = process.env.NODE_ENV === "production";
+
+  if (requested === "http" || (!requested && httpUrl)) {
+    if (!httpUrl) throw new Error("SNAPSHOT_SOURCE=http requires SNAPSHOT_URL.");
+    return httpSource(httpUrl);
+  }
 
   if (requested === "blob" || (!requested && url)) {
     if (!url) {
@@ -34,12 +41,12 @@ function resolveSource(): SnapshotSource {
   }
 
   // The committed seed is a development convenience. Reaching for it in a
-  // production build almost always means SNAPSHOT_BLOB_URL failed to reach the
+  // production build almost always means the snapshot URL failed to reach the
   // deployment, and silently serving a stale board is the one outcome worth
   // crashing to avoid. Opting in explicitly is still allowed.
   if (isProduction && requested !== "file") {
     throw new Error(
-      "No snapshot source configured: set SNAPSHOT_BLOB_URL. Refusing to " +
+      "No snapshot source configured: set SNAPSHOT_URL. Refusing to " +
         "serve the committed development seed in production, because it " +
         "would present stale prices as current.",
     );
@@ -74,4 +81,14 @@ export async function loadSnapshot(): Promise<SnapshotPayload> {
       bandElapsed: file.band.elapsedDays,
     },
   };
+}
+
+/** The polling calendar needs no prices, history, GEX or intraday charts. */
+export async function loadCalendarContext(): Promise<SnapshotCalendarContext> {
+  const source = resolveSource();
+  if (source.loadCalendarContext) return source.loadCalendarContext();
+  // Development seed and explicitly selected legacy stores retain their contract.
+  const file = await source.load();
+  return { schemaVersion: 1, generatedAt: file.generatedAt,
+    anchorDate: file.band.anchorDate, symbols: file.quotes.map(quote => quote.symbol) };
 }

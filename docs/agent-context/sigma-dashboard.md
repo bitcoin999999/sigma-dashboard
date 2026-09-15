@@ -92,3 +92,44 @@ Vercel 팀 `centme-9969`, 프로젝트명 `sigma-dashboard`에 배포돼 있다.
 - 두 피드의 7일 이동, 주별 캐시 분리, 연도 경계와 한영 버튼 렌더링을 검증했다. 전체 테스트 21개, 변경 파일 lint, TypeScript 및 로컬 Webpack 빌드 통과. 전체 lint는 기존 `docs/reviews/2026-09-10/reproduce.cjs`의 require 스타일 오류 8개로 실패했다.
 - 사용자 요청으로 프로덕션 배포: `dpl_DU1CZA7qCYLAfjtQgFR37wogkS2U`, `https://sigma-dashboard-1fcqjitwg-svpk1.vercel.app`. Vercel 빌드 통과, 대표 주소 `https://sigma-dashboard-five.vercel.app` 연결 완료.
 - 운영 API 검증: week=0은 9/7~9/11(매크로 8건), week=1은 9/14~9/18(매크로 6건), 모두 HTTP 200·macroErrors 0. 한영 홈페이지 모두 HTTP 200과 `다음 주 보기 / View next week` 버튼 노출을 확인했다.
+
+### 2026-09-11 15:39 KST CPI 일정 누락 진단 (미수정)
+
+- 운영 week=0은 9/7~9/11로 정상이나 9/11 events=[]·macroStatus=ok로 반환됐다. Nasdaq economicevents?date=2026-09-12 원본은 HTTP 200·rows 3개·United States 0개였다. 인접 date=2026-09-11에는 전날 PPI가 남아 있어 임의로 날짜 보정을 되돌리지 않았다.
+- BLS 공식 9월 일정에는 9/11 08:30 ET(21:30 KST) CPI 발표가 존재한다: https://www.bls.gov/schedule/2026/09_sched_list.htm. 이번 조회에서 Nasdaq이 이를 누락한 이유 자체는 확인되지 않았다.
+- loadEconDay는 조회 성공 후 미국 행이 없으면 정상 빈 배열로 반환하고 retainCalendar는 error에서만 과거 자료를 보존한다. 따라서 벤더가 정상 응답으로 일정을 누락하면 과거 CPI 행을 대체하고 keySchedule은 주요 일정 없음으로 표시한다. 단순 HTTP 성공은 일정 완전성을 보장하지 않는다.
+- 현재 BLS fallback은 이미 존재하는 발표 당일 PPI/Core PPI 행의 actual만 채운다. CPI와 일정 행 자체의 누락에는 동작하지 않는다. 공식 일정 보완 및 정상 응답의 갑작스러운 누락 감지가 필요하나 이번 요청에서는 진단만 수행했다.
+
+## 2026-09-15 Blob 한도 초과 장애 — 긴급 복구 배포
+
+- 운영 `/api/snapshot`이 503, Blob 공개 URL이 403 `Your store is blocked`를 반환했다. Vercel 저장소 API에서 `usageQuotaExceeded=true`, `billingState=suspended`, `status=limits-exceeded-suspended`를 확인했다. 어떤 사용량 항목이 초과했는지는 미확인이다. 저장 크기는 987,612바이트, 파일은 1개였다.
+- 당일 07:06:40 KST Blob 업로드는 성공했다. **업로드 성공이 공개 읽기 성공을 보장하지 않는다.** 발행 로그의 완료만으로 서비스 정상이라고 판단하지 말고 공개 읽기/API까지 검사해야 한다.
+- `oi_shock/state/dashboard_snapshot.json`의 원본을 `data/emergency-snapshot.json`에 만료시각을 붙여 별도로 배포했다. 개발용 `data/snapshot.json`은 쓰지 않는다. 정확히 403 + 위 차단 본문일 때만 긴급 원본을 읽으며, 일반 403/404/500 및 데이터 검증 오류를 숨기지 않는다.
+- **긴급 복구본 만료: 2026-09-16 07:15 KST.** 생성시각·세션·가격을 원본 그대로 보존하며, 만료 이후에는 거부한다. 자동 갱신 문제의 영구 해결은 아직 끝나지 않았다. 사용자는 무료 파일 배포 대안과 Pro 전환 중 선택 전이며, Pro 비용을 질문했다(공식 월 $20 + 세금, 사용량 초과 추가 가능). 결제/요금제 변경은 수행하지 않았다.
+- 배포 `dpl_FHps49GDs2eddFJos2hCuNwrg1Kf`, https://sigma-dashboard-6n03a58a9-svpk1.vercel.app → 대표 주소 연결. 전체 테스트 24개·변경 파일 lint·TypeScript·로컬 Webpack 및 운영 Turbopack 빌드 통과. 운영 API/홈 HTTP 200, 브라우저 한국어 화면에서 96종목·9/14 close 확인. API의 96종목과 11섹터 배열이 로컬 원본과 모두 일치했다.
+
+### 2026-09-15 사용자 확정: 무료 정적 데이터 배포로 영구 전환 완료
+
+- 사용자가 Pro 비용·무료 방식의 단점을 확인한 뒤 **추가 결제 없는 파일 배포**를 선택했다. Vercel 요금제/결제 설정은 변경하지 않았다.
+- 데이터 전용 프로젝트 `svpk1/sigma-snapshot-data` (`prj_2nwmAeRvxdEtaS7zcV8VBwA3KppD`)를 사용한다. 고정 공개 URL은 https://sigma-snapshot-data.vercel.app/snapshot/latest.json 이다. 운영 `SNAPSHOT_SOURCE=http`, `SNAPSHOT_URL`을 이 주소로 설정했다. Blob 환경변수는 남아 있지만 사용하지 않는다.
+- `httpSource`가 기존 스키마 검사·8초 제한·앱 no-store 정책을 적용한다. 원본 날짜/가격/산식/배열을 바꾸지 않는다. 긴급 파일·만료 로직은 제거했다. 따라서 위 **9/16 07:15 임시 만료 제한은 더 이상 적용되지 않는다.**
+- `oi_shock/tools/publish_snapshot.sh`가 생성 후 `publish_static_snapshot.py`로 넘긴다. 매번 임시 디렉터리에 JSON/robots/vercel 설정/프로젝트 연결만 배치하므로 홈페이지 수정 중 코드나 비밀파일이 자동 배포되지 않는다. 생성 소스·1σ 산식·커버리지 80%·화~토 07:00 KST 스케줄은 유지한다.
+- 배포할 고정 사본에 기존 `check_snapshot.py`를 적용하고, 배포 READY 뒤 공개 JSON 전체와 홈페이지 API의 발행시각/세션/앵커/경과일/종목·섹터 배열이 원본과 일치해야 성공이다. 불일치/HTTP 오류는 고정 URL로 10초 간격 최대 10회 검증하며 실패 시 잡이 비정상 종료한다.
+- CLI 59.1.4는 agent/non-interactive에서 `{status, deployment}`로, 일반 launchd 환경에서는 배포 객체 자체를 출력했다. 첫 무인환경 검증에서 배포는 성공했지만 parser가 실패했다. 두 형태 모두 검사하고 `--non-interactive`도 명시해 수정했다.
+- 홈페이지 운영 배포 `dpl_AZdWWnfnva13SHpcbDFYUoVLTGDj`, https://sigma-dashboard-j3v6jvyte-svpk1.vercel.app → 기존 대표 주소 연결. 앱 테스트 23개·발행기 테스트 8개(총31개), 변경 파일 lint/타입 검사, 로컬/운영 빌드 통과.
+- **17:08:06~17:08:16 KST**, 설치된 launchd plist의 환경변수/실행명령/작업폴더로 `--no-generate --no-notify` 실행: 종료0, 10.25초, 96종목+11섹터 공개 파일/홈 API 모두 일치. 새 데이터 배포 https://sigma-snapshot-data-es8qsvzk7-svpk1.vercel.app. 데이터 재수집과 알림은 생략했으며 기존 상태 JSON은 수정하지 않았다.
+- 설치·로드된 잡은 계속 화~토07:00 KST. 07:00은 **수집 시작 시각**이며 최근 생성 약6분 + 이번 배포검증10초 기준 화면 반영07:06~08 예상(미래 실행시간 보장 아님). 기존처럼 Mac/네트워크가 동작해야 한다. 내일 실스케줄 실행 자체는 아직 미래이므로 미검증이다.
+
+### 2026-09-15 후속 검토: 반복 다운로드 감축·조기 발행
+
+- 위 이관 직후 사용자가 05:35 시작을 요청하여 최종 스케줄을 **화~금 EDT05:35 / EST06:35,
+  토07:00**으로 변경했다. 평일07:00 종가 대조 후 값이 바뀐 경우에만 정정 발행한다.
+- `/api/calendar`가 60초마다 987,612B 시장 파일을 읽던 경로를 같은 배포의736B
+  `calendar-context.json`으로 바꿨다. 해당 다운로드 바이트99.925% 감소이며 전체 트래픽 절감률과 다르다.
+- 기존 ko/en 날짜·시간대, 주 전환, 60초 폴링, 정상10분/부분30초 TTL은 유지했다.
+  웹26개 검사·lint·tsc·운영 빌드 통과. 최종 배포 `sigma-dashboard-jda5iumsu-svpk1.vercel.app`.
+- 운영 홈/종목 상세/가격API200,96종목+11섹터 원본 일치, 두 주 일정200,
+  잘못된 week400/앵커409 확인. Nasdaq이 HTTP200으로 일부 일정을 누락하는 기존 한계는 남아 있다.
+- Blob 팀 기능 차단 시각11:34:33 KST, 파일1개/987,612B 확인. **세부 사용량 항목·수치는 아직 미확인**.
+  반복 읽기/전송이 유력하지만 방문자수나 전송량을 실측한 것처럼 보고하지 말 것.
+- [전체 운영 검토·비용·UW 근거](../../../oi_shock/docs/agent-context/snapshot-operations-20260915.md).
