@@ -1,3 +1,4 @@
+import { tickerDirectory } from "@/lib/ticker-search";
 import type { Metadata } from "next";
 
 import { LeverageCalculator } from "@/components/calculator/leverage-calculator";
@@ -41,7 +42,7 @@ export default async function CalculatorPage() {
   // The board is only here for the shared chrome. A quote feed outage must not
   // take the page down with it — the calculator says so itself and offers a
   // retry, which is more use than an error screen.
-  const [{ snapshot }, quotes] = await Promise.all([
+  const [{ snapshot, all }, quotes] = await Promise.all([
     loadBoard(),
     loadLiveQuotes(LEVERAGE_SYMBOLS).catch(
       (error: unknown): LiveQuotes | null => {
@@ -51,5 +52,5 @@ export default async function CalculatorPage() {
     ),
   ]);
 
-  return <LeverageCalculator snapshot={snapshot} initialQuotes={quotes} />;
+  return <LeverageCalculator tickers={tickerDirectory(all)} snapshot={snapshot} initialQuotes={quotes} />;
 }

@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 
+import { TickerSearch } from "./ticker-search";
+import type { TickerSearchItem } from "@/lib/ticker-search";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { useLocale } from "@/components/locale-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -15,6 +17,7 @@ const LINK_IDS = ["market", "watchlist", "lastweek", "sectors"];
 
 interface NavBarProps {
   snapshot: MarketSnapshot;
+  tickers: TickerSearchItem[];
   updatedAt: string;
   /** Omitted on pages that render one snapshot and never re-read it. */
   onRefresh?: () => void;
@@ -37,7 +40,7 @@ function Brand() {
       <span className="num flex size-7 items-center justify-center rounded-[10px] bg-[linear-gradient(140deg,var(--primary),color-mix(in_oklch,var(--sigma-lower)_75%,var(--primary)))] text-[13px] font-semibold text-primary-foreground shadow-[0_6px_18px_-8px_var(--primary)]">
         σ
       </span>
-      <span className="text-[15px] font-semibold tracking-[-0.02em]">
+      <span className="hidden text-[15px] font-semibold sm:inline tracking-[-0.02em]">
         1SIGMA
       </span>
     </>
@@ -112,6 +115,7 @@ function navLinkClass(current: boolean): string {
 
 export function NavBar({
   snapshot,
+  tickers,
   updatedAt,
   onRefresh,
   refreshing = false,
@@ -167,7 +171,7 @@ export function NavBar({
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/45">
       {/* Shorter on phones so the second nav row below can carry full-size tap
           targets without the sticky header eating an eighth of the viewport. */}
-      <div className="mx-auto flex h-12 w-full max-w-[1600px] items-center gap-4 px-4 sm:h-14 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-12 w-full max-w-[1600px] items-center gap-2 px-4 sm:h-14 sm:gap-4 sm:px-6 lg:px-8">
         {sections ? (
           <a href="#top" className={BRAND_CLASS}>
             <Brand />
@@ -180,7 +184,7 @@ export function NavBar({
 
         <nav
           aria-label={pick("주요 메뉴", "Sections")}
-          className="hidden flex-1 justify-center md:flex"
+          className="hidden flex-1 justify-center min-[1380px]:flex"
         >
           <ul className="flex items-center gap-1">
             {links.map((link) => (
@@ -195,8 +199,8 @@ export function NavBar({
           </ul>
         </nav>
 
-        <div className="ml-auto flex items-center gap-2 md:ml-0">
-          <span className="hidden items-center gap-2 rounded-full border border-border/70 py-1 pr-3 pl-2.5 sm:flex">
+        <div className="ml-auto flex min-w-0 flex-1 items-center justify-end gap-1 sm:flex-none sm:gap-2">
+          <span className="hidden items-center gap-2 rounded-full border border-border/70 py-1 pr-3 pl-2.5 md:flex">
             <span className="relative flex size-1.5">
               {isOpen && (
                 <span className="absolute inline-flex size-full animate-ping rounded-full bg-up opacity-60" />
@@ -213,7 +217,7 @@ export function NavBar({
             </span>
           </span>
 
-          <span className="num hidden text-[11px] whitespace-nowrap text-muted-foreground lg:inline">
+          <span className="num hidden text-[11px] whitespace-nowrap text-muted-foreground min-[1500px]:inline">
             {pick("업데이트", "Updated")} {updatedAt}
           </span>
 
@@ -232,6 +236,7 @@ export function NavBar({
             </button>
           )}
 
+          <TickerSearch items={tickers} />
           <LocaleToggle />
           <ThemeToggle />
         </div>
@@ -239,7 +244,7 @@ export function NavBar({
 
       <nav
         aria-label={pick("주요 메뉴", "Sections")}
-        className="flex items-center gap-1 overflow-x-auto border-t border-border/50 px-3 py-1 md:hidden"
+        className="flex items-center gap-1 overflow-x-auto border-t border-border/50 px-3 py-1 min-[1380px]:hidden"
       >
         {links.map((link) => (
           <NavItem

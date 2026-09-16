@@ -1,5 +1,7 @@
 "use client";
 
+import { tickerDirectory } from "@/lib/ticker-search";
+
 import * as React from "react";
 
 import { ExploreNav } from "@/components/layout/explore-nav";
@@ -157,6 +159,7 @@ export function Dashboard({
   return (
     <>
       <NavBar
+        tickers={tickerDirectory([...stocks, ...etfs])}
         snapshot={meta}
         updatedAt={meta.updatedAt}
         onRefresh={refresh}

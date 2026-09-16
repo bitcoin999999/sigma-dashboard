@@ -1,3 +1,4 @@
+import { tickerDirectory } from "@/lib/ticker-search";
 import type { Metadata } from "next";
 
 import { GuideArticle } from "@/components/guide/guide-article";
@@ -77,6 +78,7 @@ export default async function GuidePage() {
     <>
       <JsonLd data={jsonLd} />
       <NavBar
+        tickers={tickerDirectory(all)}
         snapshot={snapshot}
         updatedAt={snapshot.updatedAt}
         sections={false}

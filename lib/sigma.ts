@@ -18,6 +18,11 @@ export const SIGMA_EXTREME = 1.5;
 /** How far past ±1.5σ the visualisation still tracks before clamping. */
 export const BAND_LIMIT = 2.0;
 
+/** Price bounds share one conversion; chart overlays never rederive volatility. */
+export function sigmaPriceRange(anchor: number, standardDeviation: number, multiple: number) {
+  return { lower: anchor - multiple * standardDeviation, upper: anchor + multiple * standardDeviation };
+}
+
 export function calculateZScore(
   price: number,
   anchor: number,
@@ -43,6 +48,8 @@ export function buildStockData(quote: Quote): StockData {
   const standardDeviation = (quote.anchor * quote.sigmaPercent) / 100;
   const zScore = calculateZScore(quote.price, quote.anchor, standardDeviation);
   const changeAbsolute = quote.price - quote.previousClose;
+  const one = sigmaPriceRange(quote.anchor, standardDeviation, SIGMA_1);
+  const extreme = sigmaPriceRange(quote.anchor, standardDeviation, SIGMA_EXTREME);
 
   return {
     ...quote,
@@ -51,10 +58,10 @@ export function buildStockData(quote: Quote): StockData {
     changePercent: quote.previousClose
       ? (changeAbsolute / quote.previousClose) * 100
       : 0,
-    sigma1Upper: quote.anchor + standardDeviation,
-    sigma1Lower: quote.anchor - standardDeviation,
-    sigmaExtremeUpper: quote.anchor + SIGMA_EXTREME * standardDeviation,
-    sigmaExtremeLower: quote.anchor - SIGMA_EXTREME * standardDeviation,
+    sigma1Upper: one.upper,
+    sigma1Lower: one.lower,
+    sigmaExtremeUpper: extreme.upper,
+    sigmaExtremeLower: extreme.lower,
     zScore,
     status: resolveStatus(zScore),
   };

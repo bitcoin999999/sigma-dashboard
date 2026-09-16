@@ -1,3 +1,4 @@
+import { tickerDirectory } from "@/lib/ticker-search";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -5,6 +6,7 @@ import { notFound } from "next/navigation";
 import { DataBasis } from "@/components/dashboard/data-basis";
 import { SigmaRangeBar } from "@/components/dashboard/sigma-range-bar";
 import { StatusBadge } from "@/components/dashboard/status-badge";
+import { WeeklyPriceChart } from "@/components/dashboard/weekly-price-chart";
 import { ExploreNav } from "@/components/layout/explore-nav";
 import { NavBar } from "@/components/layout/nav-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
@@ -21,6 +23,9 @@ import { SITE_NAME, SITE_URL } from "@/lib/site";
 import { STATUS_COPY, pick, type Locale } from "@/lib/i18n";
 import { getRequestLocale } from "@/lib/i18n-server";
 import { statusStyle } from "@/lib/sigma";
+import { buildChartBands } from "@/lib/weekly-chart-bands";
+import { buildGexChartSnapshot } from "@/lib/gex-chart-levels";
+import { chartWeek } from "@/lib/weekly-chart";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -72,8 +77,10 @@ export default async function SymbolPage({ params }: Params) {
   if (!stock) notFound();
 
   const locale = await getRequestLocale();
-  const { snapshot } = await loadBoard();
+  const { snapshot, all } = await loadBoard();
   const meta = STATUS_COPY[locale][stock.status];
+  const chartBands = buildChartBands(stock, snapshot.bandAnchorDate);
+  const chartGex = buildGexChartSnapshot(stock, chartWeek().weekStart, chartBands[0]?.weekStart ?? "");
 
   const stats: { term: string; detail: string; className?: string }[] = [
     { term: pick(locale, "최종 마감", "Last close"), detail: formatCurrency(stock.price) },
@@ -129,6 +136,7 @@ export default async function SymbolPage({ params }: Params) {
   return (
     <>
       <NavBar
+        tickers={tickerDirectory(all)}
         snapshot={snapshot}
         updatedAt={snapshot.updatedAt}
         sections={false}
@@ -137,7 +145,8 @@ export default async function SymbolPage({ params }: Params) {
       <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 pt-10 pb-4 sm:px-6 sm:pt-14 lg:px-8">
         <JsonLd data={jsonLd} />
 
-        <div style={statusStyle(stock.status)} className="max-w-3xl">
+        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] xl:gap-12">
+        <div style={statusStyle(stock.status)} className="min-w-0">
           <p className="label-xs">
             {stock.sector} · {pick(locale, "밴드 기간", "band window")} {snapshot.bandWindow}
           </p>
@@ -189,6 +198,9 @@ export default async function SymbolPage({ params }: Params) {
               {pick(locale, "전체 보드 보기", "See the whole board")}
             </Link>
           </div>
+        </div>
+
+        <WeeklyPriceChart key={stock.symbol} symbol={stock.symbol} bands={chartBands} gex={chartGex} />
         </div>
 
         <ExploreNav sessionDate={snapshot.sessionDate} className="mt-10" />

@@ -1,3 +1,4 @@
+import { tickerDirectory } from "@/lib/ticker-search";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
@@ -87,6 +88,7 @@ export default async function ScreenerPage({ params }: Params) {
     <>
       <JsonLd data={jsonLd} />
       <NavBar
+        tickers={tickerDirectory(all)}
         snapshot={snapshot}
         updatedAt={snapshot.updatedAt}
         sections={false}

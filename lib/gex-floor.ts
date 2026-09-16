@@ -50,8 +50,8 @@ const MAX_GAP_PERCENT = 0.5;
  * board that admitted SNDK (36% share, 82×) and rejected AAPL (0.6% share) —
  * both of which had a support strike inside the window.
  */
-const MIN_SHARE = 15;
-const MIN_DOMINANCE = 2;
+export const MIN_SHARE = 15;
+export const MIN_DOMINANCE = 2;
 
 /**
  * The floor for one symbol, or null when there is not one worth drawing.

@@ -1,3 +1,4 @@
+import { tickerDirectory } from "@/lib/ticker-search";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -79,6 +80,7 @@ export default async function DailyPage({ params }: Params) {
   return (
     <>
       <NavBar
+        tickers={tickerDirectory(daily.all)}
         snapshot={snapshot}
         updatedAt={snapshot.updatedAt}
         sections={false}

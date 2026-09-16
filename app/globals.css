@@ -70,6 +70,11 @@
      floor is not a band reading, so it must not look like one. */
   --gex-floor: oklch(0.53 0.19 305);
 
+  /* Chart-only support/resistance pair. Chroma sits above the σ ramp so a GEX
+     strike still reads as a different kind of line next to −1σ blue. */
+  --gex-support: oklch(0.55 0.17 250);
+  --gex-resistance: oklch(0.55 0.2 16);
+
   --surface-tint-a: oklch(1 0 0 / 90%);
   --surface-tint-b: oklch(1 0 0 / 55%);
   --hairline: oklch(0.24 0.02 264 / 9%);
@@ -110,6 +115,8 @@
   --sigma-cold: oklch(0.68 0.15 252);
 
   --gex-floor: oklch(0.72 0.17 305);
+  --gex-support: oklch(0.72 0.15 250);
+  --gex-resistance: oklch(0.7 0.18 16);
 
   --surface-tint-a: oklch(1 0 0 / 6%);
   --surface-tint-b: oklch(1 0 0 / 2%);

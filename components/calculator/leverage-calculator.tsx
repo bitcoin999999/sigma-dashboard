@@ -1,5 +1,7 @@
 "use client";
 
+import type { TickerSearchItem } from "@/lib/ticker-search";
+
 import * as React from "react";
 import { RotateCcw, TriangleAlert } from "lucide-react";
 
@@ -60,12 +62,14 @@ function formatSignedCurrency(value: number): string {
 
 interface LeverageCalculatorProps {
   snapshot: MarketSnapshot;
+  tickers: TickerSearchItem[];
   /** Null when the quote feed was unreachable while rendering. */
   initialQuotes: LiveQuotes | null;
 }
 
 export function LeverageCalculator({
   snapshot,
+  tickers,
   initialQuotes,
 }: LeverageCalculatorProps) {
   const { pick } = useLocale();
@@ -128,6 +132,7 @@ export function LeverageCalculator({
   return (
     <>
       <NavBar
+        tickers={tickers}
         snapshot={snapshot}
         updatedAt={snapshot.updatedAt}
         onRefresh={refresh}

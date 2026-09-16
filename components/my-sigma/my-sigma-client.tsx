@@ -1,5 +1,7 @@
 "use client";
 
+import { tickerDirectory } from "@/lib/ticker-search";
+
 import * as React from "react";
 
 import { Check, Copy, Plus, Search, X } from "lucide-react";
@@ -223,6 +225,7 @@ export function MySigmaClient({ stocks, snapshot }: MySigmaClientProps) {
   return (
     <>
       <NavBar
+        tickers={tickerDirectory(stocks)}
         snapshot={snapshot}
         updatedAt={snapshot.updatedAt}
         sections={false}
