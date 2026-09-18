@@ -194,8 +194,10 @@ export function Dashboard({
           )}
           aria-busy={refreshing}
         >
-          <h1 className="text-xl leading-snug font-semibold tracking-tight text-balance md:hidden">
-            {pick("각 종목의 이번주 예상 주가 범위와 현재 위치", "Each stock’s expected price range this week and current position")}
+          <h1 className="font-heading text-xl leading-snug font-semibold tracking-tight text-balance md:hidden">
+            <span className="text-gradient">
+              {pick("각 종목의 이번주 예상 주가 범위와 현재 위치", "Each stock’s expected price range this week and current position")}
+            </span>
           </h1>
           <p className="mt-2 mb-5 text-xs text-muted-foreground md:hidden">
             {pick("가격 기준", "Prices as of")}: {meta.sessionDate}{" "}

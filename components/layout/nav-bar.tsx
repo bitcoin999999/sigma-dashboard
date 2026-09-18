@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { RefreshCw } from "lucide-react";
 
 import { MobileNav } from "./mobile-nav";
@@ -11,6 +12,7 @@ import { LocaleToggle } from "@/components/locale-toggle";
 import { useLocale } from "@/components/locale-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useActiveSection } from "@/hooks/use-active-section";
+import { useNavStow } from "@/hooks/use-nav-stow";
 import type { MarketSnapshot } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -139,6 +141,15 @@ export function NavBar({
   const pathname = usePathname();
   const isOpen = snapshot.session === "OPEN";
 
+  /**
+   * Phones only: on a desktop the header carries the section nav and there is
+   * room for it, so it stays put. `held` keeps it while anything inside it has
+   * focus — otherwise the scroll the on-screen keyboard causes would slide the
+   * search field away from under the person typing into it.
+   */
+  const [held, setHeld] = useState(false);
+  const stowed = useNavStow(held);
+
   const links: NavLink[] = [
     ...(sections
       ? sectionLinks.map((link) => ({
@@ -170,7 +181,14 @@ export function NavBar({
 
   return (
     <>
-    <header className="sticky top-0 z-40 border-b border-border/60 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/45">
+    <header
+      onFocusCapture={() => setHeld(true)}
+      onBlurCapture={() => setHeld(false)}
+      className={cn(
+        "sticky top-0 z-40 border-b border-border/60 bg-background/60 backdrop-blur-xl transition-transform duration-200 supports-[backdrop-filter]:bg-background/45",
+        stowed && "max-md:-translate-y-full",
+      )}
+    >
       {/* Shorter on phones so the second nav row below can carry full-size tap
           targets without the sticky header eating an eighth of the viewport. */}
       <div className="mx-auto flex h-12 w-full max-w-[1600px] items-center gap-2 px-4 sm:h-14 sm:gap-4 sm:px-6 lg:px-8">
