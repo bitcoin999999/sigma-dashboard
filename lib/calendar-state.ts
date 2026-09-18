@@ -147,9 +147,16 @@ export function releaseState(event: EconEvent, now: number): ReleaseState {
 }
 
 export function keySchedule(calendar: WeekCalendar, now: number) {
-  const events = calendar.days.flatMap(day => day.events).filter(event => event.tier === 1);
-  const upcoming = events.filter(event => releaseState(event, now) === "scheduled")
+  const all = calendar.days.flatMap(day => day.events);
+  const events = all.filter(event => event.tier === 1);
+  const scheduled = (list: EconEvent[]) => list
+    .filter(event => releaseState(event, now) === "scheduled")
     .sort((a, b) => easternInstant(a.date, a.timeEt)!.getTime() - easternInstant(b.date, b.timeEt)!.getTime());
+  // Once the week's first-tier prints are behind us this line read "nothing
+  // scheduled" for days while the grid directly under it still listed
+  // releases. Second tier is genuinely what is next at that point.
+  const firstTier = scheduled(events);
+  const upcoming = firstTier.length ? firstTier : scheduled(all);
   const first = upcoming[0];
   return {
     next: first ? upcoming.filter(event => event.date === first.date && event.timeEt === first.timeEt) : [],
@@ -175,5 +182,5 @@ export function retainCalendar(next: WeekCalendar, previous?: WeekCalendar): Wee
 }
 
 export function eventKind(name: string): EconEvent["kind"] {
-  return /^(fomc (statement|press conference|meeting minutes)|jackson hole symposium|fed chair .+ speaks)$/.test(name.trim().toLowerCase()) ? "event" : "print";
+  return /^(fomc (statement|press conference|meeting minutes)|jackson hole symposium|(fomc member|fed) .+ speaks)$/.test(name.trim().toLowerCase()) ? "event" : "print";
 }

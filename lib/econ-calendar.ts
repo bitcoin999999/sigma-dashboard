@@ -129,6 +129,8 @@ const TRACKED: Record<string, 1 | 2> = {
   "core pce price index": 1,
   "michigan 1-year inflation expectations": 2,
   "ny fed 1-year consumer inflation expectations": 2,
+  "import price index": 2,
+  "export price index": 2,
 
   // Labour
   "nonfarm payrolls": 1,
@@ -145,12 +147,44 @@ const TRACKED: Record<string, 1 | 2> = {
   "core retail sales": 1,
   "ism manufacturing pmi": 2,
   "ism non-manufacturing pmi": 2,
+  "s&p global manufacturing pmi": 2,
+  "s&p global services pmi": 2,
+  "chicago pmi": 2,
   "cb consumer confidence": 2,
   "michigan consumer sentiment": 2,
+  "industrial production": 2,
+  "capacity utilization rate": 2,
+  "durable goods orders": 2,
+  "core durable goods orders": 2,
+  "personal income": 2,
+  "personal spending": 2,
+  "trade balance": 2,
+  "us leading index": 2,
+
+  // Regional surveys. The feed carries a dozen sub-series per survey — orders,
+  // prices paid, employment — and only the headline index belongs here.
+  "ny empire state manufacturing index": 2,
+  "philadelphia fed manufacturing index": 2,
+  "richmond manufacturing index": 2,
+
+  // Housing
+  "housing starts": 2,
+  "building permits": 2,
+  "existing home sales": 2,
+  "new home sales": 2,
+  "pending home sales": 2,
+  "nahb housing market index": 2,
 };
 
 /** Whoever chairs the Fed, by title rather than by name, so it survives a handover. */
 const FED_CHAIR = /^fed chair .+ speaks$/;
+
+/**
+ * Everyone else on the committee — governors, regional presidents, the vice
+ * chair. Matched by title too, and for the same reason: the names turn over
+ * every year, and a list of them goes stale silently rather than loudly.
+ */
+const FED_SPEAKER = /^(?:fomc member|fed) .+ speaks$/;
 
 interface EconRow {
   gmt?: string;
@@ -237,7 +271,7 @@ function seoulTime(
 /** The release's rank, or null when it is not one this board carries. */
 function tierOf(name: string): 1 | 2 | null {
   const key = name.trim().toLowerCase();
-  return TRACKED[key] ?? (FED_CHAIR.test(key) ? 1 : null);
+  return TRACKED[key] ?? (FED_CHAIR.test(key) ? 1 : FED_SPEAKER.test(key) ? 2 : null);
 }
 
 /**

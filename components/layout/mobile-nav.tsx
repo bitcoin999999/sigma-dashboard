@@ -9,6 +9,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogTitle, DialogDescription, D
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LocaleToggle } from "@/components/locale-toggle";
 import { SCREENERS } from "@/lib/screeners";
+import { cn } from "@/lib/utils";
 
 export function MobileNav({ sessionDate }: { sessionDate: string }) {
   const pathname = usePathname();
@@ -35,9 +36,29 @@ export function MobileNav({ sessionDate }: { sessionDate: string }) {
   // there is no element to observe, so the last reading would otherwise stick.
   const onBoard = pathname === "/" && boardInView;
 
+  /**
+   * Reading down the board is the one thing this page is for, and the bar sits
+   * on top of it the whole way. It steps aside while you go down and comes back
+   * the moment you go up, which is also when you are looking for it.
+   */
+  const [stowed, setStowed] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      // Below this the movement is a thumb resting on the glass, not a scroll.
+      if (Math.abs(y - last) < 8) return;
+      // Never stowed near the top: there the bar is the only navigation on screen.
+      setStowed(y > last && y > 96);
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   const item = "flex min-h-14 min-w-11 flex-col items-center justify-center gap-1 rounded-lg text-[11px] focus-visible:outline-2 focus-visible:outline-ring";
   const home = pathname === "/" && !onBoard;
-  return <nav aria-label={pick("모바일 주요 메뉴", "Mobile navigation")} className="mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 px-3 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl md:hidden">
+  return <nav aria-label={pick("모바일 주요 메뉴", "Mobile navigation")} className={cn("mobile-bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-border/70 bg-background/95 px-3 pt-1 pb-[max(0.25rem,env(safe-area-inset-bottom))] backdrop-blur-xl transition-transform duration-200 md:hidden", stowed && !open && "translate-y-full")}>
     <div className="mx-auto grid max-w-lg grid-cols-4 gap-1">
       {/* On the home route this is a jump to the top, not a no-op link to the
           page you are already on — otherwise the tab does nothing and there is
