@@ -62,7 +62,7 @@ export function SummaryCards({
         </div>
       </div>
 
-      <div className="hidden grid-cols-2 gap-3 lg:grid lg:grid-cols-4">
+      <div className="hidden gap-3 lg:grid lg:grid-cols-4">
       <SummaryCard
         icon={Activity}
         label={pick("시장 상태", "Market Status")}

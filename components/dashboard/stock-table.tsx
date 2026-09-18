@@ -82,12 +82,17 @@ export function StockTable({
           </caption>
           <thead>
             <tr className="border-b border-border/60">
-              <Th className="w-11 sm:w-auto"><span className="sr-only">{pick("관심", "Watch")}</span></Th>
-              <Th className="pl-4">{pick("종목", "Symbol")}</Th>
+              {/* Percentages, and they must total 100. A `display:none` cell
+                  still claims a share of whatever slack is left in a fixed
+                  layout, so an auto column here split the remainder five ways
+                  and left the symbol 32px. Leaving no slack is the only way to
+                  keep it out of the hidden columns' hands. */}
+              <Th className="w-[14%] sm:w-auto"><span className="sr-only">{pick("관심", "Watch")}</span></Th>
+              <Th className="w-[42%] pl-4 sm:w-auto">{pick("종목", "Symbol")}</Th>
               <Th align="right" className="hidden sm:table-cell">
                 {pick("가격", "Price")}
               </Th>
-              <Th align="right" className="w-[4.5rem] sm:w-auto">{pick("등락", "Change")}</Th>
+              <Th align="right" className="w-[20%] sm:w-auto">{pick("등락", "Change")}</Th>
               <Th align="right" className="hidden lg:table-cell">
                 ±1σ {pick("범위", "range")}
               </Th>
@@ -102,7 +107,7 @@ export function StockTable({
                   is hidden and σ would otherwise butt straight up against the
                   change figure — two right-aligned numbers touching, which
                   reads as one. */}
-              <Th align="right" className="w-20 pl-2 pr-3 sm:w-auto sm:pl-5 sm:pr-4 xl:pr-0">
+              <Th align="right" className="w-[24%] pl-2 pr-3 sm:w-auto sm:pl-5 sm:pr-4 xl:pr-0">
                 σ
               </Th>
               <Th align="right" className="hidden pr-4 xl:table-cell">
