@@ -19,8 +19,10 @@ export function Section({
   className,
   children,
 }: SectionProps) {
+  // `scroll-mt-28` is 7rem, which clears the phone header — the taller of the
+  // two at 105px — when an in-page link lands on this section.
   return (
-    <section id={id} className={cn("scroll-mt-24", className)}>
+    <section id={id} className={cn("scroll-mt-28", className)}>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="max-w-xl">
           {eyebrow && <p className="label-xs mb-2">{eyebrow}</p>}

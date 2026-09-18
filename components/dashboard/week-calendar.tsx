@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ArrowLeft, ArrowRight, ChevronDown, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, RefreshCw } from "lucide-react";
 import { useLocale } from "@/components/locale-provider";
 import type { Locale } from "@/lib/i18n";
 import type { EarningsEvent, EconEvent, WeekCalendar as CalendarData } from "@/lib/econ-calendar";
@@ -119,7 +119,13 @@ export function WeekCalendar({ calendar: initial, bandAnchorDate, onSelect, clas
         {(partial || error) && <p className="mt-2 text-xs font-medium">{error ?? pick("일부 피드를 사용할 수 없습니다 · 일자별 데이터 상태를 확인하세요.", "Some feeds are unavailable · check each day’s data status.")}</p>}
       </div>
 
-      <ol className={cn("mt-4 grid grid-cols-1 gap-x-5 gap-y-3", days.length > 5 ? "min-[1180px]:grid-cols-6" : "min-[1180px]:grid-cols-5")}>
+      {/* Phone: a week is five days, and on a phone five stacked accordions is
+          a full screen of chevrons before the first event. The strip puts the
+          whole week in one row — with a dot for a tier-1 print and a second for
+          tracked earnings — and one day's detail sits open underneath it. */}
+      <MobileWeek days={days} now={now} today={today} onSelect={onSelect} showPrevious={showPrevious} />
+
+      <ol className={cn("mt-4 hidden grid-cols-1 gap-x-5 gap-y-3", days.length > 5 ? "min-[1180px]:grid min-[1180px]:grid-cols-6" : "min-[1180px]:grid min-[1180px]:grid-cols-5")}>
         {days.map(day => <DayColumn key={`${locale}-${day.date}`} day={day} now={now} today={today} onSelect={onSelect} showPrevious={showPrevious} />)}
       </ol>
       <footer className="mt-4 flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-border pt-3 text-xs leading-5 text-muted-foreground">
@@ -130,63 +136,122 @@ export function WeekCalendar({ calendar: initial, bandAnchorDate, onSelect, clas
   );
 }
 
+function MobileWeek({ days, now, today, onSelect, showPrevious }: {
+  days: CalendarDisplayDay[]; now: number; today: string; showPrevious: boolean; onSelect: WeekCalendarProps["onSelect"];
+}) {
+  const { locale, pick } = useLocale();
+  const [picked, setPicked] = React.useState<string | null>(null);
+  // Derived with a fallback rather than synced in an effect: flipping to next
+  // week replaces every date at once, and the old pick simply stops matching.
+  const fallback = days.find(day => day.date >= today)?.date ?? days.at(-1)?.date ?? "";
+  const active = days.some(day => day.date === picked) ? picked! : fallback;
+  const day = days.find(entry => entry.date === active);
+  if (!day) return null;
+  const failed = day.sources.some(source => source.macroStatus === "error" || source.earningsStatus === "error");
+
+  return (
+    <div className="mt-4 min-[1180px]:hidden">
+      {/* Bleeds to the card's edge so the last day does not look clipped by
+          padding when the row scrolls. */}
+      <div role="tablist" aria-label={pick("요일 선택", "Select a day")} className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 sm:-mx-5 sm:px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {days.map(entry => {
+          const selected = entry.date === active;
+          const tier1 = entry.events.filter(event => event.tier === 1).length;
+          const broken = entry.sources.some(source => source.macroStatus === "error" || source.earningsStatus === "error");
+          return (
+            <button key={entry.date} type="button" role="tab" aria-selected={selected} aria-controls="week-day-panel"
+              onClick={() => setPicked(entry.date)}
+              className={cn("flex min-h-[3.5rem] w-[3.5rem] shrink-0 snap-start flex-col items-center justify-center gap-0.5 rounded-xl border transition-colors",
+                selected ? "border-transparent bg-foreground text-background"
+                  : entry.date === today ? "border-foreground/40 text-foreground"
+                  : "border-border text-muted-foreground", focus)}>
+              <span className="text-[11px] leading-4 font-medium">{weekday(entry.date, locale)}</span>
+              <span className="num text-sm leading-4 font-semibold">{dateLabel(entry.date)}</span>
+              {/* Two dots, not a count: a tier-1 print and tracked earnings are
+                  the only two reasons to open a day from the strip. */}
+              <span aria-hidden className="flex h-1.5 items-center gap-0.5">
+                {tier1 > 0 && <span className={cn("size-1.5 rounded-full", selected ? "bg-background" : "bg-primary")} />}
+                {entry.earnings.length > 0 && <span className={cn("size-1.5 rounded-full", selected ? "bg-background/60" : "bg-muted-foreground/60")} />}
+                {broken && <span className={cn("size-1.5 rounded-full", selected ? "bg-background/60" : "bg-foreground/60")} />}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <div id="week-day-panel" role="tabpanel" aria-live="polite" className="mt-4 border-t border-border pt-3">
+        <div className="mb-2 flex items-center gap-2">
+          <span className={cn("num text-sm font-semibold", day.date === today && "rounded bg-foreground px-1.5 py-0.5 text-background")}>{weekday(day.date, locale)} {dateLabel(day.date)}</span>
+          {day.date === today && <span className="text-xs font-medium">{pick("오늘", "Today")} · {calendarZoneLabel(locale)}</span>}
+          <span className="ml-auto text-xs text-muted-foreground">{failed ? pick("피드 일부 사용 불가", "Some feeds unavailable") : pick(`macro ${day.events.length} · 실적 ${day.earnings.length}`, `${day.events.length} macro · ${day.earnings.length} earnings`)}</span>
+        </div>
+        <DayMacro day={day} now={now} showPrevious={showPrevious} />
+        <DayEarnings day={day} onSelect={onSelect} />
+      </div>
+    </div>
+  );
+}
+
 function DayColumn({ day, now, today, onSelect, showPrevious }: {
   day: CalendarDisplayDay; now: number; today: string; showPrevious: boolean; onSelect: WeekCalendarProps["onSelect"];
 }) {
   const { locale, pick } = useLocale();
-  const [expanded, setExpanded] = React.useState<boolean | null>(null);
-  const uncertain = day.events.some(event => event.tier === 1 && releaseState(event, now) === "unconfirmed");
+  return (
+    <li className="min-w-0 row-span-3 grid grid-rows-subgrid">
+      <div className="flex min-h-9 items-center gap-2 border-b border-border pb-2">
+        <span className={cn("num text-sm font-semibold", day.date === today && "rounded bg-foreground px-1.5 py-0.5 text-background")}>{weekday(day.date, locale)} {dateLabel(day.date)}</span>
+        {day.date === today && <span className="ml-auto text-xs font-medium">{pick("오늘", "Today")} · {calendarZoneLabel(locale)}</span>}
+      </div>
+      <DayMacro day={day} now={now} showPrevious={showPrevious} />
+      <DayEarnings day={day} onSelect={onSelect} flush />
+    </li>
+  );
+}
+
+function DayMacro({ day, now, showPrevious }: { day: CalendarDisplayDay; now: number; showPrevious: boolean }) {
+  const { locale, pick } = useLocale();
   const macroFailures = day.sources.filter(source => source.macroStatus === "error");
-  const earningsFailures = day.sources.filter(source => source.earningsStatus === "error");
-  const failed = macroFailures.length > 0 || earningsFailures.length > 0;
-  const hasRows = day.events.length > 0 || day.earnings.length > 0 || failed;
-  const open = expanded ?? (day.date >= today || uncertain || failed);
   const groups = new Map<string, EconEvent[]>();
   for (const event of day.events) {
     const time = eventDisplayTime(event, locale).time;
     groups.set(time, [...(groups.get(time) ?? []), event]);
   }
-  const received = day.events.filter(event => releaseState(event, now) === "received").length;
-  const title = <><span className={cn("num text-sm font-semibold", day.date === today && "rounded bg-foreground px-1.5 py-0.5 text-background")}>{weekday(day.date, locale)} {dateLabel(day.date)}</span>{day.date === today && <span className="ml-auto text-xs font-medium">{pick("오늘", "Today")} · {calendarZoneLabel(locale)}</span>}</>;
   return (
-    <li className="min-w-0 border-b border-border pb-3 last:border-b-0 min-[1180px]:row-span-3 min-[1180px]:grid min-[1180px]:grid-rows-subgrid min-[1180px]:border-b-0 min-[1180px]:pb-0">
-      <div>
-        <div className="hidden min-h-9 items-center gap-2 border-b border-border pb-2 min-[1180px]:flex">{title}</div>
-        <button type="button" aria-expanded={hasRows ? open : undefined} aria-controls={hasRows ? `day-${day.date} earnings-${day.date}` : undefined}
-          disabled={!hasRows} onClick={() => setExpanded(!open)}
-          className={cn("flex min-h-11 w-full items-center gap-2 text-left min-[1180px]:hidden", focus)}>
-          {title}{hasRows && <ChevronDown aria-hidden className={cn("ml-auto size-4 shrink-0 text-muted-foreground transition-transform", open && "rotate-180")} />}
-        </button>
-        {!open && hasRows && <p className="pb-1 text-xs leading-5 text-muted-foreground min-[1180px]:hidden">{macroFailures.length > 0 ? pick("Macro 피드 사용 불가", "Macro feed unavailable") : received > 0 ? pick(`${received}개 발표`, `${received} released`) : `${day.events.length} macro`} · {earningsFailures.length > 0 ? pick("실적 피드 사용 불가", "Earnings feed unavailable") : pick(`실적 ${day.earnings.length}개`, `${day.earnings.length} earnings`)}{day.events.some(event => event.tier === 1) && ` · ${day.events.filter(event => event.tier === 1).map(event => event.name).join(" / ")}`}</p>}
+    <div>
+      {macroFailures.map(source => <FeedError key={source.date} name="Macro" at={source.macroCheckedAt} sourceDate={source.date} />)}
+      {day.events.length === 0 && macroFailures.length === 0 && <p className="py-1 text-xs text-muted-foreground">{pick("예정된 일정 없음", "No scheduled events")}</p>}
+      <div className="space-y-4">
+        {[...groups].map(([time, events]) => {
+          const states = [...new Set(events.map(event => releaseState(event, now)))];
+          return <section key={time} aria-label={`${time || pick("종일", "All day")} Macro`}>
+            <div className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <p className="num text-xs leading-4 text-muted-foreground">{time ? <EventClock event={events[0]} /> : `${pick("종일 · 시각 미제공", "All day")} · ${dateLabel(events[0].date)} ET`}</p>
+              {states.length === 1 && <StateLabel state={states[0]} important={events.some(event => event.tier === 1)} />}
+            </div>
+            <ul className="space-y-3">{events.map(event => <EventRow key={`${event.date}-${event.timeEt}-${event.name}`} event={event} now={now} showPrevious={showPrevious} showState={states.length > 1} />)}</ul>
+          </section>;
+        })}
       </div>
-      <div id={`day-${day.date}`} className={cn(!open && hasRows ? "hidden" : "block", "min-[1180px]:block")}>
-        {macroFailures.map(source => <FeedError key={source.date} name="Macro" at={source.macroCheckedAt} sourceDate={source.date} />)}
-        {day.events.length === 0 && macroFailures.length === 0 && <p className="py-1 text-xs text-muted-foreground">{pick("예정된 일정 없음", "No scheduled events")}</p>}
-        <div className="space-y-4">
-          {[...groups].map(([time, events]) => {
-            const states = [...new Set(events.map(event => releaseState(event, now)))];
-            return <section key={time} aria-label={`${time || pick("종일", "All day")} Macro`}>
-              <div className="mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-1">
-                <p className="num text-xs leading-4 text-muted-foreground">{time ? <EventClock event={events[0]} /> : `${pick("종일 · 시각 미제공", "All day")} · ${dateLabel(events[0].date)} ET`}</p>
-                {states.length === 1 && <StateLabel state={states[0]} important={events.some(event => event.tier === 1)} />}
-              </div>
-              <ul className="space-y-3">{events.map(event => <EventRow key={`${event.date}-${event.timeEt}-${event.name}`} event={event} now={now} showPrevious={showPrevious} showState={states.length > 1} />)}</ul>
-            </section>;
-          })}
-        </div>
+    </div>
+  );
+}
+
+function DayEarnings({ day, onSelect, flush = false }: { day: CalendarDisplayDay; onSelect: WeekCalendarProps["onSelect"]; flush?: boolean }) {
+  const { locale, pick } = useLocale();
+  const earningsFailures = day.sources.filter(source => source.earningsStatus === "error");
+  if (day.earnings.length === 0 && earningsFailures.length === 0) return <div />;
+  return (
+    <div>
+      <div className={cn("border-t border-border pt-3", !flush && "mt-3")}>
+        <p className="mb-2 text-xs font-medium text-muted-foreground">{pick("추적 종목 실적", "Tracked earnings")}</p>
+        {earningsFailures.map(source => <FeedError key={source.date} name={pick("실적", "Earnings")} at={source.earningsCheckedAt} sourceDate={source.date} />)}
+        <div className="flex flex-wrap gap-2">{day.earnings.map(entry => <button key={`${entry.date}-${entry.symbol}`} type="button"
+          onClick={() => onSelect(entry.symbol, entry)} aria-label={`${entry.symbol} ${SESSION_LABEL[entry.session]} ${pick("실적 상세", "earnings details")}`}
+          className={cn("num inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-2.5 text-sm font-semibold hover:bg-muted min-[1180px]:min-h-9", focus)}>
+          {entry.symbol}{entry.session !== "UNKNOWN" ? <span className="text-xs font-normal text-muted-foreground">{locale === "ko" ? (entry.session === "AFTER" ? "미국 장후" : "미국 장전") : SESSION_LABEL[entry.session]}</span> : locale === "ko" && <span className="text-xs font-normal text-muted-foreground">{dateLabel(earningsDisplayDate(entry, locale).date)} ET · 시각 미제공</span>}
+        </button>)}</div>
       </div>
-      <div id={`earnings-${day.date}`} className={cn(!open ? "hidden" : "block", "min-[1180px]:block")}>
-        {(day.earnings.length > 0 || earningsFailures.length > 0) && <div className="mt-3 border-t border-border pt-3 min-[1180px]:mt-0">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">{pick("추적 종목 실적", "Tracked earnings")}</p>
-          {earningsFailures.map(source => <FeedError key={source.date} name={pick("실적", "Earnings")} at={source.earningsCheckedAt} sourceDate={source.date} />)}
-          <div className="flex flex-wrap gap-2">{day.earnings.map(entry => <button key={`${entry.date}-${entry.symbol}`} type="button"
-            onClick={() => onSelect(entry.symbol, entry)} aria-label={`${entry.symbol} ${SESSION_LABEL[entry.session]} ${pick("실적 상세", "earnings details")}`}
-            className={cn("num inline-flex min-h-11 items-center gap-2 rounded-lg border border-border px-2.5 text-sm font-semibold hover:bg-muted min-[1180px]:min-h-9", focus)}>
-            {entry.symbol}{entry.session !== "UNKNOWN" ? <span className="text-xs font-normal text-muted-foreground">{locale === "ko" ? (entry.session === "AFTER" ? "미국 장후" : "미국 장전") : SESSION_LABEL[entry.session]}</span> : locale === "ko" && <span className="text-xs font-normal text-muted-foreground">{dateLabel(earningsDisplayDate(entry, locale).date)} ET · 시각 미제공</span>}
-          </button>)}</div>
-        </div>}
-      </div>
-    </li>
+    </div>
   );
 }
 

@@ -28,9 +28,15 @@ interface StockGridProps {
   onReset?: () => void;
 }
 
-/** Shared so pages laying cards out themselves stay on the same rhythm. */
+/**
+ * Shared so pages laying cards out themselves stay on the same rhythm.
+ *
+ * `list-surface` is the phone form: the gap closes, the container takes over
+ * the glass, and the cards inside render as hairline-separated rows. From `sm`
+ * up it is inert and this is the grid it always was.
+ */
 export const GRID =
-  "grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4";
+  "list-surface grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3 2xl:grid-cols-4";
 
 export function StockGrid({
   stocks,
@@ -91,7 +97,10 @@ export function StockGrid({
 
 export function StockGridSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className={GRID} aria-hidden>
+    <div
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+      aria-hidden
+    >
       {Array.from({ length: count }).map((_, index) => (
         <div key={index} className="glass space-y-4 p-4">
           <div className="flex items-start justify-between">

@@ -285,6 +285,48 @@
     word-spacing: -0.34em;
   }
 
+  /* Below `sm` the board is a list, not a grid of cards. One glass surface owns
+     the whole run and the rows inside it are separated by hairlines, so 77
+     names cost 77 rows instead of 77 framed panels with a gap between each.
+     Above `sm` it dissolves and the grid gets its cards back. */
+  .list-surface {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius-2xl);
+    background-image: linear-gradient(
+      160deg,
+      var(--surface-tint-a),
+      var(--surface-tint-b)
+    );
+  }
+
+  .dark .list-surface {
+    background-color: oklch(0.21 0.019 264 / 55%);
+  }
+
+  /* Separators belong to the container, not the row: some callers wrap each
+     card in a positioning div, which would make every row `:last-child` of its
+     own parent and leave the list with no rules at all. */
+  .list-surface > * + * {
+    border-top: 1px solid var(--hairline);
+  }
+
+  @media (min-width: 640px) {
+    .list-surface,
+    .dark .list-surface {
+      overflow: visible;
+      border: 0;
+      border-radius: 0;
+      background-color: transparent;
+      background-image: none;
+    }
+
+    .list-surface > * + * {
+      border-top: 0;
+    }
+  }
+
   .label-xs {
     font-size: 0.6875rem;
     line-height: 1rem;
@@ -384,6 +426,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto !important;
+  }
+
   *,
   *::before,
   *::after {
@@ -393,14 +439,16 @@
   }
 }
 
-/* Mobile navigation leaves room for the keyboard and safe-area. */
-html { scroll-padding-top: 8rem; }
-.mobile-bottom-nav [aria-current="page"] { color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); }
-@media (max-width: 767px) {
-  body:has(input:focus, textarea:focus) .mobile-bottom-nav { display: none; }
-  #watchlist { scroll-margin-top: 8rem; }
+/* The sticky header's clearance lives on the targets, as `scroll-mt-*`. A
+   `scroll-padding-top` here would not replace it — the two add — so an in-page
+   jump would land that much short of the heading it was aimed at. */
+.mobile-bottom-nav [aria-current="page"] {
+  color: var(--primary);
+  background: color-mix(in oklch, var(--primary) 8%, transparent);
 }
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto !important; }
-  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+
+@media (max-width: 767px) {
+  body:has(input:focus, textarea:focus) .mobile-bottom-nav {
+    display: none;
+  }
 }

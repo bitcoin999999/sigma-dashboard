@@ -225,15 +225,18 @@ export function MySigmaClient({ stocks, snapshot, sharedSymbols = "" }: MySigmaC
                 {watchlist.map((stock) => (
                   // Keep the remove control beside the card so the detail link
                   // and the destructive action remain independent targets.
-                  <div key={stock.symbol} className="group/row relative">
+                  <div key={stock.symbol} className="group/row relative pr-12 sm:pr-0">
                     <StockCard stock={stock} onSelect={setSelected} showWatch={false} />
                     <button
                       type="button"
                       onClick={() => remove(stock.symbol)}
                       aria-label={pick(`My Sigma에서 ${stock.symbol} 삭제`, `Remove ${stock.symbol} from My Sigma`)}
-                      // Sits on the corner rather than inside it: the card's own
-                      // top-right already carries the status badge.
-                      className="absolute -top-2 -right-2 z-10 flex size-11 md:size-7 items-center justify-center rounded-full border border-border/60 bg-background text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-md:opacity-100"
+                      // On the card it sits on the corner rather than inside
+                      // it: the card's own top-right already carries the status
+                      // badge. In the phone list there is no corner to hang off
+                      // — the surface clips — so it takes the row's right slot,
+                      // which `showWatch={false}` has already left empty.
+                      className="absolute top-1/2 right-1 z-10 flex size-11 -translate-y-1/2 items-center justify-center rounded-full border border-border/60 bg-background text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-md:opacity-100 sm:top-[-0.5rem] sm:right-[-0.5rem] sm:translate-y-0 md:size-7"
                     >
                       <X className="size-3.5" aria-hidden />
                     </button>

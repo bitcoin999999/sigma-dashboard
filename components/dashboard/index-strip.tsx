@@ -47,14 +47,99 @@ export function IndexStrip({ stocks, onSelect, className }: IndexStripProps) {
   if (indices.length === 0) return null;
 
   return (
-    // Two-up before four-up, never three: at three columns the fourth card
-    // drops to a row of its own and reads as an afterthought rather than a
-    // peer of the other three.
-    <div className={cn("grid gap-3 sm:grid-cols-2 lg:grid-cols-4", className)}>
-      {indices.map((stock) => (
-        <IndexCard key={stock.symbol} stock={stock} onSelect={onSelect} />
-      ))}
-    </div>
+    <>
+      {/* On a phone the four cards stacked to a full screen before a single
+          name appeared. Four indices are a comparison, and a comparison wants
+          one number column the eye can run down — not four framed panels it
+          has to re-orient inside of. Same data, one surface, no sparkline. */}
+      <ul
+        className={cn(
+          "glass divide-y divide-[var(--hairline)] overflow-hidden sm:hidden",
+          className,
+        )}
+      >
+        {indices.map((stock) => (
+          <li key={stock.symbol}>
+            <IndexRow stock={stock} onSelect={onSelect} />
+          </li>
+        ))}
+      </ul>
+
+      {/* Two-up before four-up, never three: at three columns the fourth card
+          drops to a row of its own and reads as an afterthought rather than a
+          peer of the other three. */}
+      <div
+        className={cn(
+          "hidden gap-3 sm:grid sm:grid-cols-2 lg:grid-cols-4",
+          className,
+        )}
+      >
+        {indices.map((stock) => (
+          <IndexCard key={stock.symbol} stock={stock} onSelect={onSelect} />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function IndexRow({
+  stock,
+  onSelect,
+}: {
+  stock: StockData;
+  onSelect: (symbol: string) => void;
+}) {
+  const { locale } = useLocale();
+  const meta = STATUS_COPY[locale][stock.status];
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(stock.symbol)}
+      style={statusStyle(stock.status)}
+      aria-label={`${stock.symbol}, ${formatSigma(stock.zScore)}, ${meta.longLabel}`}
+      className="flex min-h-[4.25rem] w-full cursor-pointer items-center gap-3 px-4 py-3 text-left active:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+    >
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2">
+          <span className="num text-[15px] font-semibold tracking-[-0.01em]">
+            {stock.symbol}
+          </span>
+          <span className="truncate text-[11px] text-muted-foreground">
+            {INDEX_CAPTION[stock.symbol] ?? stock.name}
+          </span>
+        </div>
+        {/* The bar carries the band position the sparkline used to imply, at a
+            twentieth of the height. */}
+        <SigmaRangeBar
+          zScore={stock.zScore}
+          status={stock.status}
+          className="mt-2"
+        />
+        <p className="num mt-1.5 truncate text-[11px] text-muted-foreground/80">
+          {formatCurrency(stock.sigma1Lower)} – {formatCurrency(stock.sigma1Upper)}
+          <span className="ml-1.5 text-muted-foreground/60">
+            {formatBandWidth(stock.sigmaPercent)}
+          </span>
+        </p>
+      </div>
+
+      {/* One right edge for all four rows: σ, then price, then the day. */}
+      <div className="flex shrink-0 flex-col items-end gap-1">
+        <span
+          className={cn(
+            "num text-lg leading-none font-semibold tracking-tight",
+            stock.status === "NORMAL" ? "text-foreground/85" : "state-tint",
+          )}
+        >
+          {formatSigma(stock.zScore, 2)}
+        </span>
+        <span className="num text-xs text-muted-foreground">
+          {formatCurrency(stock.price)}
+        </span>
+        <ChangePill value={stock.changePercent} showIcon={false} />
+      </div>
+    </button>
   );
 }
 

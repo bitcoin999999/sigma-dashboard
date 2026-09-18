@@ -152,7 +152,7 @@ export function WeeklyRecapTable({ stocks, onSelect }: WeeklyRecapTableProps) {
               onChange={(event) => setQuery(event.target.value)}
               placeholder={pick("티커 검색", "Search ticker")}
               aria-label={pick("주간 리캡 티커 검색", "Search the weekly recap by ticker")}
-              className="h-8 pr-8 pl-8 text-sm"
+              className="h-11 pr-8 pl-8 text-base md:h-8 md:text-sm"
             />
             {query && (
               <button

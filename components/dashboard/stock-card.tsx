@@ -1,5 +1,6 @@
 "use client";
 
+import type { MouseEvent } from "react";
 import Link from "next/link";
 import { opensPanel } from "@/lib/stock-navigation";
 import { WatchButton } from "@/components/watchlist/watch-button";
@@ -49,6 +50,25 @@ export function StockCard({
   const label = `${stock.symbol}, ${stock.name}. ${STATUS_COPY[locale][stock.status].longLabel}.${
     floor ? pick(" −1σ 하단에 GEX floor.", " GEX floor on the −1σ edge.") : ""
   } ${pick("상세 열기.", "Open details.")}`;
+
+  // Both variants want the same destination and the same desktop-only panel
+  // interception, so the link plumbing is written once and spread into each.
+  const link = {
+    href: href ?? `/symbol/${stock.symbol}`,
+    prefetch: false as const,
+    style: statusStyle(stock.status),
+    "aria-label": label,
+    onClick: (event: MouseEvent<HTMLAnchorElement>) => {
+      if (
+        !href &&
+        onSelect &&
+        opensPanel(event, window.matchMedia("(min-width: 768px)").matches)
+      ) {
+        event.preventDefault();
+        onSelect(stock.symbol);
+      }
+    },
+  };
 
   const className = cn(
     "glass glass-interactive group block w-full cursor-pointer p-4 text-left",
@@ -131,19 +151,77 @@ export function StockCard({
 
   return (
     <div className="relative min-w-0">
+      {/* Phone: a row in a list. The card spends 160px on framing and vertical
+          rhythm that only pays off when several sit side by side — stacked one
+          per line it is 12,000px of scrolling for 77 names. The row keeps the
+          four things the board is read for (name, band position, price, σ) and
+          drops the padding around them. */}
       <Link
-        href={href ?? `/symbol/${stock.symbol}`}
-        prefetch={false}
-        onClick={(event) => {
-          if (!href && onSelect && opensPanel(event, window.matchMedia("(min-width: 768px)").matches)) {
-            event.preventDefault(); onSelect(stock.symbol);
-          }
-        }}
-        style={statusStyle(stock.status)}
-        aria-label={label}
-        className={cn(className, showWatch && "pr-16")}
-      >{body}</Link>
-      {showWatch && <div className="absolute right-2 top-2"><WatchButton symbol={stock.symbol} compact /></div>}
+        {...link}
+        className={cn(
+          "flex min-h-[4.5rem] w-full cursor-pointer items-center gap-3 px-4 py-3 text-left active:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring sm:hidden",
+          showWatch && "pr-12",
+        )}
+      >
+        {/* One column, not two: the price belongs on the symbol's line and the
+            day's move on the σ line, so both edges of the row line up and the
+            eye reads across instead of pairing a block against a block. */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-2">
+            <span className="num text-[15px] leading-none font-semibold tracking-tight">
+              {stock.symbol}
+            </span>
+            <span className="truncate text-[11px] text-muted-foreground/80">
+              {stock.name}
+            </span>
+            <span className="num ml-auto shrink-0 pl-2 text-[15px] leading-none font-semibold tracking-tight">
+              {formatCurrency(stock.price)}
+            </span>
+          </div>
+
+          <SigmaRangeBar
+            zScore={stock.zScore}
+            status={stock.status}
+            className="mt-2.5"
+          />
+
+          <div className="mt-2 flex items-center gap-2">
+            <span
+              className={cn(
+                "num shrink-0 text-xs leading-none font-semibold",
+                stock.status === "NORMAL" ? "text-foreground/75" : "state-tint",
+              )}
+            >
+              {formatSigma(stock.zScore)}
+            </span>
+            <StatusBadge status={stock.status} />
+            {floor && (
+              <span className="gex-floor-chip num inline-flex shrink-0 items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium">
+                <Anchor className="size-2.5" aria-hidden />
+                {formatCurrency(floor.strike)}
+              </span>
+            )}
+            <ChangePill
+              value={stock.changePercent}
+              showIcon={false}
+              className="ml-auto shrink-0"
+            />
+          </div>
+        </div>
+      </Link>
+
+      <Link
+        {...link}
+        className={cn(className, "hidden sm:block", showWatch && "pr-16")}
+      >
+        {body}
+      </Link>
+
+      {showWatch && (
+        <div className="absolute top-1/2 right-1 -translate-y-1/2 sm:top-2 sm:right-2 sm:translate-y-0">
+          <WatchButton symbol={stock.symbol} compact />
+        </div>
+      )}
     </div>
   );
 }

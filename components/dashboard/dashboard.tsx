@@ -171,17 +171,54 @@ export function Dashboard({
         refreshing={refreshing}
       />
 
+      {/* `scroll-mt-28` clears the sticky header, which for `#top` means the
+          jump lands at the document top rather than one header-height into it. */}
       <main
         id="top"
-        className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-4 pt-5 pb-4 sm:px-6 md:pt-14 lg:px-8"
+        className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col scroll-mt-28 px-4 pt-5 pb-4 sm:px-6 md:pt-14 lg:px-8"
       >
         {refreshError && <p role="alert" className="order-first mb-3 text-sm text-down">{pick("새로고침하지 못했습니다. 마지막으로 받은 데이터를 표시합니다.", "Refresh failed. Showing the last received data.")}</p>}
-        <HomeWatchlist stocks={[...stocks, ...etfs]} snapshot={meta} />
 
+        {/* Source order below is the phone order, so the sequence a screen
+            reader walks is the sequence on screen. `md:order-*` puts the desktop
+            arrangement back: hero, calendar, benchmarks, counts, board. */}
+
+        {/* Four indices are the cheapest read on the page and the frame for
+            everything under them — a dozen names past +1σ means one thing if the
+            index went with them and another if it did not. So they open the phone. */}
+        <section
+          aria-labelledby="benchmarks-label"
+          className={cn(
+            "order-1 transition-opacity duration-200 md:order-3 md:mt-8",
+            refreshing && "opacity-70",
+          )}
+          aria-busy={refreshing}
+        >
+          <h1 className="text-xl font-semibold tracking-tight md:hidden">
+            {pick("이번 주, 시장은 어디쯤?", "Where is the market this week?")}
+          </h1>
+          <p className="mt-2 mb-5 text-xs text-muted-foreground md:hidden">
+            {pick("가격 기준", "Prices as of")}: {meta.sessionDate}{" "}
+            {pick("미국 정규장 종가", "US regular-session close")}
+          </p>
+          <p id="benchmarks-label" className="label-xs mb-3">{pick("벤치마크", "Benchmarks")}</p>
+          <IndexStrip stocks={stocks} onSelect={setSelected} />
+        </section>
+
+        {calendar && (
+          <WeekCalendar
+            calendar={calendar}
+            bandAnchorDate={snapshot.bandAnchorDate}
+            onSelect={(symbol, earnings) => { setSelectedEarnings(earnings); setSelected(symbol); }}
+            className="order-2 mt-8 md:order-2"
+          />
+        )}
+
+        <HomeWatchlist stocks={[...stocks, ...etfs]} />
 
           <Section
             id="watchlist"
-            className="order-2 md:mt-16"
+            className="order-4 mt-9 md:order-5 md:mt-16"
             eyebrow={pick("워치리스트", "Watchlist")}
             title={pick("Sigma 모니터", "Sigma monitor")}
             description={pick("종목을 눌러 상세를 확인하세요. 등락은 전일 종가 대비, σ는 이번 주 밴드 기준입니다.", "Select a symbol for details. Change is versus the prior close; sigma uses this week’s band.")}
@@ -222,8 +259,8 @@ export function Dashboard({
             </div>
           </Section>
 
-        <section id="market" className="order-3 mt-10 scroll-mt-32 md:order-1 md:mt-0">
-          <h2 className="mb-5 text-xl font-semibold md:hidden">{pick("시장 요약·일정", "Market summary & calendar")}</h2>
+        <section id="market" className="order-5 mt-12 scroll-mt-28 md:order-1 md:mt-0">
+          <h2 className="mb-5 text-xl font-semibold md:hidden">{pick("시장 요약", "Market summary")}</h2>
           <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,42rem)_minmax(0,1fr)] lg:gap-12">
             <div className="min-w-0">
               <p className="label-xs">
@@ -265,49 +302,32 @@ export function Dashboard({
                 sentence beside it, not a separate section to scroll to. */}
             <DataBasis snapshot={meta} className="max-w-md lg:justify-self-end" />
           </div>
-
-          {calendar && (
-            <WeekCalendar
-              calendar={calendar}
-              bandAnchorDate={snapshot.bandAnchorDate}
-              onSelect={(symbol, earnings) => { setSelectedEarnings(earnings); setSelected(symbol); }}
-              className="mt-8"
-            />
-          )}
-
-          <div
-            className={cn(
-              "mt-8 transition-opacity duration-200",
-              refreshing && "opacity-70",
-            )}
-            aria-busy={refreshing}
-          >
-            {/* The benchmarks come before the aggregate counts on purpose: a
-                dozen names past +1σ reads very differently depending on whether
-                the index went with them or not. */}
-            <div className="mb-6">
-              <p className="label-xs mb-3">{pick("벤치마크", "Benchmarks")}</p>
-              <IndexStrip stocks={stocks} onSelect={setSelected} />
-            </div>
-
-            <SummaryCards
-              counts={counts}
-              previousCounts={previousCounts}
-              stocks={stocks}
-            />
-
-            <div className="mt-3">
-              <SigmaOverview
-                stocks={stocks}
-                counts={counts}
-                onSelect={setSelected}
-                opening={opening}
-              />
-            </div>
-          </div>
         </section>
 
-        <div className="order-4 mt-12 space-y-16 sm:mt-20 sm:space-y-20">
+        <div
+          className={cn(
+            "order-6 mt-6 transition-opacity duration-200 md:order-4",
+            refreshing && "opacity-70",
+          )}
+          aria-busy={refreshing}
+        >
+          <SummaryCards
+            counts={counts}
+            previousCounts={previousCounts}
+            stocks={stocks}
+          />
+
+          <div className="mt-3">
+            <SigmaOverview
+              stocks={stocks}
+              counts={counts}
+              onSelect={setSelected}
+              opening={opening}
+            />
+          </div>
+        </div>
+
+        <div className="order-7 mt-12 space-y-16 sm:mt-20 sm:space-y-20 md:order-6">
 
 
           <Section
