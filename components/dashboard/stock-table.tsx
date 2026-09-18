@@ -70,19 +70,24 @@ export function StockTable({
   const { pick } = useLocale();
   return (
     <div className="glass overflow-hidden p-0">
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left">
+      <div className="sm:overflow-x-auto">
+        {/* Fixed layout on phones only. Auto layout sizes the symbol column to
+            the longest company name, which pushed the table 90px past the
+            viewport and put σ — the column the view exists for — behind a
+            sideways swipe. Fixed caps it and lets the name truncate instead.
+            From `sm` up there is room, so the natural widths come back. */}
+        <table className="w-full table-fixed border-collapse text-left sm:table-auto">
           <caption className="sr-only">
             {pick("현재 필터에 맞는 종목의 가격, 일일 등락, ±1σ 밴드와 현재 위치", "Every symbol matching the current filter, with its price, daily change, ±1σ band and current position inside it.")}
           </caption>
           <thead>
             <tr className="border-b border-border/60">
-              <Th><span className="sr-only">{pick("관심", "Watch")}</span></Th>
+              <Th className="w-11 sm:w-auto"><span className="sr-only">{pick("관심", "Watch")}</span></Th>
               <Th className="pl-4">{pick("종목", "Symbol")}</Th>
               <Th align="right" className="hidden sm:table-cell">
                 {pick("가격", "Price")}
               </Th>
-              <Th align="right">{pick("등락", "Change")}</Th>
+              <Th align="right" className="w-[4.5rem] sm:w-auto">{pick("등락", "Change")}</Th>
               <Th align="right" className="hidden lg:table-cell">
                 ±1σ {pick("범위", "range")}
               </Th>
@@ -97,7 +102,7 @@ export function StockTable({
                   is hidden and σ would otherwise butt straight up against the
                   change figure — two right-aligned numbers touching, which
                   reads as one. */}
-              <Th align="right" className="pl-5 pr-4 xl:pr-0">
+              <Th align="right" className="w-20 pl-2 pr-3 sm:w-auto sm:pl-5 sm:pr-4 xl:pr-0">
                 σ
               </Th>
               <Th align="right" className="hidden pr-4 xl:table-cell">
@@ -189,7 +194,7 @@ function Row({
       <span className="ml-2 hidden text-[11px] text-muted-foreground/80 sm:inline">
         {showSector ? stock.sector : stock.name}
       </span>
-      <span className="block max-w-[16rem] truncate text-[11px] text-muted-foreground/70 sm:hidden">
+      <span className="block truncate text-[11px] text-muted-foreground/70 sm:hidden">
         {stock.name}
       </span>
     </>
@@ -223,7 +228,7 @@ function Row({
             if (!href && onSelect && opensPanel(event, window.matchMedia("(min-width: 768px)").matches)) {
               event.preventDefault(); onSelect(stock.symbol);
             }
-          }} aria-label={label} className={cn(cellClass, "inline-flex min-h-11 flex-col justify-center")}>
+          }} aria-label={label} className={cn(cellClass, "flex min-h-11 w-full min-w-0 flex-col justify-center sm:inline-flex sm:w-auto")}>
           {symbolBody}
         </Link>
       </td>
@@ -259,7 +264,7 @@ function Row({
 
       <td
         className={cn(
-          "num py-2.5 pl-5 pr-4 text-right text-[13px] font-semibold xl:pr-0",
+          "num py-2.5 pl-2 pr-3 text-right text-[13px] font-semibold sm:pl-5 sm:pr-4 xl:pr-0",
           stock.status === "NORMAL" ? "text-foreground/75" : "state-tint",
         )}
       >

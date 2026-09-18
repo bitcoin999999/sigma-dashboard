@@ -1,5 +1,5 @@
 export const WATCHLIST_KEY = "sigma-personal-watchlist";
-export const WATCHLIST_LIMIT = 10;
+export const WATCHLIST_LIMIT = 20;
 
 /** Unknown/off-board symbols are preserved in storage until explicitly removed. */
 export function normalizeSymbols(values: unknown, valid?: ReadonlySet<string>): string[] {

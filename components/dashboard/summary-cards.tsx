@@ -29,7 +29,40 @@ export function SummaryCards({
   }));
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <>
+      {/* Four numbers and four short labels do not need four cards. Below `lg`
+          they are one strip: the counts stay legible, the framing that cost a
+          screen's worth of height goes away, and the rail — the only part that
+          says anything the numbers do not — moves under all four. */}
+      <div className="glass grid grid-cols-4 gap-px p-3 lg:hidden">
+        <CompactStat
+          label={pick("추적", "Tracked")}
+          value={counts.total}
+        />
+        <CompactStat
+          label={<>+1{SIGMA}</>}
+          value={counts.beyondUpper1}
+          delta={counts.beyondUpper1 - previousCounts.beyondUpper1}
+          status="UPPER_1SIGMA"
+        />
+        <CompactStat
+          label={<>+1.5{SIGMA}</>}
+          value={counts.overheated}
+          delta={counts.overheated - previousCounts.overheated}
+          status="OVERHEATED"
+        />
+        <CompactStat
+          label={<>−1.5{SIGMA}</>}
+          value={counts.oversold}
+          delta={counts.oversold - previousCounts.oversold}
+          status="OVERSOLD"
+        />
+        <div className="col-span-4">
+          <DistributionRail distribution={distribution} total={counts.total} />
+        </div>
+      </div>
+
+      <div className="hidden grid-cols-2 gap-3 lg:grid lg:grid-cols-4">
       <SummaryCard
         icon={Activity}
         label={pick("시장 상태", "Market Status")}
@@ -69,6 +102,44 @@ export function SummaryCards({
         delta={counts.oversold - previousCounts.oversold}
         status="OVERSOLD"
       />
+      </div>
+    </>
+  );
+}
+
+function CompactStat({
+  label,
+  value,
+  delta,
+  status,
+}: {
+  label: React.ReactNode;
+  value: number;
+  delta?: number;
+  status?: SigmaStatus;
+}) {
+  return (
+    <div
+      style={status ? statusStyle(status) : undefined}
+      className="border-l border-border/50 px-2 first:border-0 first:pl-0"
+    >
+      <p className="label-xs truncate">{label}</p>
+      <p className="mt-1 flex items-baseline gap-1">
+        <span
+          className={cn(
+            "num text-xl leading-none font-semibold tracking-tight",
+            status && "state-tint",
+          )}
+        >
+          {value}
+        </span>
+        {delta !== undefined && delta !== 0 && (
+          <span className="num text-[11px] text-muted-foreground">
+            {delta > 0 ? "+" : "−"}
+            {Math.abs(delta)}
+          </span>
+        )}
+      </p>
     </div>
   );
 }

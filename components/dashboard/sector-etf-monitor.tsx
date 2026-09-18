@@ -1,7 +1,7 @@
 "use client";
 
 import { useLocale } from "@/components/locale-provider";
-import { formatBandWidth, formatCurrency, formatSigma } from "@/lib/format";
+import { formatCurrency, formatSigma } from "@/lib/format";
 import { statusStyle } from "@/lib/sigma";
 import type { SectorEtfData } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -10,6 +10,8 @@ import { ChangePill } from "./change-pill";
 import { SIGMA } from "./sigma-glyph";
 import { SigmaRangeBar } from "./sigma-range-bar";
 import { StatusBadge } from "./status-badge";
+import { StockCard } from "./stock-card";
+import { GRID } from "./stock-grid";
 
 interface SectorEtfMonitorProps {
   etfs: SectorEtfData[];
@@ -19,9 +21,13 @@ interface SectorEtfMonitorProps {
 export function SectorEtfMonitor({ etfs, onSelect }: SectorEtfMonitorProps) {
   const { pick } = useLocale();
   return (
-    <div className="glass overflow-hidden">
+    <>
+      {/* Two trees rather than one: `glass` is a component class, so it cannot
+          be toggled per breakpoint, and the card grid brings its own surface
+          below `md`. Nesting them would draw the border twice. */}
+      <div className="glass hidden overflow-hidden md:block">
       {/* Dense table on wide screens — this section is reference data. */}
-      <table className="hidden w-full border-collapse text-sm md:table">
+      <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="border-b border-border/70">
             <Th className="pl-5 text-left">{pick("종목", "Symbol")}</Th>
@@ -97,63 +103,15 @@ export function SectorEtfMonitor({ etfs, onSelect }: SectorEtfMonitorProps) {
           ))}
         </tbody>
       </table>
+      </div>
 
-      <ul className="divide-y divide-border/50 md:hidden">
+      {/* Same rows as the board below `md`, so the two monitors read alike. */}
+      <div className={cn(GRID, "md:hidden")}>
         {etfs.map((etf) => (
-          <li key={etf.symbol}>
-            <button
-              type="button"
-              onClick={() => onSelect(etf.symbol)}
-              style={statusStyle(etf.status)}
-              className="w-full p-4 text-left transition-colors hover:bg-[color-mix(in_oklch,var(--foreground)_4%,transparent)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="num text-[13px] font-semibold">
-                    {etf.symbol}
-                  </div>
-                  <div className="mt-0.5 text-[11px] text-muted-foreground">
-                    {etf.sectorLabel}
-                  </div>
-                </div>
-                <StatusBadge status={etf.status} />
-              </div>
-
-              <div className="mt-3 flex items-end justify-between gap-3">
-                <span className="num text-lg leading-none font-semibold">
-                  {formatCurrency(etf.price)}
-                </span>
-                <ChangePill value={etf.changePercent} />
-              </div>
-
-              <div className="mt-3.5">
-                <SigmaRangeBar zScore={etf.zScore} status={etf.status} />
-              </div>
-
-              <div className="mt-3 flex items-center justify-between">
-                <span className="num min-w-0 truncate text-[11px] text-muted-foreground/80">
-                  {formatCurrency(etf.sigma1Lower)} –{" "}
-                  {formatCurrency(etf.sigma1Upper)}
-                  <span className="ml-1.5 text-muted-foreground/60">
-                    {formatBandWidth(etf.sigmaPercent)}
-                  </span>
-                </span>
-                <span
-                  className={cn(
-                    "num text-xs font-semibold",
-                    etf.status === "NORMAL"
-                      ? "text-foreground/75"
-                      : "state-tint",
-                  )}
-                >
-                  {formatSigma(etf.zScore)}
-                </span>
-              </div>
-            </button>
-          </li>
+          <StockCard key={etf.symbol} stock={etf} onSelect={onSelect} showSector={false} />
         ))}
-      </ul>
-    </div>
+      </div>
+    </>
   );
 }
 
