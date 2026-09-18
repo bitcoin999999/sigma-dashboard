@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { opensPanel } from "@/lib/stock-navigation";
+import { WatchButton } from "@/components/watchlist/watch-button";
 import { Anchor } from "lucide-react";
 
 import { useLocale } from "@/components/locale-provider";
@@ -20,17 +22,11 @@ interface StockCardProps {
   stock: StockData;
   /** Opens the detail panel in place. Ignored when `href` is given. */
   onSelect?: (symbol: string) => void;
-  /**
-   * Navigates instead of opening the panel — used by the server-rendered
-   * screener pages, which have no panel to open.
-   *
-   * The card swaps its own tag rather than being wrapped in a link, because a
-   * `<button>` inside an `<a>` is invalid HTML: the browser resolves the nesting
-   * however it likes, and keyboard users get two focus stops for one card.
-   */
+  /** Navigates instead of opening the panel — used by screener pages. */
   href?: string;
   /** Off inside a sector block, where the heading already said it. */
   showSector?: boolean;
+  showWatch?: boolean;
 }
 
 export function StockCard({
@@ -38,6 +34,7 @@ export function StockCard({
   onSelect,
   href,
   showSector = true,
+  showWatch = true,
 }: StockCardProps) {
   const { locale, pick } = useLocale();
   const isExtreme =
@@ -51,7 +48,7 @@ export function StockCard({
 
   const label = `${stock.symbol}, ${stock.name}. ${STATUS_COPY[locale][stock.status].longLabel}.${
     floor ? pick(" −1σ 하단에 GEX floor.", " GEX floor on the −1σ edge.") : ""
-  } ${href ? pick("페이지 열기.", "Open page.") : pick("상세 열기.", "Open details.")}`;
+  } ${pick("상세 열기.", "Open details.")}`;
 
   const className = cn(
     "glass glass-interactive group block w-full cursor-pointer p-4 text-left",
@@ -132,28 +129,21 @@ export function StockCard({
     </>
   );
 
-  if (href) {
-    return (
+  return (
+    <div className="relative min-w-0">
       <Link
-        href={href}
+        href={href ?? `/symbol/${stock.symbol}`}
+        prefetch={false}
+        onClick={(event) => {
+          if (!href && onSelect && opensPanel(event, window.matchMedia("(min-width: 768px)").matches)) {
+            event.preventDefault(); onSelect(stock.symbol);
+          }
+        }}
         style={statusStyle(stock.status)}
         aria-label={label}
-        className={className}
-      >
-        {body}
-      </Link>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect?.(stock.symbol)}
-      style={statusStyle(stock.status)}
-      aria-label={label}
-      className={className}
-    >
-      {body}
-    </button>
+        className={cn(className, showWatch && "pr-16")}
+      >{body}</Link>
+      {showWatch && <div className="absolute right-2 top-2"><WatchButton symbol={stock.symbol} compact /></div>}
+    </div>
   );
 }

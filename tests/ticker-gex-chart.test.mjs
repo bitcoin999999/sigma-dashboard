@@ -22,12 +22,13 @@ const sigma=compile('../lib/sigma.ts');
 const level=(strike,netGex)=>({strike,netGex});
 const profile=(support=[],resistance=[],rows=[...support,...resistance])=>({asOf:'2026-09-15',support,resistance,profile:rows});
 
-test('ticker directory is small, unique, alphabetical and matches prefixes case-insensitively',()=>{
+test('ticker directory is small, unique, alphabetical and matches ticker prefixes and company names case-insensitively',()=>{
   const items=search.tickerDirectory([{symbol:'AVGO',name:'Broadcom',history:['large']},{symbol:'ASML',name:'ASML'},{symbol:'AAPL',name:'Apple'},{symbol:'AVGO',name:'Broadcom'},{symbol:'META',name:'Meta'}]);
-  assert.deepEqual(search.matchingTickers(items,' a ').map(i=>i.symbol),['AAPL','ASML','AVGO']);
+  assert.deepEqual(search.matchingTickers(items,' a ').map(i=>i.symbol),['AAPL','ASML','AVGO','META']);
   assert.deepEqual(search.matchingTickers(items,'AV').map(i=>i.symbol),['AVGO']);
   assert.deepEqual(search.matchingTickers(items,''),[]);
   assert.deepEqual(search.matchingTickers(items,'XYZ'),[]);
+  assert.deepEqual(search.matchingTickers(items,'broadcom').map(i=>i.symbol),['AVGO']);
   assert.ok(items.every(i=>Object.keys(i).length===2));
 });
 test('missing or one-sided GEX never invents the other side',()=>{

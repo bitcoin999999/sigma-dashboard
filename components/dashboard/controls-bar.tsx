@@ -82,7 +82,7 @@ export function ControlsBar({
               onClick={() => onFilterChange(option.key)}
               aria-pressed={active}
               className={cn(
-                "inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
+                "inline-flex h-11 md:h-8 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-medium transition-colors",
                 "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                 active
                   ? "border-transparent bg-foreground text-background"
@@ -103,8 +103,8 @@ export function ControlsBar({
         })}
       </div>
 
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1 lg:w-56 lg:flex-none">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="relative w-full md:w-auto md:flex-1 lg:w-56 lg:flex-none">
           <Search
             className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground"
             aria-hidden
@@ -115,14 +115,14 @@ export function ControlsBar({
             onChange={(event) => onQueryChange(event.target.value)}
             placeholder={pick("티커 검색", "Search ticker")}
             aria-label={pick("티커 검색", "Search ticker")}
-            className="h-8 pr-8 pl-8 text-sm"
+            className="h-11 md:h-8 pr-12 pl-8 text-base md:text-sm"
           />
           {query ? (
             <button
               type="button"
               onClick={() => onQueryChange("")}
               aria-label={pick("검색 초기화", "Clear search")}
-              className="absolute top-1/2 right-2 -translate-y-1/2 rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="absolute top-1/2 right-0 flex size-11 md:size-8 items-center justify-center -translate-y-1/2 rounded text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               <X className="size-3.5" />
             </button>
@@ -143,7 +143,7 @@ export function ControlsBar({
         >
           <SelectTrigger
             aria-label={pick("종목 정렬", "Sort stocks")}
-            className="h-8 min-w-[9.5rem] gap-2"
+            className="min-h-11 md:min-h-8 min-w-[9.5rem] gap-2"
           >
             <ArrowUpDown
               className="size-3.5 text-muted-foreground"

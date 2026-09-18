@@ -177,7 +177,7 @@ function DetailContent({ stock, earnings }: { stock: StockData; earnings?: Earni
           href={`/symbol/${stock.symbol}`}
           className="mt-5 inline-flex h-9 items-center gap-1.5 rounded-full border border-border/80 px-3.5 text-xs font-medium transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          {pick(`${stock.symbol} 페이지 열기`, `Open ${stock.symbol} page`)}
+          {pick(`${stock.symbol} 전체 차트 열기`, `Open ${stock.symbol} full chart`)}
           <ArrowUpRight className="size-3.5" aria-hidden />
         </Link>
 

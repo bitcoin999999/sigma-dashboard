@@ -47,7 +47,7 @@ export function ViewToggle({ value, onChange, className }: ViewToggleProps) {
             aria-label={label}
             title={label}
             className={cn(
-              "flex size-7 cursor-pointer items-center justify-center rounded-[6px] transition-colors",
+              "flex size-11 md:size-7 cursor-pointer items-center justify-center rounded-[6px] transition-colors",
               "focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-ring",
               active
                 ? "bg-[color-mix(in_oklch,var(--foreground)_9%,transparent)] text-foreground"

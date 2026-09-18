@@ -1,5 +1,7 @@
 "use client";
 
+import { useWatchlist, saveWatchlist } from "@/hooks/use-watchlist";
+import { normalizeSymbols, WATCHLIST_LIMIT } from "@/lib/watchlist";
 import { tickerDirectory } from "@/lib/ticker-search";
 
 import * as React from "react";
@@ -19,168 +21,45 @@ import { Input } from "@/components/ui/input";
 import type { MarketSnapshot, StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const STORAGE_KEY = "sigma-personal-watchlist";
-const WATCHLIST_LIMIT = 10;
 const SHARE_PARAM = "s";
-/** Search results shown at once. Long enough to browse, short enough to scan. */
 const SUGGESTION_LIMIT = 8;
-
-/**
- * Cleans an untrusted list of tickers into something safe to render.
- *
- * Both inputs are untrusted in the same way: a share URL is typed by whoever
- * sends it, and `localStorage` outlives the board — a list saved a month ago
- * can name symbols the publisher has since dropped. Anything not currently in
- * the snapshot is discarded rather than rendered as a blank card.
- */
-function normalizeSymbols(values: string[], valid: Set<string>): string[] {
-  const seen = new Set<string>();
-
-  for (const value of values) {
-    if (typeof value !== "string") continue;
-    const symbol = value.trim().toUpperCase();
-    if (!symbol || seen.has(symbol) || !valid.has(symbol)) continue;
-    seen.add(symbol);
-    if (seen.size >= WATCHLIST_LIMIT) break;
-  }
-
-  return [...seen];
-}
-
-function readStoredSymbols(valid: Set<string>): string[] {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-
-    return normalizeSymbols(parsed as string[], valid);
-  } catch {
-    // Corrupt JSON, a value written by something else, or storage blocked
-    // outright. None of those are worth taking the page down for.
-    return [];
-  }
-}
-
-function writeStoredSymbols(symbols: string[]): void {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(symbols));
-  } catch {
-    // Private browsing or a full quota. The list still works for this visit.
-  }
-}
-
-function readSharedSymbols(valid: Set<string>): string[] {
-  const raw = new URLSearchParams(window.location.search).get(SHARE_PARAM);
-  if (!raw) return [];
-  return normalizeSymbols(raw.split(","), valid);
-}
-
-interface Watchlist {
-  symbols: string[];
-  /**
-   * The list came in over a share link and has not been written to this
-   * browser yet. Kept separate from "empty" so a visitor opening someone
-   * else's link never silently overwrites their own saved watchlist.
-   */
-  shared: boolean;
-}
-
-/** Stable identity, so the empty case does not re-trigger every memo below. */
-const NO_SYMBOLS: string[] = [];
-
-const noSubscribe = () => () => {};
-
-/**
- * False on the server and through hydration, true on every render after.
- *
- * Neither `localStorage` nor the URL is readable while rendering on the
- * server, and reading them during hydration would make the first client render
- * disagree with the markup it is adopting. This says when it is safe to look.
- */
-function useHydrated(): boolean {
-  return React.useSyncExternalStore(
-    noSubscribe,
-    () => true,
-    () => false,
-  );
-}
 
 interface MySigmaClientProps {
   /** Every symbol in the current snapshot — the universe you can pick from. */
   stocks: StockData[];
   snapshot: MarketSnapshot;
+  sharedSymbols?: string;
 }
 
-export function MySigmaClient({ stocks, snapshot }: MySigmaClientProps) {
+export function MySigmaClient({ stocks, snapshot, sharedSymbols = "" }: MySigmaClientProps) {
   const { pick } = useLocale();
   const bySymbol = React.useMemo(
     () => new Map(stocks.map((stock) => [stock.symbol, stock])),
     [stocks],
   );
 
-  const hydrated = useHydrated();
-  /** Set on the first edit, from which point it is the list. */
-  const [edited, setEdited] = React.useState<Watchlist | null>(null);
+  const saved = useWatchlist();
+  // The page keys this component by the share query, so a new shared URL is a new draft.
+  const [sharedList, setSharedList] = React.useState<string[] | null>(() => {
+    const incoming = normalizeSymbols(sharedSymbols.split(","), new Set(bySymbol.keys()));
+    return incoming.length ? incoming : null;
+  });
   const [query, setQuery] = React.useState("");
   const [selected, setSelected] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
-
-  // A share link wins over storage: following someone's link and landing on
-  // your own watchlist would be the wrong answer to an explicit request.
-  const stored = React.useMemo<Watchlist | null>(() => {
-    if (!hydrated) return null;
-
-    const valid = new Set(bySymbol.keys());
-    const fromUrl = readSharedSymbols(valid);
-
-    return fromUrl.length > 0
-      ? { symbols: fromUrl, shared: true }
-      : { symbols: readStoredSymbols(valid), shared: false };
-  }, [hydrated, bySymbol]);
-
-  const list = edited ?? stored;
-  /** Nothing is readable until hydration, so the first paint has no list. */
-  const ready = list !== null;
-  const symbols = list?.symbols ?? NO_SYMBOLS;
-  const shared = list?.shared ?? false;
-
-  /**
-   * Applies an edit, and persists it unless the list is still someone else's.
-   *
-   * While `shared` is set the edit stays in memory: the visitor is looking at
-   * a link, and only the explicit Save below is treated as consent to replace
-   * whatever they had stored.
-   */
-  const update = React.useCallback(
-    (next: string[]) => {
-      setEdited({ symbols: next, shared });
-      if (!shared) writeStoredSymbols(next);
-    },
-    [shared],
-  );
-
-  const add = React.useCallback(
-    (symbol: string) => {
-      if (symbols.includes(symbol) || symbols.length >= WATCHLIST_LIMIT) return;
-      update([...symbols, symbol]);
-      setQuery("");
-    },
-    [symbols, update],
-  );
-
-  const remove = React.useCallback(
-    (symbol: string) => {
-      update(symbols.filter((entry) => entry !== symbol));
-    },
-    [symbols, update],
-  );
-
-  const save = React.useCallback(() => {
-    writeStoredSymbols(symbols);
-    setEdited({ symbols, shared: false });
-  }, [symbols]);
+  const ready = saved.ready;
+  const symbols = sharedList ?? saved.symbols;
+  const shared = sharedList !== null;
+  const update = (next: string[]) => {
+    if (shared) setSharedList(next);
+    else saveWatchlist(next);
+  };
+  const add = (symbol: string) => {
+    if (!ready || symbols.includes(symbol) || symbols.length >= WATCHLIST_LIMIT) return;
+    update([...symbols, symbol]); setQuery("");
+  };
+  const remove = (symbol: string) => update(symbols.filter((item) => item !== symbol));
+  const save = () => { saveWatchlist(symbols); setSharedList(null); };
 
   const watchlist = React.useMemo(
     () =>
@@ -242,6 +121,8 @@ export function MySigmaClient({ stocks, snapshot }: MySigmaClientProps) {
           </p>
         </div>
 
+        {!saved.persistent && <p role="status" className="mt-3 text-sm text-muted-foreground">{pick("브라우저 저장을 사용할 수 없어 이번 방문에만 유지됩니다.", "Storage unavailable; kept for this visit only.")}</p>}
+        {ready && symbols.filter((symbol) => !bySymbol.has(symbol)).map((symbol) => <div key={symbol} className="mt-3 flex items-center gap-3 text-sm"><span>{symbol} · {pick("현재 데이터 없음 · 저장 유지", "Unavailable · still saved")}</span><button type="button" className="min-h-11 rounded-lg border px-3" onClick={() => remove(symbol)}>{pick("관심 해제", "Remove")}</button></div>)}
         <ExploreNav sessionDate={snapshot.sessionDate} className="mt-7" />
 
         <DataBasis snapshot={snapshot} className="mt-7 max-w-4xl" />
@@ -266,14 +147,14 @@ export function MySigmaClient({ stocks, snapshot }: MySigmaClientProps) {
                 <Input
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
-                  disabled={full}
+                  disabled={full || !ready}
                   placeholder={
                     full
                       ? pick("워치리스트가 가득 찼습니다 — 추가하려면 하나를 삭제하세요", "Watchlist full — remove one to add another")
                       : "NVDA, Nvidia, Palantir…"
                   }
                   aria-label={pick("추가할 종목 검색", "Search symbols to add")}
-                  className="h-10 pl-9"
+                  className="h-11 pl-9 text-base"
                 />
               </div>
 
@@ -284,7 +165,7 @@ export function MySigmaClient({ stocks, snapshot }: MySigmaClientProps) {
                       <button
                         type="button"
                         onClick={() => add(stock.symbol)}
-                        className="flex w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
+                        className="flex min-h-11 w-full items-center gap-3 px-3.5 py-2.5 text-left transition-colors hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
                       >
                         <span className="num w-16 shrink-0 text-[13px] font-semibold">
                           {stock.symbol}
@@ -313,7 +194,7 @@ export function MySigmaClient({ stocks, snapshot }: MySigmaClientProps) {
           <Section
             eyebrow={pick("워치리스트", "Watchlist")}
             title={pick("내 종목", "Your symbols")}
-            description={pick("각 카드는 메인 보드와 같은 주간 σ 밴드를 사용합니다. 종목을 누르면 상세 패널이 열립니다.", "Each card sits on the same weekly σ band as the main board. Select one to open its detail panel.")}
+            description={pick("각 카드는 메인 보드와 같은 주간 σ 밴드를 사용합니다. 모바일에서 종목을 누르면 전체 차트가 열립니다.", "Each card sits on the same weekly σ band as the main board. Select one on mobile to open its full chart.")}
           >
             {shared && (
               <div className="glass mb-4 flex flex-wrap items-center justify-between gap-3 p-3.5">
@@ -323,7 +204,7 @@ export function MySigmaClient({ stocks, snapshot }: MySigmaClientProps) {
                 <button
                   type="button"
                   onClick={save}
-                  className="shrink-0 rounded-full border border-border/80 px-3 py-1.5 text-xs font-medium transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="min-h-11 shrink-0 rounded-full border border-border/80 px-3 py-1.5 text-xs font-medium transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
                 >
                   {pick("이 브라우저에 저장", "Save to this browser")}
                 </button>
@@ -342,18 +223,17 @@ export function MySigmaClient({ stocks, snapshot }: MySigmaClientProps) {
             ) : (
               <div className={GRID}>
                 {watchlist.map((stock) => (
-                  // The remove control is a sibling of the card, not a child:
-                  // the card is itself a button, and nesting one button inside
-                  // another is invalid HTML.
+                  // Keep the remove control beside the card so the detail link
+                  // and the destructive action remain independent targets.
                   <div key={stock.symbol} className="group/row relative">
-                    <StockCard stock={stock} onSelect={setSelected} />
+                    <StockCard stock={stock} onSelect={setSelected} showWatch={false} />
                     <button
                       type="button"
                       onClick={() => remove(stock.symbol)}
                       aria-label={pick(`My Sigma에서 ${stock.symbol} 삭제`, `Remove ${stock.symbol} from My Sigma`)}
                       // Sits on the corner rather than inside it: the card's own
                       // top-right already carries the status badge.
-                      className="absolute -top-2 -right-2 z-10 flex size-7 items-center justify-center rounded-full border border-border/60 bg-background text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-sm:opacity-100"
+                      className="absolute -top-2 -right-2 z-10 flex size-11 md:size-7 items-center justify-center rounded-full border border-border/60 bg-background text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100 hover:text-foreground focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring max-md:opacity-100"
                     >
                       <X className="size-3.5" aria-hidden />
                     </button>
@@ -375,13 +255,13 @@ export function MySigmaClient({ stocks, snapshot }: MySigmaClientProps) {
                   value={shareUrl}
                   aria-label={pick("공유 URL", "Share URL")}
                   onFocus={(event) => event.currentTarget.select()}
-                  className="num h-10 min-w-0 flex-1 text-xs"
+                  className="num h-11 min-w-0 flex-1 text-xs"
                 />
                 <button
                   type="button"
                   onClick={copyShareUrl}
                   className={cn(
-                    "inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border px-3.5 text-xs font-medium transition-colors",
+                    "inline-flex min-h-11 shrink-0 items-center gap-2 rounded-lg border px-3.5 text-xs font-medium transition-colors",
                     "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
                     copied
                       ? "border-up/50 text-up"

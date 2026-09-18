@@ -1,5 +1,7 @@
 "use client";
 
+import { HomeWatchlist } from "@/components/watchlist/home-watchlist";
+import { useBoardState } from "@/hooks/use-board-state";
 import { tickerDirectory } from "@/lib/ticker-search";
 
 import * as React from "react";
@@ -27,7 +29,6 @@ import type {
   Quote,
   SectorEtfData,
   SectorEtfQuote,
-  SortKey,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -62,11 +63,10 @@ export function Dashboard({
   const [liveQuotes, setLiveQuotes] = React.useState(quotes);
   const [liveSectorQuotes, setLiveSectorQuotes] = React.useState(sectorQuotes);
   const [meta, setMeta] = React.useState(snapshot);
+  const [refreshError, setRefreshError] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
 
-  const [query, setQuery] = React.useState("");
-  const [filter, setFilter] = React.useState<FilterKey>("ALL");
-  const [sort, setSort] = React.useState<SortKey>("ZSCORE");
+  const { query, setQuery, filter, setFilter, sort, setSort } = useBoardState();
   const [view, setView] = useStoredView();
   const [selected, setSelected] = React.useState<string | null>(null);
   const [selectedEarnings, setSelectedEarnings] = React.useState<EarningsEvent | null>(null);
@@ -140,12 +140,17 @@ export function Dashboard({
    */
   const refresh = React.useCallback(async () => {
     setRefreshing(true);
+    setRefreshError(false);
     try {
       const response = await fetch("/api/snapshot", { cache: "no-store" });
+      if (!response.ok) throw new Error("Snapshot refresh failed");
       const next = (await response.json()) as SnapshotPayload;
+      if (!Array.isArray(next.quotes) || !Array.isArray(next.sectorQuotes) || !next.snapshot?.generatedAt) throw new Error("Invalid snapshot");
       setLiveQuotes(next.quotes);
       setLiveSectorQuotes(next.sectorQuotes);
       setMeta(next.snapshot);
+    } catch {
+      setRefreshError(true);
     } finally {
       setRefreshing(false);
     }
@@ -154,7 +159,7 @@ export function Dashboard({
   const resetFilters = React.useCallback(() => {
     setQuery("");
     setFilter("ALL");
-  }, []);
+  }, [setQuery, setFilter]);
 
   return (
     <>
@@ -168,16 +173,64 @@ export function Dashboard({
 
       <main
         id="top"
-        className="mx-auto w-full max-w-[1600px] flex-1 px-4 pt-10 pb-4 sm:px-6 sm:pt-14 lg:px-8"
+        className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-4 pt-5 pb-4 sm:px-6 md:pt-14 lg:px-8"
       >
-        <section id="market" className="scroll-mt-24">
+        {refreshError && <p role="alert" className="order-first mb-3 text-sm text-down">{pick("새로고침하지 못했습니다. 마지막으로 받은 데이터를 표시합니다.", "Refresh failed. Showing the last received data.")}</p>}
+        <HomeWatchlist stocks={[...stocks, ...etfs]} snapshot={meta} />
+
+
+          <Section
+            id="watchlist"
+            className="order-2 md:mt-16"
+            eyebrow={pick("워치리스트", "Watchlist")}
+            title={pick("Sigma 모니터", "Sigma monitor")}
+            description={pick("종목을 눌러 상세를 확인하세요. 등락은 전일 종가 대비, σ는 이번 주 밴드 기준입니다.", "Select a symbol for details. Change is versus the prior close; sigma uses this week’s band.")}
+            action={
+              <span className="num text-xs text-muted-foreground">
+                {pick(`${counts.total}개 중 ${visible.length}개`, `${visible.length} of ${counts.total} symbols`)}
+              </span>
+            }
+          >
+            <div className="space-y-5">
+              <ControlsBar
+                query={query}
+                onQueryChange={setQuery}
+                filter={filter}
+                onFilterChange={setFilter}
+                sort={sort}
+                onSortChange={setSort}
+                view={view}
+                onViewChange={setView}
+                filterCounts={filterCounts}
+              />
+
+              <div
+                className={cn(
+                  "transition-opacity duration-200",
+                  refreshing && "opacity-70",
+                )}
+                aria-busy={refreshing}
+              >
+                <StockGrid
+                  stocks={visible}
+                  onSelect={setSelected}
+                  view={view}
+                  grouped={filter === "ALL"}
+                  onReset={resetFilters}
+                />
+              </div>
+            </div>
+          </Section>
+
+        <section id="market" className="order-3 mt-10 scroll-mt-32 md:order-1 md:mt-0">
+          <h2 className="mb-5 text-xl font-semibold md:hidden">{pick("시장 요약·일정", "Market summary & calendar")}</h2>
           <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,42rem)_minmax(0,1fr)] lg:gap-12">
             <div className="min-w-0">
               <p className="label-xs">
                 {pick("밴드 기간", "Band window")} · {meta.bandWindow} · {pick("앵커", "anchored")} {meta.bandAnchor}
                 {opening && pick(" · 월요일 개장", " · opens Monday")}
               </p>
-              <h1 className="mt-3 font-heading text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
+              <h1 className="hidden md:block mt-3 font-heading text-[1.75rem] leading-[1.15] font-semibold tracking-[-0.03em] text-balance sm:text-4xl">
                 <span className="text-gradient">
                   {pick("각 종목의 이번주 예상 주가 범위와 현재 위치", "Each stock’s expected price range this week and current position")}
                 </span>
@@ -254,48 +307,8 @@ export function Dashboard({
           </div>
         </section>
 
-        <div className="mt-16 space-y-16 sm:mt-20 sm:space-y-20">
-          <Section
-            id="watchlist"
-            eyebrow={pick("워치리스트", "Watchlist")}
-            title={pick("Sigma 모니터", "Sigma monitor")}
-            description={pick("모든 추적 종목의 현재 밴드 위치입니다. Overheated와 oversold 종목이 위에 배치됩니다. 필터가 없으면 섹터별로 나누고, 범위 이탈 종목이 많은 섹터부터 보여줍니다.", "Every tracked symbol with its live position on the band. Overheated and oversold names float to the top. With no filter applied the list breaks out by sector, the sector holding the most dislocated names first.")}
-            action={
-              <span className="num text-xs text-muted-foreground">
-                {pick(`${counts.total}개 중 ${visible.length}개`, `${visible.length} of ${counts.total} symbols`)}
-              </span>
-            }
-          >
-            <div className="space-y-5">
-              <ControlsBar
-                query={query}
-                onQueryChange={setQuery}
-                filter={filter}
-                onFilterChange={setFilter}
-                sort={sort}
-                onSortChange={setSort}
-                view={view}
-                onViewChange={setView}
-                filterCounts={filterCounts}
-              />
+        <div className="order-4 mt-12 space-y-16 sm:mt-20 sm:space-y-20">
 
-              <div
-                className={cn(
-                  "transition-opacity duration-200",
-                  refreshing && "opacity-70",
-                )}
-                aria-busy={refreshing}
-              >
-                <StockGrid
-                  stocks={visible}
-                  onSelect={setSelected}
-                  view={view}
-                  grouped={filter === "ALL"}
-                  onReset={resetFilters}
-                />
-              </div>
-            </div>
-          </Section>
 
           <Section
             id="lastweek"

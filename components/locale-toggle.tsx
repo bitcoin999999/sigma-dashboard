@@ -29,7 +29,7 @@ export function LocaleToggle() {
             aria-pressed={active}
             title={option.label}
             className={cn(
-              "flex size-7 items-center justify-center rounded-md text-base leading-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+              "flex size-11 md:size-7 items-center justify-center rounded-md text-base leading-none transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
               active
                 ? "bg-[color-mix(in_oklch,var(--foreground)_10%,transparent)]"
                 : "opacity-45 hover:opacity-100",

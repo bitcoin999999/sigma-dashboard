@@ -1,3 +1,5 @@
+import { WatchButton } from "@/components/watchlist/watch-button";
+import { SymbolShare } from "@/components/share/symbol-share";
 import { tickerDirectory } from "@/lib/ticker-search";
 import type { Metadata } from "next";
 import Link from "next/link";
@@ -184,16 +186,21 @@ export default async function SymbolPage({ params }: Params) {
             ))}
           </dl>
 
-          <div className="mt-8 flex flex-wrap gap-2">
+          <p className="mt-5 text-xs leading-relaxed text-muted-foreground">{pick(locale, "표시 가격", "Price basis")}: {snapshot.sessionDate} {pick(locale, "미국 정규장 종가 · 차트 봉과 GEX OI 기준 시각은 차트에 별도 표시합니다.", "US regular-session close · candle and GEX OI timestamps are shown separately on the chart.")}</p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            <WatchButton symbol={stock.symbol} />
+          </div>
+          <div className="mt-3"><SymbolShare symbol={stock.symbol} /></div>
+          <div className="mt-4 flex flex-wrap gap-2">
             <Link
-              href={`/my-sigma?s=${stock.symbol}`}
-              className="inline-flex h-9 items-center rounded-full border border-border/80 px-3.5 text-xs font-medium transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              href="/my-sigma"
+              className="inline-flex min-h-11 items-center rounded-full border border-border/80 px-3.5 text-xs font-medium transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
-              {pick(locale, "My Sigma에서 열기", "Open in My Sigma")}
+              {pick(locale, "관심 목록 보기", "View watchlist")}
             </Link>
             <Link
               href="/"
-              className="inline-flex h-9 items-center rounded-full border border-border/80 px-3.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="inline-flex min-h-11 items-center rounded-full border border-border/80 px-3.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
             >
               {pick(locale, "전체 보드 보기", "See the whole board")}
             </Link>

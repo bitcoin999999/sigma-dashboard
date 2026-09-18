@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { opensPanel } from "@/lib/stock-navigation";
+import { WatchButton } from "@/components/watchlist/watch-button";
 import { Anchor } from "lucide-react";
 
 import { useLocale } from "@/components/locale-provider";
@@ -16,13 +18,14 @@ import { STATUS_COPY } from "@/lib/i18n";
 import { statusStyle, type SectorGroup } from "@/lib/sigma";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { rememberBoardScroll } from "@/lib/board-navigation";
 
 import { SectorHeading } from "./sector-heading";
 import { SigmaRangeBar } from "./sigma-range-bar";
 import { StatusBadge } from "./status-badge";
 
 /** Every column the header declares — the width a separator row has to span. */
-const COLUMNS = 7;
+const COLUMNS = 8;
 
 interface StockTableProps {
   stocks: StockData[];
@@ -74,6 +77,7 @@ export function StockTable({
           </caption>
           <thead>
             <tr className="border-b border-border/60">
+              <Th><span className="sr-only">{pick("관심", "Watch")}</span></Th>
               <Th className="pl-4">{pick("종목", "Symbol")}</Th>
               <Th align="right" className="hidden sm:table-cell">
                 {pick("가격", "Price")}
@@ -193,7 +197,11 @@ function Row({
 
   return (
     <tr
-      onClick={() => (href ? router.push(href) : onSelect?.(stock.symbol))}
+      onClick={(event) => {
+        if ((event.target as Element).closest("a,button")) return;
+        if (!href && onSelect && opensPanel(event, window.matchMedia("(min-width: 768px)").matches)) onSelect(stock.symbol);
+        else { rememberBoardScroll(); router.push(href ?? `/symbol/${stock.symbol}`); }
+      }}
       style={statusStyle(stock.status)}
       className={cn(
         "cursor-pointer border-b border-border/40 transition-colors last:border-0",
@@ -207,33 +215,17 @@ function Row({
         floor && "gex-floor-row",
       )}
     >
-      <td className="py-2.5 pl-4">
-        {href ? (
-          // Stops at the cell so the row's own handler does not push the same
-          // route a second time on top of the link's navigation.
-          <Link
-            href={href}
-            onClick={(event) => event.stopPropagation()}
-            aria-label={label}
-            className={cellClass}
-          >
-            {symbolBody}
-          </Link>
-        ) : (
-          <button
-            type="button"
-            onClick={(event) => {
-              // The row already handles the click; without this the panel would
-              // open twice and the second call would fight the first.
-              event.stopPropagation();
-              onSelect?.(stock.symbol);
-            }}
-            aria-label={label}
-            className={cellClass}
-          >
-            {symbolBody}
-          </button>
-        )}
+      <td className="w-12 pl-1"><WatchButton symbol={stock.symbol} compact /></td>
+      <td className="py-2.5 pl-2">
+        <Link href={href ?? `/symbol/${stock.symbol}`} prefetch={false}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (!href && onSelect && opensPanel(event, window.matchMedia("(min-width: 768px)").matches)) {
+              event.preventDefault(); onSelect(stock.symbol);
+            }
+          }} aria-label={label} className={cn(cellClass, "inline-flex min-h-11 flex-col justify-center")}>
+          {symbolBody}
+        </Link>
       </td>
 
       <td className="num hidden py-2.5 text-right text-[13px] sm:table-cell">

@@ -33,8 +33,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function MySigmaPage() {
+export default async function MySigmaPage({ searchParams }: { searchParams: Promise<{ s?: string | string[] }> }) {
+  const query = await searchParams;
+  const sharedSymbols = typeof query.s === "string" ? query.s : "";
   const { snapshot, all } = await loadBoard();
 
-  return <MySigmaClient stocks={all} snapshot={snapshot} />;
+  return <MySigmaClient key={sharedSymbols} stocks={all} snapshot={snapshot} sharedSymbols={sharedSymbols} />;
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { RefreshCw } from "lucide-react";
 
+import { MobileNav } from "./mobile-nav";
 import { TickerSearch } from "./ticker-search";
 import type { TickerSearchItem } from "@/lib/ticker-search";
 import { LocaleToggle } from "@/components/locale-toggle";
@@ -168,6 +169,7 @@ export function NavBar({
   ];
 
   return (
+    <>
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/60 backdrop-blur-xl supports-[backdrop-filter]:bg-background/45">
       {/* Shorter on phones so the second nav row below can carry full-size tap
           targets without the sticky header eating an eighth of the viewport. */}
@@ -227,7 +229,7 @@ export function NavBar({
               onClick={onRefresh}
               disabled={refreshing}
               aria-label={pick("시세 새로고침", "Refresh quotes")}
-              className="flex size-8 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
+              className="flex size-11 md:size-8 items-center justify-center rounded-lg border border-border/70 text-muted-foreground transition-colors hover:border-border hover:bg-[color-mix(in_oklch,var(--foreground)_6%,transparent)] hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-60"
             >
               <RefreshCw
                 className={cn("size-3.5", refreshing && "animate-spin")}
@@ -236,15 +238,16 @@ export function NavBar({
             </button>
           )}
 
-          <TickerSearch items={tickers} />
+          <div className="hidden md:block"><TickerSearch items={tickers} /></div>
           <LocaleToggle />
           <ThemeToggle />
         </div>
       </div>
 
+      <div className="px-4 pb-3 md:hidden"><TickerSearch items={tickers} expandedWidth /></div>
       <nav
         aria-label={pick("주요 메뉴", "Sections")}
-        className="flex items-center gap-1 overflow-x-auto border-t border-border/50 px-3 py-1 min-[1380px]:hidden"
+        className="hidden md:flex items-center gap-1 overflow-x-auto border-t border-border/50 px-3 py-1 min-[1380px]:hidden"
       >
         {links.map((link) => (
           <NavItem
@@ -260,5 +263,7 @@ export function NavBar({
         ))}
       </nav>
     </header>
+    <MobileNav sessionDate={snapshot.sessionDate} />
+    </>
   );
 }

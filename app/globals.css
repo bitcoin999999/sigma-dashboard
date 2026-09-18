@@ -392,3 +392,15 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Mobile navigation leaves room for the keyboard and safe-area. */
+html { scroll-padding-top: 8rem; }
+.mobile-bottom-nav [aria-current="page"] { color: var(--primary); background: color-mix(in oklch, var(--primary) 8%, transparent); }
+@media (max-width: 767px) {
+  body:has(input:focus, textarea:focus) .mobile-bottom-nav { display: none; }
+  #watchlist { scroll-margin-top: 8rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}

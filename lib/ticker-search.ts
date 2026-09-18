@@ -11,5 +11,5 @@ export function tickerDirectory(items: readonly TickerSearchItem[]): TickerSearc
 
 export function matchingTickers(items: readonly TickerSearchItem[], query: string): TickerSearchItem[] {
   const prefix = query.trim().toUpperCase();
-  return prefix ? items.filter((item) => item.symbol.toUpperCase().startsWith(prefix)) : [];
+  return prefix ? items.filter((item) => (item.symbol.toUpperCase().startsWith(prefix) || item.name.toUpperCase().includes(prefix))) : [];
 }
