@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import type { MouseEvent } from "react";
+
 import { ChangePill } from "@/components/dashboard/change-pill";
 import { PriceChart } from "@/components/dashboard/price-chart";
 import { SigmaRangeBar } from "@/components/dashboard/sigma-range-bar";
@@ -7,6 +10,7 @@ import { useLocale } from "@/components/locale-provider";
 import { formatBandWidth, formatCurrency, formatSigma } from "@/lib/format";
 import { STATUS_COPY } from "@/lib/i18n";
 import { statusStyle } from "@/lib/sigma";
+import { opensPanel } from "@/lib/stock-navigation";
 import type { StockData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -35,6 +39,30 @@ interface IndexStripProps {
   stocks: StockData[];
   onSelect: (symbol: string) => void;
   className?: string;
+}
+
+/**
+ * The same destination and the same desktop-only panel interception a watchlist
+ * card uses: an index is a symbol like any other, and clicking one should land
+ * where clicking NVDA lands rather than in a strip-specific behaviour.
+ */
+function indexLink(
+  stock: StockData,
+  onSelect: (symbol: string) => void,
+  label: string,
+) {
+  return {
+    href: `/symbol/${stock.symbol}`,
+    prefetch: false as const,
+    style: statusStyle(stock.status),
+    "aria-label": label,
+    onClick: (event: MouseEvent<HTMLAnchorElement>) => {
+      if (opensPanel(event, window.matchMedia("(min-width: 768px)").matches)) {
+        event.preventDefault();
+        onSelect(stock.symbol);
+      }
+    },
+  };
 }
 
 export function IndexStrip({ stocks, onSelect, className }: IndexStripProps) {
@@ -93,11 +121,12 @@ function IndexRow({
   const meta = STATUS_COPY[locale][stock.status];
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(stock.symbol)}
-      style={statusStyle(stock.status)}
-      aria-label={`${stock.symbol}, ${formatSigma(stock.zScore)}, ${meta.longLabel}`}
+    <Link
+      {...indexLink(
+        stock,
+        onSelect,
+        `${stock.symbol}, ${formatSigma(stock.zScore)}, ${meta.longLabel}`,
+      )}
       className="flex min-h-[4.25rem] w-full cursor-pointer items-center gap-3 px-4 py-3 text-left active:bg-[color-mix(in_oklch,var(--foreground)_5%,transparent)] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
     >
       <div className="min-w-0 flex-1">
@@ -139,7 +168,7 @@ function IndexRow({
         </span>
         <ChangePill value={stock.changePercent} showIcon={false} />
       </div>
-    </button>
+    </Link>
   );
 }
 
@@ -156,13 +185,14 @@ function IndexCard({
     stock.status === "OVERHEATED" || stock.status === "OVERSOLD";
 
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(stock.symbol)}
-      style={statusStyle(stock.status)}
-      aria-label={`${stock.symbol}, ${formatSigma(stock.zScore)}, ${meta.longLabel}`}
+    <Link
+      {...indexLink(
+        stock,
+        onSelect,
+        `${stock.symbol}, ${formatSigma(stock.zScore)}, ${meta.longLabel}`,
+      )}
       className={cn(
-        "glass glass-interactive group w-full cursor-pointer p-4 text-left",
+        "glass glass-interactive group block w-full cursor-pointer p-4 text-left",
         isExtreme &&
           "border-[color-mix(in_oklch,var(--state)_34%,transparent)] shadow-[0_0_0_1px_color-mix(in_oklch,var(--state)_14%,transparent),0_18px_44px_-32px_var(--state)]",
       )}
@@ -234,6 +264,6 @@ function IndexCard({
           {meta.longLabel}
         </span>
       </div>
-    </button>
+    </Link>
   );
 }

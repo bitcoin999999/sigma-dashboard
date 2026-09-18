@@ -210,7 +210,7 @@ export function Dashboard({
             calendar={calendar}
             bandAnchorDate={snapshot.bandAnchorDate}
             onSelect={(symbol, earnings) => { setSelectedEarnings(earnings); setSelected(symbol); }}
-            className="order-2 mt-8 md:order-2"
+            className="order-4 mt-8 md:order-2"
           />
         )}
 
@@ -218,7 +218,7 @@ export function Dashboard({
 
           <Section
             id="watchlist"
-            className="order-4 mt-9 md:order-5 md:mt-16"
+            className="order-6 mt-9 md:order-5 md:mt-16"
             eyebrow={pick("워치리스트", "Watchlist")}
             title={pick("Sigma 모니터", "Sigma monitor")}
             description={pick("종목을 눌러 상세를 확인하세요. 등락은 전일 종가 대비, σ는 이번 주 밴드 기준입니다.", "Select a symbol for details. Change is versus the prior close; sigma uses this week’s band.")}
@@ -259,7 +259,7 @@ export function Dashboard({
             </div>
           </Section>
 
-        <section id="market" className="order-5 mt-12 scroll-mt-28 md:order-1 md:mt-0">
+        <section id="market" className="order-2 mt-9 scroll-mt-28 md:order-1 md:mt-0">
           <h2 className="mb-5 text-xl font-semibold md:hidden">{pick("시장 요약", "Market summary")}</h2>
           <div className="grid items-end gap-8 lg:grid-cols-[minmax(0,42rem)_minmax(0,1fr)] lg:gap-12">
             <div className="min-w-0">
@@ -306,7 +306,7 @@ export function Dashboard({
 
         <div
           className={cn(
-            "order-6 mt-6 transition-opacity duration-200 md:order-4",
+            "order-3 mt-6 transition-opacity duration-200 md:order-4",
             refreshing && "opacity-70",
           )}
           aria-busy={refreshing}
