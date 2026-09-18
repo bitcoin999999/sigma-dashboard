@@ -75,7 +75,8 @@ export function buildGexChartSnapshot(stock: StockData, weekStart: string, floor
 
 /** Only labels move. All price lines continue to use the original axis transform. */
 export function separatePriceLabels<T extends { value: number }>(levels: T[], y: (price: number) => number, top: number, bottom: number) {
-  const gap = 22;
+  // Each tag now carries its name above its price, so two lines have to clear.
+  const gap = 28;
   const sorted = levels.map((level) => ({ ...level, labelY: y(level.value) })).sort((a, b) => a.labelY - b.labelY);
   for (let i = 0; i < sorted.length; i++) sorted[i].labelY = Math.max(sorted[i].labelY, top, i ? sorted[i - 1].labelY + gap : top);
   for (let i = sorted.length - 1; i >= 0; i--) sorted[i].labelY = Math.min(sorted[i].labelY, bottom, i < sorted.length - 1 ? sorted[i + 1].labelY - gap : bottom);

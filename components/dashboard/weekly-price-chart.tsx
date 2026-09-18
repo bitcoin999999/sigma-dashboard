@@ -74,7 +74,7 @@ export function WeeklyPriceChart({ symbol, bands, gex }: { symbol: string; bands
     <section aria-label={pick(`${symbol} 이번 주 30분봉 차트`, `${symbol} weekly 30-minute chart`)} className="glass min-w-0 rounded-2xl p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-base font-semibold">{pick("이번 주 가격", "Price this week")}</h2>
+          <h2 className="text-base font-semibold"><span className="num">{symbol}</span> {pick("이번 주 가격", "price this week")}</h2>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {days.length > 0 && `${dateLabel(days[0])}–${dateLabel(days[4])} · `}
             {pick("30분봉 · 미국 정규장 · 시간 KST", "30-minute candles · US regular session (ET)")}
@@ -106,6 +106,18 @@ export function WeeklyPriceChart({ symbol, bands, gex }: { symbol: string; bands
 
 const TOGGLE_ON = "border-transparent bg-[color-mix(in_oklch,var(--primary)_22%,transparent)] text-foreground";
 const TOGGLE_OFF = "border-border/70 text-muted-foreground hover:text-foreground";
+
+/**
+ * Half the height of a level tag in the price gutter.
+ *
+ * The tag used to be one line of price with the level's name printed inside the
+ * plot, pinned to the right edge. That edge is empty on Monday and full of
+ * Friday's candles by the end of the week, so on Friday the names sat on top of
+ * the newest bars — the ones you are actually looking at. The name moved into
+ * the tag, above its price, which puts every piece of level text outside the
+ * candle area for good.
+ */
+const TAG_HALF = 13;
 
 export function WeeklyCandlePlot({ data, band: suppliedBand, gex: suppliedGex }: { data: WeeklyChartData; band?: WeeklyChartBand; gex?: GexChartSnapshot | null }) {
   const { pick, locale } = useLocale();
@@ -177,7 +189,7 @@ export function WeeklyCandlePlot({ data, band: suppliedBand, gex: suppliedGex }:
   const placed = separatePriceLabels([
     ...candidates.filter((level) => inView(level.value)),
     ...(last ? [{ label: "", value: last.close, color: "", dash: "", weight: 0, kind: "last" as const, note: "" }] : []),
-  ], y, top + 10, height - bottom - 10);
+  ], y, top + TAG_HALF, height - bottom - TAG_HALF);
   const levels = placed.filter((level) => level.kind !== "last");
   const lastTagY = placed.find((level) => level.kind === "last")?.labelY;
   // ±2σ off screen is the normal case and says nothing; ±1σ or a GEX strike
@@ -268,7 +280,7 @@ export function WeeklyCandlePlot({ data, band: suppliedBand, gex: suppliedGex }:
           height={y(Math.max(band.lower, floor)) - y(Math.min(band.upper, ceiling))} fill="var(--sigma-normal)" opacity={0.06} />}
         {ticks.map((price) => <g key={price}>
           <line x1={left} x2={width - right} y1={y(price)} y2={y(price)} stroke="var(--border)" strokeOpacity={0.55} />
-          {!placed.some((level) => Math.abs(level.labelY - y(price)) < 16) && <text x={width - right + 8} y={y(price)} dominantBaseline="middle" fill="var(--muted-foreground)" fontSize={11} className="num">{formatCurrency(price)}</text>}
+          {!placed.some((level) => Math.abs(level.labelY - y(price)) < TAG_HALF + 7) && <text x={width - right + 8} y={y(price)} dominantBaseline="middle" fill="var(--muted-foreground)" fontSize={11} className="num">{formatCurrency(price)}</text>}
         </g>)}
         <line x1={left} x2={left} y1={top} y2={height - bottom} stroke="var(--border)" />
         <line x1={left} x2={width - right} y1={height - bottom} y2={height - bottom} stroke="var(--border)" />
@@ -286,12 +298,13 @@ export function WeeklyCandlePlot({ data, band: suppliedBand, gex: suppliedGex }:
         {levels.map((level) => <g key={level.label}>
           <title>{`${level.label} ${formatCurrency(level.value)}${level.note ? ` · ${level.note}` : ""}`}</title>
           <line x1={left} x2={width - right} y1={y(level.value)} y2={y(level.value)} stroke={level.color} strokeWidth={level.weight} strokeDasharray={level.dash} />
-          <text x={width - right - 6} y={y(level.value) - 5} textAnchor="end" fill={level.color} fontSize={11} fontWeight={600}
-            stroke="var(--card)" strokeWidth={3} paintOrder="stroke" className="num">{level.label}</text>
           <path d={`M ${width - right} ${y(level.value)} L ${width - right + 4} ${level.labelY}`} stroke={level.color} strokeOpacity={0.7} fill="none" />
-          <rect x={width - right + 4} y={level.labelY - 9} width={right - 6} height={18} rx={3}
+          <rect x={width - right + 4} y={level.labelY - TAG_HALF} width={right - 6} height={TAG_HALF * 2} rx={3}
             fill={level.color} fillOpacity={0.16} stroke={level.color} strokeOpacity={0.55} />
-          <text x={width - right + 8} y={level.labelY} dominantBaseline="middle" fill={level.color} fontSize={11} fontWeight={600} className="num">
+          <text x={width - right + 8} y={level.labelY - 3} fill={level.color} fontSize={9} fontWeight={600} className="num">
+            {level.label}
+          </text>
+          <text x={width - right + 8} y={level.labelY + 8} fill={level.color} fontSize={11} fontWeight={600} className="num">
             {formatCurrency(level.value)}
           </text>
         </g>)}
