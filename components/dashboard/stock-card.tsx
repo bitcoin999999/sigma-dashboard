@@ -111,7 +111,17 @@ export function StockCard({
         />
       )}
 
-      <div className="flex items-start justify-between gap-3">
+      {/* Only this row runs under the watch button, so only this row gets out
+          of its way. The clearance used to sit on the card's own padding, which
+          reserved the full 64px down all 142px of it — the button is 44px tall
+          and stops a third of the way down, so the price, the band bar and the
+          footer were being inset past a star that was no longer there. */}
+      <div
+        className={cn(
+          "flex items-start justify-between gap-3",
+          showWatch && "pr-11",
+        )}
+      >
         <div className="min-w-0">
           <div className="flex items-baseline gap-2">
             <span className="num text-[15px] leading-none font-semibold tracking-tight">
@@ -275,10 +285,7 @@ export function StockCard({
         </div>
       </Link>
 
-      <Link
-        {...link}
-        className={cn(className, "hidden sm:block", showWatch && "pr-16")}
-      >
+      <Link {...link} className={cn(className, "hidden sm:block")}>
         {body}
       </Link>
 
