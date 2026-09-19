@@ -193,9 +193,8 @@ export function StockCard({
           showWatch && "pr-12",
         )}
       >
-        {/* One column, not two: the price belongs on the symbol's line and the
-            day's move on the σ line, so both edges of the row line up and the
-            eye reads across instead of pairing a block against a block. */}
+        {/* One column, not two: each line runs the full width and the eye reads
+            across, instead of pairing a block against a block. */}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2">
             <span className="num text-[15px] leading-none font-semibold tracking-tight">
@@ -204,8 +203,20 @@ export function StockCard({
             <span className="truncate text-[11px] text-muted-foreground/80">
               {stock.name}
             </span>
-            <span className="num ml-auto shrink-0 pl-2 text-[15px] leading-none font-semibold tracking-tight">
-              {formatCurrency(stock.price)}
+            {/* Price and the day's move, together. The move used to sit on the
+                σ line, which put the two halves of one reading on separate
+                rows and spent the only slack the σ line had. */}
+            <span className="ml-auto flex shrink-0 items-baseline gap-2 pl-2">
+              <span className="num text-[15px] leading-none font-semibold tracking-tight">
+                {formatCurrency(stock.price)}
+              </span>
+              {/* `leading-none` so the pill's box does not out-measure the
+                  price beside it and push the whole row taller. */}
+              <ChangePill
+                value={stock.changePercent}
+                showIcon={false}
+                className="py-0 leading-none"
+              />
             </span>
           </div>
 
@@ -224,7 +235,12 @@ export function StockCard({
             >
               {formatSigma(stock.zScore)}
             </span>
-            <StatusBadge status={stock.status} />
+            {/* Only when there is something to say. The badge is a bucketing of
+                the σ figure immediately to its left, so on a NORMAL row it
+                spends 75px to repeat it — and this line has three other things
+                to fit. Kept for the extremes, where it is the exception marker
+                it was meant to be. */}
+            {stock.status !== "NORMAL" && <StatusBadge status={stock.status} />}
             {(floor || support) && (
               <span
                 className={cn(
@@ -236,11 +252,25 @@ export function StockCard({
                 {formatCurrency((floor ?? support)!.strike)}
               </span>
             )}
-            <ChangePill
-              value={stock.changePercent}
-              showIcon={false}
-              className="ml-auto shrink-0"
-            />
+            {/* The band the bar above is drawing, in numbers. The bar says
+                where price sits; without the edges it cannot say what the
+                week's move is worth, which is the one thing the desktop card
+                has always spelled out in its footer. It takes the slack in
+                this line rather than a line of its own, so the row height is
+                unchanged. */}
+            <span className="num flex min-w-0 flex-1 items-baseline justify-end gap-1 text-[10px] text-muted-foreground/80">
+              {/* The edges truncate and the width does not. On a row that is
+                  already carrying an extreme badge and a GEX strike there is
+                  not always room for all three, and "how far can it move" is
+                  the half that still reads without the other. */}
+              <span className="truncate">
+                {formatCurrency(stock.sigma1Lower)} –{" "}
+                {formatCurrency(stock.sigma1Upper)}
+              </span>
+              <span className="shrink-0 text-muted-foreground/60">
+                {formatBandWidth(stock.sigmaPercent)}
+              </span>
+            </span>
           </div>
         </div>
       </Link>

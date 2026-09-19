@@ -6,6 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { DataBasis } from "@/components/dashboard/data-basis";
+import { GexPanel } from "@/components/dashboard/gex-panel";
 import { SigmaRangeBar } from "@/components/dashboard/sigma-range-bar";
 import { StatusBadge } from "@/components/dashboard/status-badge";
 import { WeeklyPriceChart } from "@/components/dashboard/weekly-price-chart";
@@ -209,6 +210,31 @@ export default async function SymbolPage({ params }: Params) {
 
         <WeeklyPriceChart key={stock.symbol} symbol={stock.symbol} bands={chartBands} gex={chartGex} />
         </div>
+
+        {/* On desktop this ladder was reachable only through the board's detail
+            panel, behind a tab. A phone never opens that panel — tapping a card
+            lands here — so the one view that says where the options market's
+            weight is sitting had no route on mobile at all. Here it gets the
+            page version: bigger rows, the net GEX figure per strike, and the σ
+            band edges drawn across it. */}
+        {stock.gex && (
+          <section className="glass mt-10 max-w-3xl p-5 sm:p-6">
+            <h2 className="font-heading text-base font-semibold tracking-tight">
+              <span className="num">{stock.symbol}</span>{" "}
+              {pick(locale, "행사가별 GEX 분포", "GEX by strike")}
+            </h2>
+            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+              {pick(
+                locale,
+                "행사가마다 쌓인 딜러 감마입니다. 점선은 이번 주 ±1σ 밴드 가장자리이므로, 감마가 두꺼운 자리와 밴드 끝이 겹치는지 한 화면에서 확인할 수 있습니다.",
+                "Dealer gamma stacked at each strike. The dashed lines are this week's ±1σ edges, so whether a thick strike and a band edge land on the same price is readable in one view.",
+              )}
+            </p>
+            <div className="mt-5">
+              <GexPanel stock={stock} detailed />
+            </div>
+          </section>
+        )}
 
         <ExploreNav sessionDate={snapshot.sessionDate} className="mt-10" />
 
