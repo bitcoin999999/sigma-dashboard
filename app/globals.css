@@ -384,6 +384,15 @@
     color: var(--gex-floor);
   }
 
+  /* A large options support with no σ edge behind it. Deliberately the chart's
+     support blue and not the purple: one strike is one reason, and the purple
+     has to keep meaning two. */
+  .gex-support-chip {
+    border: 1px solid color-mix(in oklch, var(--gex-support) 30%, transparent);
+    background: color-mix(in oklch, var(--gex-support) 12%, transparent);
+    color: color-mix(in oklch, var(--gex-support) 88%, var(--foreground));
+  }
+
   .gex-floor-row {
     background: color-mix(in oklch, var(--gex-floor) 6%, transparent);
     box-shadow: inset 2px 0 0 0 var(--gex-floor);

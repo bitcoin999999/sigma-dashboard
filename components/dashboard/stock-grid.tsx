@@ -34,9 +34,14 @@ interface StockGridProps {
  * `list-surface` is the phone form: the gap closes, the container takes over
  * the glass, and the cards inside render as hairline-separated rows. From `sm`
  * up it is inert and this is the grid it always was.
+ *
+ * One column more than it used to carry at `xl` and above. At four across on a
+ * 1600px board a card was ~385px wide for content that tops out around 240px,
+ * so the extra column is width the cards were not using and a fifth of the
+ * scrolling back.
  */
 export const GRID =
-  "list-surface grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-3 xl:grid-cols-3 2xl:grid-cols-4";
+  "list-surface grid grid-cols-1 gap-0 sm:grid-cols-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5";
 
 export function StockGrid({
   stocks,
@@ -98,11 +103,11 @@ export function StockGrid({
 export function StockGridSkeleton({ count = 8 }: { count?: number }) {
   return (
     <div
-      className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+      className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
       aria-hidden
     >
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="glass space-y-4 p-4">
+        <div key={index} className="glass space-y-3 p-3.5">
           <div className="flex items-start justify-between">
             <div className="space-y-2">
               <Skeleton className="h-3.5 w-14" />

@@ -30,6 +30,8 @@ const HAIRLINE = "#252b38";
 const UP = "#34d399";
 const DOWN = "#f87171";
 const ACCENT = "#8ab4f8";
+/** The same purple the board uses for a GEX strike on the −1σ edge. */
+const FLOOR = "#b388f9";
 
 export default async function Image({
   params,
@@ -119,7 +121,7 @@ export default async function Image({
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-        {digest.stocks.map((stock) => (
+        {digest.picks.map(({ stock, level }) => (
           <div
             key={stock.symbol}
             style={{
@@ -179,18 +181,22 @@ export default async function Image({
             >
               {formatSigma(stock.zScore)}
             </div>
+            {/* The level is why the symbol is on the card, so it takes the
+                column the band range used to have. Without a level — the
+                fallback lists — the range is still the most useful thing to
+                put there. */}
             <div
               style={{
                 display: "flex",
                 justifyContent: "flex-end",
                 width: 280,
                 fontSize: 19,
-                color: MUTED,
+                color: level ? (level.confluence ? FLOOR : ACCENT) : MUTED,
               }}
             >
-              {formatCurrency(stock.sigma1Lower)} –{" "}
-              {formatCurrency(stock.sigma1Upper)}{" "}
-              {formatBandWidth(stock.sigmaPercent)}
+              {level
+                ? `GEX ${formatCurrency(level.strike)} · ${Math.round(level.share)}%`
+                : `${formatCurrency(stock.sigma1Lower)} – ${formatCurrency(stock.sigma1Upper)} ${formatBandWidth(stock.sigmaPercent)}`}
             </div>
           </div>
         ))}

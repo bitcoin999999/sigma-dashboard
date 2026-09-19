@@ -96,6 +96,84 @@ export function findGexFloor(stock: StockData): GexFloor | null {
   };
 }
 
+/**
+ * How many positive strikes the window needs before `share` means anything.
+ *
+ * On a window holding one positive strike the primary support owns 100% of it
+ * by arithmetic — that is a fact about how thin the chain is, not about the
+ * level. `findGexFloor` can ignore this because the −1σ agreement is a second,
+ * independent filter; a ranking built on share alone cannot. On the Sep 18
+ * board this rejected KEEL (one positive strike, 100% share) and XPEV (three,
+ * 27%) while keeping NVDA, GLD and QQQ.
+ */
+export const MIN_POSITIVE_STRIKES = 5;
+
+export interface GexSupport {
+  strike: number;
+  netGex: number;
+  /** The strike's share of all positive gamma in the published window, 0–100. */
+  share: number;
+  /** How many times the next-strongest support strike this one is. */
+  dominance: number;
+  /** How far under spot the strike sits, as a percentage of spot. */
+  distancePercent: number;
+  /** The strike is also on the −1σ edge — i.e. `findGexFloor` took it too. */
+  confluence: boolean;
+}
+
+/**
+ * The largest options support under spot, with or without a σ edge behind it.
+ *
+ * `findGexFloor` answers "do two independent methods agree on one price". This
+ * answers the broader question a trader asks first — "where is the option
+ * market's weight sitting under this name today" — and it is deliberately
+ * blind to the band.
+ *
+ * Dropping the −1σ test removes the corroboration that made the floor worth
+ * trusting, so two guards replace it: the strike has to be inside the week's
+ * reach, because gamma parked below −1.5σ is not today's business, and the
+ * window has to clear `MIN_POSITIVE_STRIKES`.
+ *
+ * This is a screen, not a prediction. Nothing here says the level holds.
+ */
+export function findGexSupport(stock: StockData): GexSupport | null {
+  const gex: GexProfile | undefined = stock.gex;
+  if (!gex) return null;
+
+  const primary = gex.support[0];
+  if (!primary || primary.netGex <= 0) return null;
+
+  // Out of reach for the week the card is dated to.
+  if (stock.standardDeviation > 0 && primary.strike < stock.sigmaExtremeLower) {
+    return null;
+  }
+
+  const positive = gex.profile
+    .map((level) => level.netGex)
+    .filter((value) => value > 0);
+  if (positive.length < MIN_POSITIVE_STRIKES) return null;
+
+  const total = positive.reduce((sum, value) => sum + value, 0);
+  if (total <= 0) return null;
+
+  const share = (primary.netGex / total) * 100;
+  const next = gex.support[1]?.netGex ?? 0;
+  const dominance = next > 0 ? primary.netGex / next : Infinity;
+
+  if (share < MIN_SHARE || dominance < MIN_DOMINANCE) return null;
+
+  return {
+    strike: primary.strike,
+    netGex: primary.netGex,
+    share,
+    dominance,
+    distancePercent: stock.price
+      ? ((primary.strike - stock.price) / stock.price) * 100
+      : 0,
+    confluence: Boolean(findGexFloor(stock)),
+  };
+}
+
 /** The board's floors, strongest first. */
 export function selectGexFloors(stocks: StockData[]): StockData[] {
   return stocks

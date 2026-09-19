@@ -125,13 +125,32 @@ export default async function DailyPage({ params }: Params) {
 
         <DataBasis snapshot={snapshot} className="mt-7 max-w-4xl" />
 
-        <div className={`${GRID} mt-10`}>
-          {digest.stocks.map((stock) => (
-            <StockCard
-              key={stock.symbol}
-              stock={stock}
-              href={`/symbol/${stock.symbol}`}
-            />
+        {/* One section per reason. An unlabelled section is the fallback list,
+            where the page heading has already said what it is. */}
+        <div className="mt-10 space-y-9">
+          {digest.sections.map((section, index) => (
+            <section key={section.title || index}>
+              {section.title && (
+                <div className="mb-4">
+                  <h2 className="font-heading text-base font-semibold tracking-tight">
+                    {section.title}
+                  </h2>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {section.note}
+                  </p>
+                </div>
+              )}
+              <div className={GRID}>
+                {section.picks.map(({ stock }) => (
+                  <StockCard
+                    key={stock.symbol}
+                    stock={stock}
+                    href={`/symbol/${stock.symbol}`}
+                    showSupport
+                  />
+                ))}
+              </div>
+            </section>
           ))}
         </div>
       </main>
