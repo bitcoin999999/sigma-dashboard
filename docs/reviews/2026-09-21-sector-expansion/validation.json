@@ -1,0 +1,492 @@
+{
+  "requested": [
+    "XLF",
+    "JPM",
+    "GS",
+    "V",
+    "XLE",
+    "XOM",
+    "CVX",
+    "SLB",
+    "XLI",
+    "CAT",
+    "RTX",
+    "LMT",
+    "XLU",
+    "CEG",
+    "VST",
+    "ETN",
+    "XLRE",
+    "PLD",
+    "EQIX",
+    "CIBR",
+    "CRWD",
+    "PANW",
+    "ANET",
+    "VRT",
+    "DELL"
+  ],
+  "newQuotes": [
+    {
+      "symbol": "JPM",
+      "price": 349.67,
+      "anchor": 349.67,
+      "sigmaPercent": 2.96,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "GS",
+      "price": 942.0,
+      "anchor": 942.0,
+      "sigmaPercent": 3.9,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "V",
+      "price": 368.29,
+      "anchor": 368.29,
+      "sigmaPercent": 2.57,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "XOM",
+      "price": 163.54,
+      "anchor": 163.54,
+      "sigmaPercent": 3.91,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "CVX",
+      "price": 209.51,
+      "anchor": 209.51,
+      "sigmaPercent": 3.75,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "SLB",
+      "price": 51.12,
+      "anchor": 51.12,
+      "sigmaPercent": 4.44,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "CAT",
+      "price": 808.99,
+      "anchor": 808.99,
+      "sigmaPercent": 4.54,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "RTX",
+      "price": 194.0,
+      "anchor": 194.0,
+      "sigmaPercent": 2.85,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "LMT",
+      "price": 533.38,
+      "anchor": 533.38,
+      "sigmaPercent": 3.42,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "CEG",
+      "price": 254.71,
+      "anchor": 254.71,
+      "sigmaPercent": 5.0,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "VST",
+      "price": 140.67,
+      "anchor": 140.67,
+      "sigmaPercent": 5.58,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "PLD",
+      "price": 134.84,
+      "anchor": 134.84,
+      "sigmaPercent": 3.35,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "EQIX",
+      "price": 1021.34,
+      "anchor": 1021.34,
+      "sigmaPercent": 3.81,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "CIBR",
+      "price": 99.87,
+      "anchor": 99.87,
+      "sigmaPercent": 4.21,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    },
+    {
+      "symbol": "ANET",
+      "price": 199.39,
+      "anchor": 199.39,
+      "sigmaPercent": 6.04,
+      "sessionDate": "2026-09-18",
+      "anchorDate": "2026-09-18",
+      "gex": true,
+      "intraday": true
+    }
+  ],
+  "charts": [
+    {
+      "symbol": "ANET",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "CAT",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "CEG",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "CIBR",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "CRWD",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "CVX",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "DELL",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "EQIX",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "ETN",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "GS",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "JPM",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "LMT",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "PANW",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "PLD",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "RTX",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "SLB",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "V",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "VRT",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "VST",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "XLE",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "XLF",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "XLI",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "XLRE",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "XLU",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    },
+    {
+      "symbol": "XOM",
+      "candles": 65,
+      "weekStart": "2026-09-14",
+      "weekEnd": "2026-09-18"
+    }
+  ],
+  "localRoutes": [
+    {
+      "symbol": "XLF",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "JPM",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "GS",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "V",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "XLE",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "XOM",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "CVX",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "SLB",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "XLI",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "CAT",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "RTX",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "LMT",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "XLU",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "CEG",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "VST",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "ETN",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "XLRE",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "PLD",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "EQIX",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "CIBR",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "CRWD",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "PANW",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "ANET",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "VRT",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    },
+    {
+      "symbol": "DELL",
+      "status": 200,
+      "inSitemap": true,
+      "heading": true
+    }
+  ],
+  "counts": {
+    "before": 108,
+    "after": 123,
+    "monitor": 112,
+    "sectorEtfs": 11
+  },
+  "existingNonClassificationChanges": []
+}

@@ -1,4 +1,5 @@
 import { WatchButton } from "@/components/watchlist/watch-button";
+import { CLASSIFICATION_LABELS } from "@/lib/classification";
 import { SymbolShare } from "@/components/share/symbol-share";
 import { tickerDirectory } from "@/lib/ticker-search";
 import type { Metadata } from "next";
@@ -162,6 +163,12 @@ export default async function SymbolPage({ params }: Params) {
           </div>
 
           <p className="mt-3 text-sm text-muted-foreground">{stock.name}</p>
+
+          {(stock.assetClass || stock.region || stock.themes?.length) && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+            {[stock.assetClass, stock.region].flatMap(value => value
+              ? [CLASSIFICATION_LABELS[value] ? pick(locale, ...CLASSIFICATION_LABELS[value]) : value] : [])
+              .concat(stock.themes ?? []).join(" · ")}
+          </p>}
 
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
             {meta.description}

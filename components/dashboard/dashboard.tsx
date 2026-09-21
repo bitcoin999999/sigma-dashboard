@@ -33,6 +33,8 @@ import type {
 import { cn } from "@/lib/utils";
 
 import { ControlsBar } from "./controls-bar";
+import { ClassificationFilters } from "./classification-filters";
+import { EMPTY_CLASSIFICATION_FILTERS, matchesClassification } from "@/lib/classification";
 import { DataBasis } from "./data-basis";
 import { IndexStrip } from "./index-strip";
 import { SectorEtfMonitor } from "./sector-etf-monitor";
@@ -68,6 +70,7 @@ export function Dashboard({
 
   const { query, setQuery, filter, setFilter, sort, setSort } = useBoardState();
   const [view, setView] = useStoredView();
+  const [classification, setClassification] = React.useState({ ...EMPTY_CLASSIFICATION_FILTERS });
   const [selected, setSelected] = React.useState<string | null>(null);
   const [selectedEarnings, setSelectedEarnings] = React.useState<EarningsEvent | null>(null);
 
@@ -109,20 +112,25 @@ export function Dashboard({
     [liveQuotes],
   );
 
+  const classifiedStocks = React.useMemo(
+    () => stocks.filter(stock => matchesClassification(stock, classification)),
+    [stocks, classification],
+  );
+
   const filterCounts = React.useMemo(
     () =>
       Object.fromEntries(
         FILTER_OPTIONS.map((option) => [
           option.key,
-          filterStocks(stocks, option.key, "").length,
+          filterStocks(classifiedStocks, option.key, "").length,
         ]),
       ) as Record<FilterKey, number>,
-    [stocks],
+    [classifiedStocks],
   );
 
   const visible = React.useMemo(
-    () => sortStocks(filterStocks(stocks, filter, query), sort),
-    [stocks, filter, query, sort],
+    () => sortStocks(filterStocks(classifiedStocks, filter, query), sort),
+    [classifiedStocks, filter, query, sort],
   );
 
   const selectedStock = React.useMemo(() => {
@@ -243,6 +251,8 @@ export function Dashboard({
                 filterCounts={filterCounts}
               />
 
+              <ClassificationFilters stocks={stocks} value={classification} onChange={setClassification} />
+
               <div
                 className={cn(
                   "transition-opacity duration-200",
@@ -255,7 +265,7 @@ export function Dashboard({
                   onSelect={setSelected}
                   view={view}
                   grouped={filter === "ALL"}
-                  onReset={resetFilters}
+                  onReset={() => { resetFilters(); setClassification({ ...EMPTY_CLASSIFICATION_FILTERS }); }}
                 />
               </div>
             </div>

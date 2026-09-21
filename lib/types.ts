@@ -1,3 +1,5 @@
+import type { AssetClass, Region } from "./classification";
+
 export type SigmaStatus =
   | "NORMAL"
   | "UPPER_1SIGMA"
@@ -57,6 +59,10 @@ export interface Quote {
   symbol: string;
   name: string;
   sector: string;
+  /** Supplied by the dashboard producer; legacy snapshots may omit these. */
+  assetClass?: AssetClass;
+  themes?: string[];
+  region?: Region;
   price: number;
   previousClose: number;
   anchor: number;

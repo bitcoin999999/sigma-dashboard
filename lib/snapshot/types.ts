@@ -8,6 +8,8 @@ import type { Quote, SectorEtfQuote } from "@/lib/types";
 export interface SnapshotFile {
   /** Absent on files written before versioning; those are treated as v1. */
   schemaVersion?: number;
+  /** Additive taxonomy fields; older publications have no classification version. */
+  classificationVersion?: number;
   generatedAt: string;
   band: {
     anchorDate: string;
@@ -110,5 +112,23 @@ export function assertSnapshotFile(
   // non-zero when it cannot build a single band.
   if (file.quotes.length === 0) {
     throw new Error(`Snapshot from ${origin} contains no quotes.`);
+  }
+
+  if (file.classificationVersion !== undefined) {
+    if (file.classificationVersion !== 1) throw new Error(`Unsupported classification version from ${origin}.`);
+    const symbols = new Set<string>();
+    for (const quote of [...file.quotes, ...file.sectorQuotes]) {
+      if (!quote || typeof quote.symbol !== "string" || !quote.symbol || symbols.has(quote.symbol)
+        || typeof quote.sector !== "string" || !quote.sector
+        || !["equity", "etf", "unknown"].includes(quote.assetClass ?? "")
+        || !["US", "China", "Korea", "Global", "Unknown"].includes(quote.region ?? "")
+        || !Array.isArray(quote.themes) || quote.themes.some(theme => typeof theme !== "string" || !theme.trim())) {
+        throw new Error(`Invalid or duplicate classified symbol from ${origin}.`);
+      }
+      symbols.add(quote.symbol);
+      if (![quote.price, quote.anchor, quote.sigmaPercent].every(value => typeof value === "number" && Number.isFinite(value) && value > 0)) {
+        throw new Error(`Invalid classified quote values for ${quote.symbol} from ${origin}.`);
+      }
+    }
   }
 }

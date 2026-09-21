@@ -259,7 +259,10 @@ export function matchesQuery(stock: StockData, query: string): boolean {
   return (
     stock.symbol.includes(needle) ||
     stock.name.toUpperCase().includes(needle) ||
-    stock.sector.toUpperCase().includes(needle)
+    stock.sector.toUpperCase().includes(needle) ||
+    (stock.themes ?? []).some(theme => theme.toUpperCase().includes(needle)) ||
+    (stock.region ?? "").toUpperCase().includes(needle) ||
+    (stock.assetClass ?? "").toUpperCase().includes(needle)
   );
 }
 
