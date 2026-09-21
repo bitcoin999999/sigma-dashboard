@@ -24,6 +24,13 @@ const stocks = [
   quote('CRWD', { sector: 'Technology', themes: ['Cybersecurity', 'Cloud'], region: 'US', assetClass: 'equity' }),
 ];
 
+test('original semiconductor, optical and neocloud groups remain separately browsable', () => {
+  const groups = [quote('DELL', { sector: 'Semiconductors' }), quote('AAOI', { sector: 'Optical' }),
+    quote('IREN', { sector: 'Neocloud' })].map(buildStockData);
+  assert.deepEqual(new Set(groupBySector(groups).map(g => g.sector)), new Set(['Semiconductors', 'Optical', 'Neocloud']));
+  assert.deepEqual(groups.filter(s => matchesClassification(s, { ...empty, sector: 'Optical' })).map(s => s.symbol), ['AAOI']);
+});
+
 test('sector, theme, region and asset type are independent AND filters', () => {
   const filters = { sector: 'Technology', theme: 'Cybersecurity', region: 'US', assetClass: 'equity' };
   assert.deepEqual(stocks.filter(s => matchesClassification(s, filters)).map(s => s.symbol), ['CRWD']);

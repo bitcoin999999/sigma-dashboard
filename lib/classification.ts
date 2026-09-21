@@ -1,7 +1,11 @@
 /** Classification values arrive in the snapshot; the producer owns ticker mappings. */
 export type AssetClass = "equity" | "etf" | "unknown";
 export type Region = "US" | "China" | "Korea" | "Global" | "Unknown";
-export type Sector = "Technology" | "Communication Services" | "Consumer Discretionary"
+/** User-curated display groups; broad sector names remain for the SPDR ETF monitor. */
+export type Sector = "Benchmarks & ETF" | "Mega Cap" | "Defensive" | "Semiconductors"
+  | "Software" | "Optical" | "Neocloud" | "Space" | "Quantum" | "Power"
+  | "China ADR" | "Materials & Commodities" | "Crypto" | "Networking" | "Industrials & Defense"
+  | "Technology" | "Communication Services" | "Consumer Discretionary"
   | "Consumer Staples" | "Healthcare" | "Financials" | "Industrials" | "Energy"
   | "Utilities" | "Real Estate" | "Materials" | "Broad Market" | "Unclassified";
 
@@ -41,6 +45,13 @@ export function classificationOptions(stocks: readonly ClassifiedSymbol[]) {
 }
 
 export const CLASSIFICATION_LABELS: Record<string, [string, string]> = {
+  "Benchmarks & ETF": ["지수·ETF", "Benchmarks & ETF"], "Mega Cap": ["대형 기술주", "Mega Cap"],
+  Defensive: ["경기방어주", "Defensive"], Semiconductors: ["반도체", "Semiconductors"],
+  Software: ["소프트웨어", "Software"], Optical: ["광통신", "Optical"], Neocloud: ["네오클라우드", "Neocloud"],
+  Space: ["우주", "Space"], Quantum: ["양자컴퓨팅", "Quantum"], Power: ["전력", "Power"],
+  "China ADR": ["중국 ADR", "China ADR"], "Materials & Commodities": ["소재·원자재", "Materials & Commodities"],
+  Crypto: ["크립토", "Crypto"], Networking: ["네트워킹", "Networking"],
+  "Industrials & Defense": ["산업재·방산", "Industrials & Defense"],
   equity: ["개별주", "Equity"], etf: ["ETF", "ETF"], unknown: ["유형 미분류", "Unknown type"],
   US: ["미국", "US"], China: ["중국", "China"], Korea: ["한국", "Korea"],
   Global: ["글로벌·기타 지역", "Global / other regions"], Unknown: ["지역 미분류", "Unknown region"],

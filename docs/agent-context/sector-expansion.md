@@ -1,3 +1,18 @@
+# 2026-09-22 사용자 확정: 기존 테마 그룹 복원
+
+**아래 9/21의 표준 산업 섹터 재분류 방침을 대체한다.** 사용자는 반도체·광통신·소프트웨어 등이 분리된 이전 그룹을 선호한다고 명시했다. `sector`는 다시 사용자가 정한 화면 그룹이다. 표준 산업 분류를 이유로 합치거나 기존 사용자 지정 배치를 이동하지 말 것.
+
+- 기존 97개를 확장 전 스냅샷의 14개 그룹으로 정확히 복원한다. DELL은 Semiconductors, ETN/VRT/SEDG/CLS는 Power, IREN/WULF/KEEL은 Neocloud 등 기존 지정도 보존한다.
+- 신규 15개만 배치: Financials=JPM/GS/V, Energy=XOM/CVX/SLB, Industrials & Defense=CAT/RTX/LMT, Power=CEG/VST, Real Estate=PLD/EQIX, Benchmarks & ETF=CIBR, Networking=ANET.
+- 기존 CRWD/PANW를 신규 사이버보안 그룹으로 옮기지 않는다. Software 유지. CIBR은 IGV/SOXX처럼 기존 ETF 그룹에 추가한다.
+- ANET은 데이터센터/클라우드 네트워크 장비가 중심이므로 Networking을 만든다. [Arista 사업 소개](https://www.arista.com/en/company/company-overview), [CIBR 운용사](https://www.ftportfolios.com/retail/etf/EtfSummary.aspx?Ticker=CIBR).
+- 신규 15개 유지, 일반 모니터 112 + SPDR ETF 11 = 123개. SPDR ETF의 별도 목록은 유지한다.
+- 카탈로그의 sector만 복원한다. assetClass/themes/region, σ 산식, 가격/차트/GEX, 알람 모집단·스케줄은 그대로다. 발행 시 현재 스냅샷을 백업하고 sector 외 모든 필드와 종목 순서가 같은지 비교한다. 가격을 다시 수집하거나 과거 스냅샷으로 교체하지 않는다.
+- 알 수 없는 새 동적 ETF 구성종목은 원본 그룹명을 통해 Semiconductors/Software 등을 이어받는다. 유형·지역은 임의 추정 없이 unknown/Unknown 유지.
+- 확장 전 97개 그룹을 테스트 fixture로 보존하여 재분류 회귀를 검사한다.
+
+---
+
 # 2026-09-21 종목 확장·분류 구조
 
 ## 범위와 숫자
