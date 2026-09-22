@@ -1,3 +1,8 @@
+import { symbolImageUrl } from "@/lib/symbol-card";
+import { SymbolImageShare } from "@/components/share/symbol-image-share";
+import { RelatedLink } from "@/components/share/related-link";
+import { SigmaHistoryChart } from "@/components/dashboard/sigma-history-chart";
+import { loadMarketHistory } from "@/lib/market-history-server";
 import { WatchButton } from "@/components/watchlist/watch-button";
 import { CLASSIFICATION_LABELS } from "@/lib/classification";
 import { SymbolShare } from "@/components/share/symbol-share";
@@ -61,16 +66,17 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   }
 
   const { snapshot } = await loadBoard();
-  const title = `${stock.symbol} ${pick(locale, "이번 주 Expected Move", "Expected Move This Week")} · ${SITE_NAME}`;
-  const description = describe(stock, snapshot.updatedAt, locale);
+  const title = `${stock.name} ${stock.symbol} ${pick(locale, "주간 예상 변동 범위·시그마 차트", "Expected Move This Week & Sigma Chart")} | ${SITE_NAME}`;
+  const description = describe(stock, `${snapshot.sessionDate} ${pick(locale,"미국 정규장 종가","US regular-session close")}`, locale);
+  const image = symbolImageUrl(stock.symbol,snapshot.snapshotId!,locale,"og");
   const url = `/symbol/${stock.symbol}`;
 
   return {
     title,
     description,
     alternates: { canonical: url },
-    openGraph: { type: "article", url, title, description },
-    twitter: { card: "summary_large_image", title, description },
+    openGraph: { type: "article", url, title, description, images:[{url:image,width:1200,height:630,alt:`${stock.symbol} | 1SIGMA`}] },
+    twitter: { card: "summary_large_image", title, description, images:[image] },
   };
 }
 
@@ -82,6 +88,10 @@ export default async function SymbolPage({ params }: Params) {
 
   const locale = await getRequestLocale();
   const { snapshot, all } = await loadBoard();
+  const history = await loadMarketHistory(stock,snapshot);
+  const related = all.filter(s => s.symbol !== stock.symbol && (s.sector === stock.sector || s.themes?.some(t=>stock.themes?.includes(t))))
+    .sort((a,b)=>Number(b.sector === stock.sector)-Number(a.sector === stock.sector) ||
+      (b.themes?.filter(t=>stock.themes?.includes(t)).length ?? 0)-(a.themes?.filter(t=>stock.themes?.includes(t)).length ?? 0) || a.symbol.localeCompare(b.symbol)).slice(0,6);
   const meta = STATUS_COPY[locale][stock.status];
   const chartBands = buildChartBands(stock, snapshot.bandAnchorDate);
   const chartGex = buildGexChartSnapshot(stock, chartWeek().weekStart, chartBands[0]?.weekStart ?? "");
@@ -198,7 +208,7 @@ export default async function SymbolPage({ params }: Params) {
           <div className="mt-5 flex flex-wrap gap-2">
             <WatchButton symbol={stock.symbol} />
           </div>
-          <div className="mt-3"><SymbolShare symbol={stock.symbol} /></div>
+          <div className="mt-3 space-y-3"><SymbolShare symbol={stock.symbol} /><SymbolImageShare key={snapshot.snapshotId} symbol={stock.symbol} imageUrl={symbolImageUrl(stock.symbol,snapshot.snapshotId!,locale,"feed")}/></div>
           <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/my-sigma"
@@ -217,6 +227,8 @@ export default async function SymbolPage({ params }: Params) {
 
         <WeeklyPriceChart key={stock.symbol} symbol={stock.symbol} bands={chartBands} gex={chartGex} />
         </div>
+
+        <SigmaHistoryChart history={history} session={snapshot.sessionDate}/>
 
         {/* On desktop this ladder was reachable only through the board's detail
             panel, behind a tab. A phone never opens that panel — tapping a card
@@ -243,6 +255,7 @@ export default async function SymbolPage({ params }: Params) {
           </section>
         )}
 
+        {related.length > 0 && <section className="mt-8"><h2 className="mb-4 text-lg font-semibold">{pick(locale,"같은 섹터·테마 종목","Related symbols")}</h2><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{related.map(s=><RelatedLink key={s.symbol} symbol={s.symbol}><span className="font-semibold">{s.symbol}</span><span className="num text-muted-foreground">{formatSigma(s.zScore)}</span></RelatedLink>)}</div></section>}
         <ExploreNav sessionDate={snapshot.sessionDate} className="mt-10" />
 
         <DataBasis snapshot={snapshot} className="mt-7 max-w-4xl" />
