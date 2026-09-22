@@ -75,6 +75,8 @@ export function SigmaRangeBar({
       return next;
     });
 
+  if (!Number.isFinite(zScore)) return <p className={cn("text-xs text-muted-foreground",className)}>{pick("σ 데이터 없음", "Sigma unavailable")}</p>;
+
   return (
     <div style={statusStyle(status)} className={cn("w-full", className)}>
       {/* The graphic is the track alone. The axis below it is text, and in the

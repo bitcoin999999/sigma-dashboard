@@ -1,4 +1,6 @@
 import { formatBandWindow, formatDay } from "@/lib/format";
+import { createHash } from "node:crypto";
+import { bandEndDate } from "@/lib/market-dates";
 import type { MarketSnapshot, Quote, SectorEtfQuote } from "@/lib/types";
 
 import { blobSource } from "./sources/blob";
@@ -64,11 +66,18 @@ function resolveSource(): SnapshotSource {
 export async function loadSnapshot(): Promise<SnapshotPayload> {
   const source = resolveSource();
   const file: SnapshotFile = await source.load();
+  return snapshotPayload(file);
+}
 
+export function snapshotPayload(file: SnapshotFile): SnapshotPayload {
   return {
     quotes: file.quotes,
     sectorQuotes: file.sectorQuotes,
     snapshot: {
+      snapshotId: file.snapshotId ?? createHash("sha256").update(JSON.stringify(file)).digest("hex"),
+      methodVersion: file.methodVersion,
+      priceBasis: file.priceBasis,
+      bandEndDate: bandEndDate(file.band.anchorDate),
       // Every figure is a settled regular-session close — there is no
       // intraday path here, so the market is never "open" from this page.
       session: "CLOSED",

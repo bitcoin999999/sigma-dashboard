@@ -1,6 +1,7 @@
 import type { AssetClass, Region } from "./classification";
 
 export type SigmaStatus =
+  | "UNAVAILABLE"
   | "NORMAL"
   | "UPPER_1SIGMA"
   | "LOWER_1SIGMA"
@@ -56,6 +57,7 @@ export interface GexProfile {
  * Absolute σ is derived, not stored.
  */
 export interface Quote {
+  sigmaBasis?: { fromAnchor: boolean; scaled: boolean };
   symbol: string;
   name: string;
   sector: string;
@@ -157,6 +159,10 @@ export interface SectorEtfData extends StockData {
 }
 
 export interface MarketSnapshot {
+  snapshotId?: string;
+  methodVersion?: string;
+  priceBasis?: string;
+  bandEndDate?: string;
   session: "PRE" | "OPEN" | "AFTER" | "CLOSED";
   updatedAt: string;
   /**

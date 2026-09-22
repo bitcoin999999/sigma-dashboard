@@ -19,7 +19,11 @@ export function fileSource(): SnapshotSource {
     name: "file",
 
     async load(): Promise<SnapshotFile> {
-      const raw = await readFile(SNAPSHOT_PATH, "utf8");
+      // Explicit local fixture override is not a deployment asset. Keep the normal
+      // seed statically traceable; never include arbitrary local files in Vercel.
+      const raw = process.env.SNAPSHOT_FILE
+        ? await readFile(/* turbopackIgnore: true */ process.env.SNAPSHOT_FILE, "utf8")
+        : await readFile(SNAPSHOT_PATH, "utf8");
       const parsed: unknown = JSON.parse(raw);
       assertSnapshotFile(parsed, SNAPSHOT_PATH);
       return parsed;

@@ -72,7 +72,7 @@ export interface GuideCopy {
     eyebrow: string;
     title: string;
     description: string;
-    status: Record<SigmaStatus, StatusCopy>;
+    status: Record<Exclude<SigmaStatus, "UNAVAILABLE">, StatusCopy>;
   };
 
   limits: {

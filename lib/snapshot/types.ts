@@ -6,6 +6,9 @@ import type { Quote, SectorEtfQuote } from "@/lib/types";
  * that would fork the calculation and reintroduce a known 1.47× divergence.
  */
 export interface SnapshotFile {
+  snapshotId?: string;
+  methodVersion?: string;
+  priceBasis?: string;
   /** Absent on files written before versioning; those are treated as v1. */
   schemaVersion?: number;
   /** Additive taxonomy fields; older publications have no classification version. */

@@ -10,15 +10,18 @@ const smallPriceFormatter = new Intl.NumberFormat("en-US", {
 
 /** Sub-$10 names need an extra digit or the σ band edges collapse visually. */
 export function formatPrice(value: number): string {
+  if (!Number.isFinite(value)) return "—";
   const formatter = Math.abs(value) < 10 ? smallPriceFormatter : priceFormatter;
   return formatter.format(value);
 }
 
 export function formatCurrency(value: number): string {
+  if (!Number.isFinite(value)) return "—";
   return `$${formatPrice(value)}`;
 }
 
 export function formatPercent(value: number, digits = 2): string {
+  if (!Number.isFinite(value)) return "—";
   const sign = value > 0 ? "+" : value < 0 ? "−" : "";
   return `${sign}${Math.abs(value).toFixed(digits)}%`;
 }
@@ -36,6 +39,7 @@ export function formatBandWidth(sigmaPercent: number, digits = 1): string {
 }
 
 export function formatSigma(zScore: number, digits = 2): string {
+  if (!Number.isFinite(zScore)) return "—";
   const sign = zScore > 0 ? "+" : zScore < 0 ? "−" : "";
   return `${sign}${Math.abs(zScore).toFixed(digits)}σ`;
 }

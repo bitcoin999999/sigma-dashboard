@@ -1,3 +1,4 @@
+import { WATCHLIST_LIMIT } from "@/lib/watchlist";
 import type { Metadata } from "next";
 
 import { MySigmaClient } from "@/components/my-sigma/my-sigma-client";
@@ -9,12 +10,12 @@ import { getRequestLocale } from "@/lib/i18n-server";
 export const dynamic = "force-dynamic";
 
 const DESCRIPTION =
-  "Pick up to ten symbols and watch them on the same weekly σ band as the main board. Stored in your browser, no account needed, shareable as a link.";
+  `Track up to ${WATCHLIST_LIMIT} symbols and manage your portfolio on this browser.`;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getRequestLocale();
   const title = `My Sigma · ${locale === "ko" ? "개인 워치리스트" : "Personal Watchlist"} · ${SITE_NAME}`;
-  const description = locale === "ko" ? "최대 10개 종목을 메인 보드와 같은 주간 σ 밴드에서 확인하세요. 계정 없이 브라우저에 저장하고 링크로 공유할 수 있습니다." : DESCRIPTION;
+  const description = locale === "ko" ? `최대 ${WATCHLIST_LIMIT}개 관심종목의 주간 σ와 포트폴리오를 이 브라우저에서 관리하세요.` : DESCRIPTION;
   return {
   title,
   description,

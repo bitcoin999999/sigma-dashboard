@@ -14,7 +14,7 @@ export function WatchButton({ symbol, compact = false }: { symbol: string; compa
   const saved = list.symbols.includes(symbol);
   const full = !saved && list.symbols.length >= WATCHLIST_LIMIT;
   const label = saved ? pick(`${symbol} 관심 해제`, `Remove ${symbol} from watchlist`) : pick(`${symbol} 관심 추가`, `Add ${symbol} to watchlist`);
-  const hint = full ? pick("관심 종목은 최대 10개입니다. My Sigma에서 하나를 삭제하세요.", "Limit of 10 symbols. Remove one in My Sigma.") : !list.persistent ? pick("브라우저 저장을 사용할 수 없어 이번 방문에만 유지됩니다.", "Storage unavailable; kept for this visit only.") : "";
+  const hint = full ? pick(`관심 종목은 최대 ${WATCHLIST_LIMIT}개입니다. My Sigma에서 하나를 삭제하세요.`, `Limit of ${WATCHLIST_LIMIT} symbols. Remove one in My Sigma.`) : !list.persistent ? pick("브라우저 저장을 사용할 수 없어 이번 방문에만 유지됩니다.", "Storage unavailable; kept for this visit only.") : "";
   // One star per row means the hint would otherwise be a live region on every
   // row, each announcing the same sentence the moment the tenth name is saved.
   // Compact stars fold it into their own label and render nothing.

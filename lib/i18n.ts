@@ -31,6 +31,7 @@ export const INTL_LOCALE: Record<Locale, string> = {
 
 export const STATUS_COPY = {
   en: {
+    UNAVAILABLE: { label: "N/A", longLabel: "Sigma unavailable", description: "Sigma data is unavailable for this observation." },
     OVERHEATED: { label: "OVERHEATED", longLabel: "Above +1.5σ", description: "More than 1.5 standard deviations above the anchor close. Statistically stretched to the upside." },
     UPPER_1SIGMA: { label: "+1σ", longLabel: "Above +1σ", description: "Broke the upper 1σ edge of its expected range but has not reached the overheated threshold." },
     NORMAL: { label: "NORMAL", longLabel: "Within ±1σ", description: "Inside the expected range. No statistical dislocation." },
@@ -38,6 +39,7 @@ export const STATUS_COPY = {
     OVERSOLD: { label: "OVERSOLD", longLabel: "Below −1.5σ", description: "More than 1.5 standard deviations below the anchor close. Statistically stretched to the downside." },
   },
   ko: {
+    UNAVAILABLE: { label: "데이터 없음", longLabel: "σ 미제공", description: "이 관측의 유효한 σ 데이터가 없습니다." },
     OVERHEATED: { label: "OVERHEATED", longLabel: "+1.5σ 상단", description: "앵커 마감가보다 1.5σ 이상 위입니다. 통계적으로 상방 과열 구간입니다." },
     UPPER_1SIGMA: { label: "+1σ", longLabel: "+1σ 상단", description: "Expected range의 +1σ 상단을 돌파했지만 overheated 기준에는 도달하지 않았습니다." },
     NORMAL: { label: "NORMAL", longLabel: "±1σ 내부", description: "Expected range 안에 있으며 통계적 이탈이 없습니다." },

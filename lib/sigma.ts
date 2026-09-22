@@ -13,6 +13,16 @@ import type {
  * dislocated — the dashboard and the alert must call the same name overheated.
  */
 export const SIGMA_1 = 1.0;
+export const SIGMA_APPROACHING = 0.85;
+
+export function isOutsideSigma(z: number): boolean {
+  const status = resolveStatus(z);
+  return status !== "NORMAL" && status !== "UNAVAILABLE";
+}
+
+export function isApproachingSigma(z: number): boolean {
+  return resolveStatus(z) === "NORMAL" && Math.abs(z) >= SIGMA_APPROACHING;
+}
 export const SIGMA_EXTREME = 1.5;
 
 /** How far past ±1.5σ the visualisation still tracks before clamping. */
@@ -28,11 +38,12 @@ export function calculateZScore(
   anchor: number,
   standardDeviation: number,
 ): number {
-  if (!standardDeviation) return 0;
+  if (![price, anchor, standardDeviation].every(value => Number.isFinite(value) && value > 0)) return NaN;
   return (price - anchor) / standardDeviation;
 }
 
 export function resolveStatus(zScore: number): SigmaStatus {
+  if (!Number.isFinite(zScore)) return "UNAVAILABLE";
   if (zScore >= SIGMA_EXTREME) return "OVERHEATED";
   if (zScore >= SIGMA_1) return "UPPER_1SIGMA";
   if (zScore <= -SIGMA_EXTREME) return "OVERSOLD";
@@ -101,13 +112,14 @@ export interface WeeklyBandResult {
  */
 export function buildWeeklyBand(band: WeeklyBand): WeeklyBandResult | null {
   const standardDeviation = (band.anchor * band.sigmaPercent) / 100;
-  if (!standardDeviation || band.closes.length === 0) return null;
+  if (!Number.isFinite(standardDeviation) || standardDeviation <= 0 || band.closes.length === 0) return null;
 
   const zAt = (close: number) =>
     calculateZScore(close, band.anchor, standardDeviation);
 
   const last = band.closes[band.closes.length - 1];
   const closeZ = zAt(last.close);
+  if (!Number.isFinite(closeZ)) return null;
 
   return {
     anchorDate: band.anchorDate,
@@ -143,6 +155,7 @@ export interface StatusMeta {
 }
 
 export const STATUS_META: Record<SigmaStatus, StatusMeta> = {
+  UNAVAILABLE: { label: "N/A", longLabel: "Sigma unavailable", description: "No valid sigma data.", colorVar: "--muted-foreground", severity: -1 },
   OVERHEATED: {
     label: "OVERHEATED",
     longLabel: "Above +1.5σ",
@@ -184,7 +197,7 @@ export const STATUS_META: Record<SigmaStatus, StatusMeta> = {
   },
 };
 
-export const STATUS_ORDER: SigmaStatus[] = [
+export const STATUS_ORDER: Exclude<SigmaStatus, "UNAVAILABLE">[] = [
   "OVERHEATED",
   "UPPER_1SIGMA",
   "NORMAL",
@@ -223,19 +236,22 @@ export function summarize(stocks: StockData[]): StatusCounts {
   };
 
   let zSum = 0;
+  let validCount = 0;
   for (const stock of stocks) {
+    if (!Number.isFinite(stock.zScore)) continue;
+    validCount += 1;
     zSum += stock.zScore;
     if (stock.zScore >= SIGMA_1) counts.beyondUpper1 += 1;
     if (stock.zScore >= SIGMA_EXTREME) counts.overheated += 1;
     if (stock.zScore <= -SIGMA_1) counts.beyondLower1 += 1;
     if (stock.zScore <= -SIGMA_EXTREME) counts.oversold += 1;
     if (stock.status === "NORMAL") counts.normal += 1;
-    if (stock.status === "NORMAL" && Math.abs(stock.zScore) >= 0.85) {
+    if (isApproachingSigma(stock.zScore)) {
       counts.approaching += 1;
     }
   }
 
-  counts.averageZ = stocks.length ? zSum / stocks.length : 0;
+  counts.averageZ = validCount ? zSum / validCount : NaN;
   return counts;
 }
 
