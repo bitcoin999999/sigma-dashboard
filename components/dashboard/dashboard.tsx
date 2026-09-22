@@ -224,7 +224,7 @@ export function Dashboard({
           />
         )}
 
-        <HomeWatchlist stocks={[...stocks, ...etfs]} />
+        <HomeWatchlist stocks={[...stocks, ...etfs]} snapshot={snapshot} />
 
           <Section
             id="watchlist"

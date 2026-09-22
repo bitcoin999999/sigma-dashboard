@@ -15,12 +15,12 @@ function compile(path, resolve = require) {
 const watch = compile('../lib/watchlist.ts');
 const sharing = compile('../lib/share.ts');
 const navigation = compile('../lib/stock-navigation.ts');
-test('legacy watchlist keeps valid saved names, deduplicates, preserves unavailable names, and caps at ten', () => {
+test('legacy watchlist keeps valid saved names, deduplicates, preserves unavailable names, and caps at twenty', () => {
   assert.equal(watch.WATCHLIST_KEY, 'sigma-personal-watchlist');
   assert.deepEqual(watch.parseStoredSymbols('["nvda"," NVDA ","OLD",null,5,"<script>"]'), ['NVDA','OLD']);
   assert.deepEqual(watch.normalizeSymbols(['NVDA','OLD'],new Set(['NVDA'])), ['NVDA']);
   assert.deepEqual(watch.parseStoredSymbols('broken'), []);
-  const ten=Array.from({length:10},(_,i)=>`T${i}`);
+  const ten=Array.from({length:20},(_,i)=>`T${i}`);
   assert.deepEqual(watch.toggleSymbol(ten,'NEW'),ten);
   assert.deepEqual(watch.toggleSymbol(['AAPL','NVDA'],'MSFT'),['AAPL','NVDA','MSFT']);
   assert.deepEqual(watch.toggleSymbol(['AAPL','NVDA'],'NVDA'),['AAPL']);

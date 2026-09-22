@@ -43,8 +43,9 @@ test('Korean calendar renders Friday as today and moves Thursday after-market ea
   assert.match(html, /다음 주 보기/);
   assert.match(html, /금 9\/11<\/span><span[^>]*>오늘 · KST/);
   assert.doesNotMatch(html, /오늘 · ET/);
-  assert.match(html, /id="earnings-2026-09-11"[^]*ADBE/);
-  assert.doesNotMatch(html, /id="earnings-2026-09-10"[^]*?ADBE[^]*?id="day-2026-09-11"/);
+  const days = calendarState.calendarDisplayDays(calendar, 'ko');
+  assert.deepEqual(days.filter(day => day.earnings.some(e => e.symbol === 'ADBE')).map(day => day.date), ['2026-09-11']);
+  assert.match(html, /aria-label="ADBE After 실적 상세"/);
   assert.match(html, /21:30 KST/);
   assert.match(html, /미국 장후/);
 });
@@ -53,6 +54,8 @@ test('English calendar keeps Thursday today, the US earnings date and ET as the 
   assert.match(html, /Dates in ET/);
   assert.match(html, /View next week/);
   assert.match(html, /Thu 9\/10<\/span><span[^>]*>Today · ET/);
-  assert.match(html, /id="earnings-2026-09-10"[^]*?ADBE[^]*?id="day-2026-09-11"/);
+  const days = calendarState.calendarDisplayDays(calendar, 'en');
+  assert.deepEqual(days.filter(day => day.earnings.some(e => e.symbol === 'ADBE')).map(day => day.date), ['2026-09-10']);
+  assert.match(html, /aria-label="ADBE After earnings details"/);
   assert.match(html, /08:30 ET/);
 });
