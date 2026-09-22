@@ -25,7 +25,7 @@ export function SigmaHistoryChart({ history, session }: { history: MarketHistory
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">{history.symbol} · {pick("주가와 주간 σ", "Price & weekly sigma")}</h2><p className="mt-1 text-xs text-muted-foreground">{pick("각 날짜에 적용된 밴드 기준 · 주간 마감 후에도 과거 밴드 유지", "Each date uses its own weekly band · settled bands are retained")}</p></div>
       <div className="flex gap-1">{[[4,"1M"],[13,"3M"],[52,"1Y"],[520,"ALL"]].map(([n,label]) => <button key={label} aria-pressed={weeks === n} onClick={() => setWeeks(Number(n))} className={`min-h-11 rounded-lg px-3 text-sm ${weeks === n ? "bg-foreground text-background" : "text-muted-foreground"}`}>{label}</button>)}</div></div>
     <p className="mt-4 text-xs text-muted-foreground">{pick("가격 ($) · 음영은 당시 ±1σ", "Price ($) · shading is that week’s ±1σ")}</p>
-    <div className="mt-2 h-64 min-w-0 sm:h-80"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={rows} syncId={`history-${history.symbol}`} margin={{top:8,right:8,bottom:0,left:0}}>
+    <div className="mt-2 h-64 min-w-0 overflow-hidden sm:h-80"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={rows} syncId={`history-${history.symbol}`} margin={{top:8,right:8,bottom:0,left:0}}>
       <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.5}/><XAxis dataKey="date" tickFormatter={dateTick} minTickGap={48} tick={{fontSize:12,fill:"var(--muted-foreground)"}}/>
       <YAxis domain={["auto","auto"]} width={58} tick={{fontSize:12,fill:"var(--muted-foreground)"}} tickFormatter={v=>Number(v).toFixed(0)}/>
       <Tooltip contentStyle={tooltip} labelFormatter={v=>String(v)} formatter={(v,name)=>[Array.isArray(v) ? v.map(n=>formatCurrency(Number(n))).join(" – ") : formatCurrency(Number(v)),name]}/>
@@ -34,7 +34,7 @@ export function SigmaHistoryChart({ history, session }: { history: MarketHistory
       {outcomes.filter(r=>isOutsideSigma(r.closeZ)).map(r=><ReferenceDot key={r.closeDate} x={r.closeDate} y={r.close} r={5} fill={r.closeZ>0?"var(--sigma-upper)":"var(--sigma-lower)"} stroke="var(--background)"/>)}
     </ComposedChart></ResponsiveContainer></div>
     <p className="mt-3 text-xs text-muted-foreground">{pick("σ 위치 · ±1 경계 도달 포함", "Sigma position · exact ±1 touches included")}</p>
-    <div className="mt-2 h-44 min-w-0"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={rows} syncId={`history-${history.symbol}`} margin={{top:8,right:8,bottom:0,left:0}}>
+    <div className="mt-2 h-44 min-w-0 overflow-hidden"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={rows} syncId={`history-${history.symbol}`} margin={{top:8,right:8,bottom:0,left:0}}>
       <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.5}/><XAxis dataKey="date" tickFormatter={dateTick} minTickGap={48} tick={{fontSize:12,fill:"var(--muted-foreground)"}}/>
       <YAxis width={58} domain={[(min:number)=>Math.min(-1.5,min),(max:number)=>Math.max(1.5,max)]} tick={{fontSize:12,fill:"var(--muted-foreground)"}} tickFormatter={v=>`${Number(v).toFixed(1)}σ`}/>
       <ReferenceLine y={1} stroke="var(--sigma-upper)" strokeDasharray="4 4"/><ReferenceLine y={-1} stroke="var(--sigma-lower)" strokeDasharray="4 4"/><ReferenceLine y={0} stroke="var(--border)"/>
@@ -47,7 +47,7 @@ export function SigmaHistoryChart({ history, session }: { history: MarketHistory
     {event&&path.length>1&&<div className="mt-4 rounded-xl border border-border p-3 sm:p-4">
       <p className="text-sm font-medium">{event.closeDate} · {formatSigma(event.closeZ)} {pick("마감 이후", "after the close")}</p>
       <p className="mt-1 text-xs text-muted-foreground">{pick("선택한 마감가 = 0% · 최대 4주 · 표의 날짜를 눌러 비교", "Selected close = 0% · up to 4 weeks · select a date above")}</p>
-      <div className="mt-3 h-44"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={path} margin={{top:8,right:8,bottom:0,left:0}}>
+      <div className="mt-3 h-44 min-w-0 overflow-hidden"><ResponsiveContainer width="100%" height="100%"><ComposedChart data={path} margin={{top:8,right:8,bottom:0,left:0}}>
         <XAxis dataKey="date" tickFormatter={dateTick} minTickGap={48} tick={{fontSize:12,fill:"var(--muted-foreground)"}}/>
         <YAxis width={58} tickFormatter={v=>`${Number(v).toFixed(1)}%`} tick={{fontSize:12,fill:"var(--muted-foreground)"}}/>
         <ReferenceLine y={0} stroke="var(--border)"/>
