@@ -95,3 +95,13 @@
 - 과거 밴드는 oi_shock의 새 `backfill_dashboard_history.py`로 앵커일 UW term structure를 조회해 복원한다. 공용 sigma_core의 기존 선택/환산식을 사용하고 기존 저장 밴드는 덮어쓰지 않는다. 이후 일상 발행은 별도 추가 호출 없이 이력을 유지한다.
 - 로컬 AMD: 1Y 2025-09-22~2026-09-22 252거래일, 밴드252/252. 1M21거래일, 3M65거래일, ALL270거래일(밴드266/270). 390px 모바일에서 가로 넘침 없고 큰 툴팁이 차트를 가리지 않는 것을 확인했다.
 - 검증: 웹96개, upstream40개 테스트 통과. ESLint/TypeScript/Next 운영 빌드 통과. 브라우저 오류 로그0개.
+
+
+### 1년 차트 운영 반영 완료
+
+- 홈페이지 코드 `edeaa7a`, 배포 `dpl_5gXYEhW8GEi2XjNGyfSszqoMerfz`, READY/production. https://sigma-dashboard-l44cjgvti-svpk1.vercel.app → https://sigma-dashboard-five.vercel.app
+- 데이터 배포 https://sigma-snapshot-data-pqfcdcl9z-svpk1.vercel.app → 기존 sigma-snapshot-data.vercel.app. 최신 스냅샷/달력/revision/API는 원본 그대로, 123종목 과거 밴드6,255개 추가. 기존가격29,907개·기존밴드340개 전수 보존.
+- 최근1년 가격116종목252거래일, 7종목은 확보된 기간만 표시. 전체 σ지원29,525/29,907거래일(98.72%), 81종목252/252. 기존 fromAnchor=false와 과거 입력 누락은 null 유지.
+- AMD/NVDA/SOXX/MU/EWY는252/252. 대표7종목 공개 JSON과 로컬 원본이 전부 일치했다. 운영 AMD 페이지에서 기본1Y 및 `σ 밴드 252/252거래일` 직접 확인.
+- 서버 history fetch는 revalidate300이므로 배포 직후 첫 요청은 이전 이력을 반환하며 백그라운드 갱신할 수 있다. 첫 요청11/252 → 다음 새로고침252/252를 확인했다. 캐시 우회 URL로 결과를 숨기지 않았다.
+- σ 위치를 독립 패널로 분리할지는 사용자가 1년 추세를 본 뒤 정한다.
