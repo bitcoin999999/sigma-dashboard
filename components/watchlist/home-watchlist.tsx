@@ -6,6 +6,7 @@ import { StockCard } from "@/components/dashboard/stock-card";
 import { GRID } from "@/components/dashboard/stock-grid";
 import { WATCHLIST_LIMIT } from "@/lib/watchlist";
 import { SigmaSummary } from "@/components/my-sigma/sigma-summary";
+import { PortfolioGlance } from "@/components/portfolio/portfolio-glance";
 import type { MarketSnapshot, StockData } from "@/lib/types";
 
 /** The home block is a preview; past this many the full list is a page away. */
@@ -21,6 +22,7 @@ export function HomeWatchlist({ stocks, snapshot }: { stocks: StockData[]; snaps
   return <section className="order-5 mt-9" aria-label={pick("내 Sigma", "My Sigma")}>
     <div className="flex items-center justify-between"><h2 className="text-xl font-semibold tracking-tight">My Sigma <span className="text-sm font-normal text-muted-foreground">{ready && `${symbols.length}/${WATCHLIST_LIMIT}`}</span></h2><Link prefetch={false} href="/my-sigma" className="inline-flex min-h-11 items-center text-xs underline underline-offset-4">{pick("관리", "Manage")}</Link></div>
     <p className="mt-1 mb-3 text-xs text-muted-foreground">{pick("관심 종목의 이번 주 밴드 위치입니다.", "Where your saved symbols sit in this week’s band.")}</p>
+    <PortfolioGlance stocks={stocks} className="mb-3" />
     {ready && <div className="mb-3"><SigmaSummary symbols={symbols} stocks={stocks} snapshot={snapshot} compact/></div>}
     {!ready ? <p className="text-xs text-muted-foreground">{pick("관심 목록 확인 중…", "Loading your watchlist…")}</p> : symbols.length === 0 ? null : <>
       <div className={GRID}>{preview.map((stock) => <StockCard key={stock.symbol} stock={stock} href={`/symbol/${stock.symbol}`} />)}</div>

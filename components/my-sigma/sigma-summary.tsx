@@ -9,9 +9,11 @@ import { formatCurrency, formatPercent, formatSigma } from "@/lib/format";
 import { isApproachingSigma, isOutsideSigma, STATUS_META } from "@/lib/sigma";
 import { GEX_NEAR_SPOT_PERCENT, nearbyGexLevels } from "@/lib/gex-proximity";
 import { productEvent } from "@/lib/product-events";
+import { usePortfolio } from "@/hooks/use-portfolio";
+import { valuePositions } from "@/lib/portfolio";
 import type { MarketSnapshot, StockData } from "@/lib/types";
 
-function GexContext({ stock, session }: { stock: StockData; session: string }) {
+export function GexContext({ stock, session }: { stock: StockData; session: string }) {
   const { pick } = useLocale();
   const nearby = nearbyGexLevels(stock, session);
   if (nearby.state === "unavailable") return <span className="text-[11px] text-muted-foreground">{pick("GEX 자료 없음", "GEX unavailable")}</span>;
@@ -37,6 +39,11 @@ export function SigmaSummary({ symbols, stocks, snapshot, compact = false, filte
     outside: allRows.filter(row => row.stock && isOutsideSigma(row.stock.zScore)).length,
     approaching: allRows.filter(row => row.stock && isApproachingSigma(row.stock.zScore)).length,
   };
+  // Holdings are read, never merged into the list: a held symbol that is not
+  // starred stays out, and a starred one shows what share of the portfolio it is.
+  const portfolio = usePortfolio();
+  const held = new Map(portfolio.ready && !portfolio.error ? valuePositions(portfolio.value.positions, stocks).rows.map(row => [row.symbol, row.weight]) : []);
+  const heldLabel = (weight: number | null) => weight === null ? pick("보유", "Held") : weight < 1 ? pick("보유 <1%", "Held <1%") : pick(`보유 ${Math.round(weight)}%`, `Held ${Math.round(weight)}%`);
   const surface = compact ? "home" : "my_sigma";
   useEffect(() => {
     if (summary.totalCount) productEvent("my_sigma_summary_view", surface, { symbolCount: summary.totalCount, validCount: summary.validCount, ...(summary.outsideCount === null ? {} : { outsideCount: summary.outsideCount }) });
@@ -66,7 +73,7 @@ export function SigmaSummary({ symbols, stocks, snapshot, compact = false, filte
       {rows.map(({ symbol, stock }) => <li key={symbol}>
         {stock ? <Link prefetch={false} href={`/symbol/${symbol}`} className="group block px-4 py-3 transition-colors hover:bg-muted/30 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring sm:px-5">
           <div className="flex items-center gap-3">
-            <div className="min-w-0"><span className="text-sm font-semibold tracking-wide">{symbol}</span><span className="num ml-2 text-xs text-muted-foreground">{formatCurrency(stock.price)}</span></div>
+            <div className="min-w-0"><span className="text-sm font-semibold tracking-wide">{symbol}</span><span className="num ml-2 text-xs text-muted-foreground">{formatCurrency(stock.price)}</span>{held.has(symbol) && <span className="num ml-2 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] text-primary">{heldLabel(held.get(symbol) ?? null)}</span>}</div>
             <div className="ml-auto shrink-0 text-right"><span className="num text-base font-semibold" style={{ color: `var(${STATUS_META[stock.status].colorVar})` }}>{formatSigma(stock.zScore)}</span><p className="mt-0.5 text-[11px] text-muted-foreground">{!Number.isFinite(stock.zScore) ? pick("σ 자료 없음", "Sigma unavailable") : isOutsideSigma(stock.zScore) ? pick(stock.zScore > 0 ? "상단 경계 밖" : "하단 경계 밖", stock.zScore > 0 ? "Upper band" : "Lower band") : isApproachingSigma(stock.zScore) ? pick("±1σ 경계 근접", "Near ±1σ") : pick("범위 안", "Inside band")}</p></div>
             <ChevronRight aria-hidden className="size-3.5 shrink-0 text-muted-foreground/50 transition-transform group-hover:translate-x-0.5" />
           </div>

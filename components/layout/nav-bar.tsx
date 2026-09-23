@@ -162,7 +162,7 @@ export function NavBar({
     {
       href: "/my-sigma",
       label: "My Sigma",
-      current: pathname === "/my-sigma",
+      current: pathname.startsWith("/my-sigma"),
       anchor: false,
     },
     {

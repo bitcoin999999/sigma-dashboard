@@ -58,36 +58,68 @@ test('observation storage bounds, corruption and same snapshot preservation',()=
   assert.strictEqual(changes.rememberObservation(list,list[0]),list);assert.throws(()=>changes.parseObservations('broken'));assert.throws(()=>changes.parseObservations('[{}]'));
 });
 const prices={AAA:[{date:'2026-09-14',close:100},{date:'2026-09-15',close:110}],BBB:[{date:'2026-09-14',close:100},{date:'2026-09-15',close:95}]};
-test('60/40 at +10/-5 produces +4% and additive contributions',()=>{
-  const r=portfolio.modelPerformance([{symbol:'AAA',weight:60},{symbol:'BBB',weight:40}],0,prices,'1D','2026-09-15');assert.ok(Math.abs(r.returnPercent-4)<1e-10);assert.ok(Math.abs(r.contributions.reduce((n,c)=>n+c.contribution,0)-4)<1e-10);
+const pos=(symbol,quantity,averageCost=null)=>({symbol,quantity,averageCost});
+test('sizes worth 60/40 at the start at +10/-5 produce +4% and additive contributions',()=>{
+  const r=portfolio.positionsPerformance([pos('AAA',0.6),pos('BBB',0.4)],prices,'1D','2026-09-15');assert.ok(Math.abs(r.returnPercent-4)<1e-10);assert.ok(Math.abs(r.contributions.reduce((n,c)=>n+c.contribution,0)-4)<1e-10);
+  const scaled=portfolio.positionsPerformance([pos('AAA',600),pos('BBB',400)],prices,'1D','2026-09-15');assert.ok(Math.abs(scaled.returnPercent-4)<1e-10);
 });
-test('buy-and-hold weights drift: 50/50 +100/0 then -50/0 returns 0 total and -33.33 daily',()=>{
+test('fixed sizes drift: 50/50 +100/0 then -50/0 returns 0 total and -33.33 daily',()=>{
   const p={AAA:[{date:'2026-09-14',close:100},{date:'2026-09-15',close:200},{date:'2026-09-16',close:100}],BBB:[{date:'2026-09-14',close:100},{date:'2026-09-15',close:100},{date:'2026-09-16',close:100}]};
-  const r=portfolio.modelPerformance([{symbol:'AAA',weight:50},{symbol:'BBB',weight:50}],0,p,'ALL','2026-09-16');assert.equal(r.returnPercent,0);assert.ok(Math.abs(r.dailyPercent+100/3)<1e-10);
+  const r=portfolio.positionsPerformance([pos('AAA',1),pos('BBB',1)],p,'ALL','2026-09-16');assert.equal(r.returnPercent,0);assert.ok(Math.abs(r.dailyPercent+100/3)<1e-10);
 });
-test('missing prices and invalid weights do not silently reweight or shorten periods',()=>{
-  assert.equal(portfolio.modelPerformance([{symbol:'AAA',weight:101}],0,prices,'1D','2026-09-15').reason,'weight_total');
-  assert.equal(portfolio.modelPerformance([{symbol:'GONE',weight:100}],0,prices,'1D','2026-09-15').reason,'missing_price');
-  assert.equal(portfolio.modelPerformance([{symbol:'AAA',weight:100}],0,prices,'1M','2026-09-15').reason,'insufficient_history');
-  assert.equal(portfolio.allocationError([{symbol:'AAA',weight:-1}],101),'invalid_weight');
+test('unsized rows, missing prices and short histories do not silently reweight or shorten periods',()=>{
+  assert.equal(portfolio.positionsPerformance([pos('AAA',null)],prices,'1D','2026-09-15').reason,'no_position');
+  const missing=portfolio.positionsPerformance([pos('AAA',1),pos('GONE',1)],prices,'1D','2026-09-15');assert.equal(missing.reason,'missing_price');assert.deepEqual(missing.limiting,['GONE']);
+  assert.equal(portfolio.positionsPerformance([pos('AAA',1)],prices,'1M','2026-09-15').reason,'insufficient_history');
+  const short=portfolio.positionsPerformance([pos('AAA',1),pos('BBB',1)],{AAA:[{date:'2026-09-14',close:100},...prices.AAA],SPY:[{date:'2026-09-14',close:1},{date:'2026-09-15',close:1}],BBB:[{date:'2026-09-15',close:95}]},'1D','2026-09-15');
+  assert.equal(short.reason,'insufficient_history');assert.deepEqual(short.limiting,['BBB']);
   const p={...prices,BBB:[{date:'2026-09-14',close:100},{date:'2026-09-16',close:100}],AAA:[...prices.AAA,{date:'2026-09-16',close:100}]};
-  assert.equal(portfolio.modelPerformance([{symbol:'AAA',weight:50},{symbol:'BBB',weight:50}],0,p,'ALL','2026-09-16').reason,'history_gap');
+  const gap=portfolio.positionsPerformance([pos('AAA',1),pos('BBB',1)],p,'ALL','2026-09-16');assert.equal(gap.reason,'history_gap');assert.deepEqual(gap.limiting,['BBB']);
 });
-test('holdings valuation uses prior value denominator and amount entry freezes units',()=>{
-  const h=[{symbol:'AAA',quantity:10,averageCost:100,asOf:'2026-09-14'}];
+test('valuation derives weight, gain and daily change from entered sizes only',()=>{
   const s=sigma.buildStockData({...quote,history:[{date:'2026-09-14',close:110},{date:'2026-09-15',close:120}]});
-  const r=portfolio.holdingsValuation(h,[s],'2026-09-15');assert.equal(r.value,1200);assert.equal(r.profit,200);assert.equal(r.daily,100);assert.ok(Math.abs(r.dailyPercent-100/11)<1e-10);
+  const b=sigma.buildStockData({...quote,symbol:'BBB',price:40,previousClose:50});
+  const r=portfolio.valuePositions([pos('AAA',10,100),pos('BBB',20),pos('NEW',null)],[s,b],'2026-09-15');
+  assert.equal(r.value,2000);assert.equal(r.rows[0].weight,60);assert.equal(r.rows[1].weight,40);assert.equal(r.rows[2].weight,null);
+  assert.equal(r.profit,200);assert.equal(r.costCount,1);assert.equal(r.profitPercent,20);
+  assert.equal(r.daily,100-200);assert.ok(Math.abs(r.dailyPercent-(-100/2100*100))<1e-10);
+  assert.equal(r.sizedCount,2);assert.equal(r.pricedCount,2);
+  assert.ok(Math.abs(r.weightedSigma-(0.6*s.zScore+0.4*b.zScore))<1e-10);
+  const gone=portfolio.valuePositions([pos('AAA',10),pos('GONE',5)],[s],'2026-09-15');assert.equal(gone.value,1200);assert.equal(gone.rows[0].weight,100);assert.equal(gone.pricedCount,1);assert.equal(gone.sizedCount,2);
+  assert.equal(portfolio.valuePositions([pos('AAA',null)],[s],'2026-09-15').value,null);
   assert.equal(portfolio.quantityFromValue(1200,120),10);assert.equal(portfolio.quantityFromValue(1,0),null);
-  assert.equal(portfolio.holdingsValuation([{...h[0],asOf:'2026-09-15'}],[s],'2026-09-15').daily,null);
-  assert.equal(portfolio.holdingsValuation(h,[],'2026-09-15').value,null);
 });
-test('portfolio schema does not accept damage, duplicate symbols or impossible dates',()=>{
+test('portfolio schema rejects damage and duplicates, and migrates v1 without inventing sizes',()=>{
   assert.deepEqual(portfolio.parsePortfolio(JSON.stringify(portfolio.EMPTY_PORTFOLIO)),portfolio.EMPTY_PORTFOLIO);
-  for(const x of [{version:2},{...portfolio.EMPTY_PORTFOLIO,holdings:[{symbol:'AAA',quantity:1,averageCost:10,asOf:'2026-02-31'}]},{...portfolio.EMPTY_PORTFOLIO,allocations:[{symbol:'AAA',weight:0},{symbol:'AAA',weight:0}]}])assert.throws(()=>portfolio.parsePortfolio(JSON.stringify(x)));
+  for(const x of [{version:2},{...portfolio.EMPTY_PORTFOLIO,positions:[pos('AAA',-1)]},{...portfolio.EMPTY_PORTFOLIO,positions:[pos('AAA',1),pos('AAA',2)]},{...portfolio.EMPTY_PORTFOLIO,positions:[pos('aaa',1)]},{...portfolio.EMPTY_PORTFOLIO,positions:Array.from({length:21},(_,i)=>pos(`T${i}`,1))},{version:1,revision:0,allocations:[],cashWeight:100,holdings:[{symbol:'AAA',quantity:1,averageCost:10,asOf:'2026-02-31'}]}])assert.throws(()=>portfolio.parsePortfolio(JSON.stringify(x)));
+  const v1={version:1,revision:4,cashWeight:0,allocations:[{symbol:'AAA',weight:60},{symbol:'BBB',weight:40},{symbol:'ZERO',weight:0}],holdings:[{symbol:'AAA',quantity:10,averageCost:100,asOf:'2026-09-14'}]};
+  assert.deepEqual(portfolio.parsePortfolio(JSON.stringify(v1)),{version:2,revision:4,positions:[pos('AAA',10,100),pos('BBB',null)]});
+  assert.equal(portfolio.isLegacyPortfolio(JSON.stringify(v1)),true);assert.equal(portfolio.isLegacyPortfolio(JSON.stringify(portfolio.EMPTY_PORTFOLIO)),false);assert.equal(portfolio.isLegacyPortfolio('broken'),false);
+});
+test('loose amount entry reads phone-keyboard input and bulk lines merge into holdings',()=>{
+  for(const [text,value] of [['10',10],['1,000',1000],['$180.5',180.5],['10주',10],['.5',0.5],['10.',10],['',null],['0',null]])assert.equal(portfolio.parseAmount(text),value);
+  for(const text of ['-1','abc','1.2.3'])assert.equal(portfolio.parseAmount(text),undefined);
+  const board=new Set(['NVDA','AAPL','SOXX']);
+  const parsed=portfolio.parsePositionLines('nvda 10 180\nAAPL,5\n\nFAKE 1\nSOXX 3 x\nNVDA 12',board);
+  assert.deepEqual(parsed.positions,[pos('AAPL',5),pos('NVDA',12)]);assert.deepEqual(parsed.rejected,['FAKE 1','SOXX 3 x']);
+  const merged=portfolio.mergePositions([pos('NVDA',1,150)],[pos('NVDA',12),pos('AAPL',5)]);
+  assert.deepEqual(merged.positions,[pos('NVDA',12,150),pos('AAPL',5)]);assert.deepEqual(merged.added,['AAPL']);
+  const full=portfolio.mergePositions(Array.from({length:20},(_,i)=>pos(`T${i}`,1)),[pos('NEW',1)]);assert.deepEqual(full.skipped,['NEW']);assert.equal(full.positions.length,20);
 });
 test('local document preserves corruption, detects other-tab writes and backs up before saving',()=>{
   const prior=globalThis.localStorage;const map=new Map([['test','broken']]);globalThis.localStorage={getItem:k=>map.get(k)??null,setItem:(k,v)=>map.set(k,v)};
   try{const store=storage.createLocalDocument('test',portfolio.EMPTY_PORTFOLIO,portfolio.parsePortfolio);assert.equal(store.getSnapshot().error,'corrupt');assert.equal(map.get('test'),'broken');map.set('test','newer');assert.equal(store.save(portfolio.EMPTY_PORTFOLIO,'broken'),'conflict');assert.equal(map.get('test'),'newer');assert.equal(store.save(portfolio.EMPTY_PORTFOLIO,'newer'),null);assert.equal(map.get('test:backup'),'newer');}finally{globalThis.localStorage=prior;}
+});
+test('local document keeps an edit in memory when the browser refuses storage, and rejects invalid documents',()=>{
+  const prior=globalThis.localStorage;const map=new Map();let refuse=false;
+  globalThis.localStorage={getItem:k=>{if(refuse)throw new Error('denied');return map.get(k)??null;},setItem:(k,v)=>{if(refuse)throw new Error('denied');map.set(k,v);}};
+  try{
+    const store=storage.createLocalDocument('memo',portfolio.EMPTY_PORTFOLIO,portfolio.parsePortfolio);store.getSnapshot();
+    const doc={...portfolio.EMPTY_PORTFOLIO,revision:1,positions:[pos('AAA',1)]};
+    assert.equal(store.save({...doc,positions:[pos('AAA',-1)]},null),'invalid');assert.equal(map.has('memo'),false);
+    refuse=true;assert.equal(store.save(doc,null),'storage_unavailable');
+    assert.deepEqual(store.getSnapshot().value,doc);assert.equal(store.getSnapshot().persistent,false);assert.equal(map.has('memo'),false);
+  }finally{globalThis.localStorage=prior;}
 });
 test('Friday close is evaluated on the settled band instead of the new zero band',()=>{
   const h={schemaVersion:1,symbol:'AAA',generatedAt:'x',prices:[{date:'2026-09-18',close:120}],bands:[{anchorDate:'2026-09-11',endDate:'2026-09-18',anchor:100,sigmaPercent:10,fromAnchor:true,closes:[{date:'2026-09-18',close:120}]},{anchorDate:'2026-09-18',endDate:'2026-09-25',anchor:120,sigmaPercent:10,closes:[]}]};
@@ -142,8 +174,8 @@ test('a saved symbol disappearing from the snapshot remains a null observation, 
 });
 test('model uses the reference session calendar to reject jointly missing days',()=>{
   const history={AAA:[{date:'2026-09-14',close:100},{date:'2026-09-16',close:110}],SPY:[{date:'2026-09-14',close:100},{date:'2026-09-15',close:100},{date:'2026-09-16',close:100}]};
-  assert.equal(portfolio.modelPerformance([{symbol:'AAA',weight:100}],0,history,'ALL','2026-09-16').reason,'history_gap');
-  assert.equal(portfolio.modelPerformance([{symbol:'AAA',weight:100}],0,history,'1D','2026-09-16').reason,'insufficient_history');
+  assert.equal(portfolio.positionsPerformance([pos('AAA',1)],history,'ALL','2026-09-16').reason,'history_gap');
+  assert.equal(portfolio.positionsPerformance([pos('AAA',1)],history,'1D','2026-09-16').reason,'insufficient_history');
 });
 
 test('price/sigma overlay keeps settled Friday, next-week resets and missing bands distinct',()=>{

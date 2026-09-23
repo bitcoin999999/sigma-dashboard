@@ -52,7 +52,7 @@ export function MobileNav({ sessionDate }: { sessionDate: string }) {
       {pathname === "/"
         ? <a href="#watchlist" className={item} aria-current={onBoard ? "page" : undefined}><Search className="size-5" aria-hidden />{pick("종목 찾기", "Symbols")}</a>
         : <Link prefetch={false} href="/#watchlist" className={item}><Search className="size-5" aria-hidden />{pick("종목 찾기", "Symbols")}</Link>}
-      <Link prefetch={false} href="/my-sigma" className={item} aria-current={pathname === "/my-sigma" ? "page" : undefined}><Star className="size-5" aria-hidden />My Sigma</Link>
+      <Link prefetch={false} href="/my-sigma" className={item} aria-current={pathname.startsWith("/my-sigma") ? "page" : undefined}><Star className="size-5" aria-hidden />My Sigma</Link>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger className={item}><Menu className="size-5" aria-hidden />{pick("더보기", "More")}</DialogTrigger>
         <DialogContent showCloseButton={false} className="max-h-[80dvh] overflow-y-auto">

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { MySigmaTabs } from "./my-sigma-tabs";
 import { SigmaSummary } from "./sigma-summary";
 import { matchesSigmaFilter, type SigmaFilter } from "@/lib/watchlist-summary";
 import { WatchlistChanges } from "./watchlist-changes";
@@ -128,7 +128,7 @@ export function MySigmaClient({ stocks, snapshot, sharedSymbols = "" }: MySigmaC
 
         {!saved.persistent && <p role="status" className="mt-3 text-sm text-muted-foreground">{pick("브라우저 저장을 사용할 수 없어 이번 방문에만 유지됩니다.", "Storage unavailable; kept for this visit only.")}</p>}
         {ready && symbols.filter((symbol) => !bySymbol.has(symbol)).map((symbol) => <div key={symbol} className="mt-3 flex items-center gap-3 text-sm"><span>{symbol} · {pick("현재 데이터 없음 · 저장 유지", "Unavailable · still saved")}</span><button type="button" className="min-h-11 rounded-lg border px-3" onClick={() => remove(symbol)}>{pick("관심 해제", "Remove")}</button></div>)}
-        <div className="mt-5 flex gap-2"><Link href="/my-sigma/portfolio" className="inline-flex min-h-11 items-center rounded-xl bg-foreground px-4 text-sm text-background">{pick("포트폴리오 · 비중과 보유 관리", "Portfolio · allocation & holdings")}</Link></div>
+        <MySigmaTabs current="watchlist" className="mt-5" />
         {ready && <div className="mt-6 space-y-4"><SigmaSummary symbols={symbols} stocks={stocks} snapshot={snapshot} filter={sigmaFilter} onFilter={setSigmaFilter}/>{!shared && <WatchlistChanges key={snapshot.snapshotId} symbols={symbols} stocks={stocks} snapshot={snapshot}/>}</div>}
         <ExploreNav sessionDate={snapshot.sessionDate} className="mt-7" />
 
