@@ -30,7 +30,6 @@ export function PriceSigmaOverlayChart({ data, symbol }: { data: PriceSigmaPoint
   const longRange = data.length > 90;
   const monthTicks = data.filter((row, index) => index === 0 || row.date.slice(0, 7) !== data[index - 1].date.slice(0, 7)).map(row => row.date);
   const [readoutPortal, setReadoutPortal] = useState<HTMLDivElement | null>(null);
-  const anchors = [...new Set(data.flatMap(row => row.anchorDate ? [row.anchorDate] : []))];
   const syncId = `history-${symbol}-${data[0]?.date}-${data.at(-1)?.date}`;
   const axis = { dataKey: "date", ticks: longRange ? monthTicks : undefined,
     tickFormatter: (value: string) => longRange ? `${value.slice(2, 4)}.${value.slice(5, 7)}` : value.slice(5).replace("-", "/"),
@@ -75,8 +74,8 @@ export function PriceSigmaOverlayChart({ data, symbol }: { data: PriceSigmaPoint
             <YAxis domain={[Math.floor(domains.sigma[0]), Math.ceil(domains.sigma[1])]} allowDecimals={false} width={62} tickFormatter={value => formatSigma(Number(value), 0)} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
             <Tooltip active defaultIndex={data.length - 1} isAnimationActive={false} content={() => null} cursor={cursor} />
             {[-1, 0, 1].map(value => <ReferenceLine key={value} y={value} stroke={value > 0 ? COLORS.upper : value < 0 ? COLORS.lower : "var(--muted-foreground)"} strokeOpacity={0.5} strokeDasharray="4 4" />)}
-            {/* Each week's baseline changes; never connect across weekly resets or missing bands. */}
-            {anchors.map(anchor => <Line key={anchor} dataKey={(row: PriceSigmaPoint) => row.anchorDate === anchor ? row.sigmaPosition : null} name="sigmaPosition" type="linear" stroke={COLORS.sigma} strokeWidth={1.5} dot={data.length <= 65 || data.filter(row => row.anchorDate === anchor).length === 1 ? { r: 2 } : false} connectNulls={false} isAnimationActive={false} />)}
+            {/* Join observed daily positions across weeks; missing observations remain gaps. */}
+            <Line dataKey="sigmaPosition" name="sigmaPosition" type="monotone" stroke={COLORS.sigma} strokeWidth={1.8} dot={data.length <= 65 ? { r: 2 } : false} connectNulls={false} isAnimationActive={false} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
