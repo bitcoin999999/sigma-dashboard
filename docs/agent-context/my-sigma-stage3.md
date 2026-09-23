@@ -153,3 +153,21 @@
 - 코드 커밋 `0c8d857`, `vercel --prod --scope svpk1` 직접 배포. `dpl_FZUDt125CDYao3kVoAbKS79CCkUX` READY/production, https://sigma-dashboard-burv6lqxc-svpk1.vercel.app → https://sigma-dashboard-five.vercel.app. 배포 전에 직전 운영 `dpl_9Yr9idonkxYjCYnfqSmAznGWghaC`(=`84513df`)가 git보다 앞서 있지 않음을 확인했다.
 - 운영 HTTP: `/`, `/my-sigma`, `/my-sigma/portfolio`(noindex·새 헤더), `/symbol/NVDA`, `/api/history/SPY` 200, 잘못된 티커 404, 애널리틱스 스크립트 200.
 - 운영 브라우저(해당 사이트 저장 자료가 없던 프로필): 검색 NVDA→Enter→수량 칸 포커스→10 입력 시 v2 문서 저장, 관심종목 자동 추가, 평가금액 $2,288.70·전일 대비 +$14.90(+0.66%)·가중 +0.75σ, 3M +9.69%(SPY +3.89%) 차트를 확인했다. 확인 뒤 그 프로필에 생긴 `sigma-*` 키는 모두 지웠다. 사용자 실제 저장 자료는 읽거나 바꾸지 않았다.
+
+## 2026-09-24: 최신 밴드 누락 진단과 클릭 팝업 복원
+
+- 사용자 XOM 제보를 2026-09-23 세션 공개 스냅샷과 대조. 전체123종목 중97종목 fromAnchor=true, 26종목 false. 제외 종목: JPM, GS, V, XOM, CVX, SLB, CAT, RTX, LMT, CEG, VST, PLD, EQIX, CIBR, ANET, XLB, XLC, XLE, XLF, XLI, XLK, XLP, XLRE, XLU, XLV, XLY.
+- 원인: sigma_core.band_sigma는 토요일 앵커 캐시에 없던 종목을 주중 IV로 채울 때 fromAnchor=false로 저장한다. 상단 현재 범위에는 발행값을 쓰지만 historyChartRows는 기존 앵커 기준 가드 때문에 차트에서 제외한다. 캐시/종가 누락이 아니다.
+- XOM 최근1년252거래일 중244일 유효, 2026-09-14~23의8거래일은 미확인. 최신종가161.23, 발행 범위157.15~169.93이지만 과거 앵커 IV로 승격하지 않는다. 최신밴드·각 날짜 팝업·기간 커버리지에 이유를 표시한다. 산식/원본/weeklyOutcomes/알림·스케줄은 변경하지 않았다.
+- 사용자 요청으로 고정 숫자줄 대신 가격·σ 차트의 클릭/터치 팝업을 복원. 날짜/종가/±1σ/앵커/σ위치, 닫기 버튼과Escape, 방향키 탐색, 기간전환 시 선택 초기화. 앞선 큰 툴팁 제거 규칙은 이 요청으로 대체한다. 부드러운 σ곡선·두 패널 구조는 유지한다.
+- 로컬 검증: 테스트103개, TypeScript/변경 파일 ESLint 통과. 데스크톱 및390px 화면에서 팝업 가격, 최신 날짜의 미확인 안내, 하단패널, 닫기/방향키/기간전환 확인. 모바일 clientWidth=scrollWidth=380. 브라우저 오류/경고0.
+- Next 운영 빌드 통과. AMD도252/252유효, 390px 클릭 팝업과 밴드가격 표시 확인.
+- 운영 적용 시도는 자동 승인 검토에서 명시적인 배포 승인이 없다는 이유로 거절됐다. 운영 저장소 복사/배포 명령 자체가 실행되지 않았으며 수정본은 작업폴더 `chart-fix/`에 있다. 사용자 배포 승인을 요청한 상태. 배포 완료로 보고하지 말 것.
+
+- 후속 사용자 메시지 "배포승인할게"로 운영 반영을 명시 승인했다. 검증된 5개 파일만 운영 저장소에 반영한다.
+
+### 클릭 팝업 운영 배포 완료
+
+- 사용자 명시 승인 후 2026-09-24 배포. `dpl_EdqNwVFvU14vz7JSGro34PrJ3bEE`, READY/production. https://sigma-dashboard-j7c9kn84k-svpk1.vercel.app → sigma-dashboard-five.vercel.app / sigmarange.com / www.sigmarange.com 별칭 확인.
+- 운영 XOM 1M 클릭 팝업: 2026-08-24 종가164.05/상단171.17/하단159.05/앵커165.11/−0.17σ 확인. 최신2026-09-23 종가161.23과 앵커 IV 미확인 안내 확인. 상단 가격·하단σ 패널 모두 클릭 동작 확인.
+- 운영390px 모바일 clientWidth=scrollWidth=380, 브라우저 오류·경고0. 데이터 원본과 미확인 밴드 제외 규칙은 유지했다.

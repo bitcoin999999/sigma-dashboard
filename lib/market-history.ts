@@ -24,6 +24,7 @@ export function mergeMarketHistory(archive: MarketHistory | null, current: Marke
   return { ...current, prices: [...prices.values()].filter(p => p.date <= cutoff).sort((a,b) => a.date.localeCompare(b.date)), bands: [...bands.values()].filter(b => b.anchorDate <= cutoff).sort((a,b) => a.anchorDate.localeCompare(b.anchorDate)) };
 }
 export type PriceSigmaPoint = {
+  bandUnavailableReason: "unverified" | "missing" | null;
   date: string;
   close: number | null;
   anchorClose: number | null;
@@ -39,12 +40,13 @@ export type PriceSigmaPoint = {
 export function historyChartRows(history: MarketHistory): (PriceSigmaPoint & { price: number; sigma: number | null; status: ReturnType<typeof resolveStatus> })[] {
   return history.prices.map(p => {
     // Closing Friday belongs to the band that just finished, never the new zero-sigma band.
-    const band = history.bands.find(b => b.fromAnchor === true && p.date > b.anchorDate && p.date <= b.endDate);
+    const matchingBands = history.bands.filter(b => p.date > b.anchorDate && p.date <= b.endDate);
+    const band = matchingBands.find(b => b.fromAnchor === true);
     const sd = band ? band.anchor * band.sigmaPercent / 100 : NaN;
     const z = band ? calculateZScore(p.close,band.anchor,sd) : NaN;
     const bounds = band && Number.isFinite(z) ? sigmaPriceRange(band.anchor,sd,1) : null;
     const sigmaPosition = Number.isFinite(z) ? z : null;
-    return { date: p.date, price: p.close, close: p.close, sigma: sigmaPosition, sigmaPosition,
+    return { bandUnavailableReason: bounds ? null : matchingBands.length ? "unverified" : "missing", date: p.date, price: p.close, close: p.close, sigma: sigmaPosition, sigmaPosition,
       anchorClose: bounds ? band!.anchor : null,
       upper1Sigma: bounds?.upper ?? null, lower1Sigma: bounds?.lower ?? null,
       range: bounds ? [bounds.lower,bounds.upper] : null,

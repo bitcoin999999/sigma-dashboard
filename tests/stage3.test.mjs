@@ -251,3 +251,11 @@ test('price history opens at one calendar year and retains the anniversary sessi
   const points=[{date:'2025-09-22',close:100},{date:'2026-09-22',close:200}];
   assert.equal(points.filter(p=>p.date>=periods.priceSigmaPeriodStart('2026-09-22','1Y')).length,2);
 });
+
+test('history distinguishes unverified IV from a missing band without promoting either',()=>{
+  const rows=history.historyChartRows({prices:[{date:'2026-09-10',close:160},{date:'2026-09-23',close:161.23}],bands:[{anchorDate:'2026-09-18',endDate:'2026-09-25',anchor:163.54,sigmaPercent:3.91,fromAnchor:false}]});
+  assert.equal(rows[0].bandUnavailableReason,'missing');
+  assert.equal(rows[1].bandUnavailableReason,'unverified');
+  for(const row of rows){assert.equal(row.upper1Sigma,null);assert.equal(row.lower1Sigma,null);assert.equal(row.sigmaPosition,null);}
+  assert.equal(rows[1].close,161.23);
+});
