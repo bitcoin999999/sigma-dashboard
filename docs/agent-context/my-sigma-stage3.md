@@ -147,3 +147,9 @@
 - 추가 경로: 관심종목 칩(개별/모두), 보드 전체 검색(Enter=첫 결과, 추가 직후 수량 칸 포커스), 여러 줄 붙여넣기 `티커 수량 [평단]`(콤마는 구분자라 천 단위 콤마 불가, 못 읽은 줄만 입력칸에 남김). 삭제는 9초 되돌리기.
 - 관심종목/포트폴리오 탭(`components/my-sigma/my-sigma-tabs.tsx`)을 두 페이지 상단에 둔다. 상단·하단 내비의 My Sigma 활성 표시는 `/my-sigma/*` 전체.
 - 검증: 테스트 102개(기존 포트폴리오 불변식을 수량 모델로 이식 + v1 마이그레이션·입력 파싱·병합·메모리 저장), tsc·eslint·`next build` 통과. 로컬 브라우저 375px/1280px에서 v1 변환·legacy 보관, 수량/금액 입력, 칩·검색·붙여넣기 추가, 관심종목 자동 추가, 삭제/되돌리기, 다른 탭 변경 반영, 손상 문서 화면, 기간 전환(3M·1Y), 홈 배지·요약 줄을 확인했다. **운영 배포·커밋은 하지 않았다.**
+
+### 포트폴리오 v2 운영 배포
+
+- 코드 커밋 `0c8d857`, `vercel --prod --scope svpk1` 직접 배포. `dpl_FZUDt125CDYao3kVoAbKS79CCkUX` READY/production, https://sigma-dashboard-burv6lqxc-svpk1.vercel.app → https://sigma-dashboard-five.vercel.app. 배포 전에 직전 운영 `dpl_9Yr9idonkxYjCYnfqSmAznGWghaC`(=`84513df`)가 git보다 앞서 있지 않음을 확인했다.
+- 운영 HTTP: `/`, `/my-sigma`, `/my-sigma/portfolio`(noindex·새 헤더), `/symbol/NVDA`, `/api/history/SPY` 200, 잘못된 티커 404, 애널리틱스 스크립트 200.
+- 운영 브라우저(해당 사이트 저장 자료가 없던 프로필): 검색 NVDA→Enter→수량 칸 포커스→10 입력 시 v2 문서 저장, 관심종목 자동 추가, 평가금액 $2,288.70·전일 대비 +$14.90(+0.66%)·가중 +0.75σ, 3M +9.69%(SPY +3.89%) 차트를 확인했다. 확인 뒤 그 프로필에 생긴 `sigma-*` 키는 모두 지웠다. 사용자 실제 저장 자료는 읽거나 바꾸지 않았다.
