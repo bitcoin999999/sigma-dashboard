@@ -24,6 +24,7 @@ export function SigmaHistoryChart({ history, session }: { history: MarketHistory
   return <section className="glass mt-8 min-w-0 rounded-2xl p-4 sm:p-6" aria-label={pick("주가와 주간 시그마 이력", "Price and weekly sigma history")}>
     <div className="flex flex-wrap items-start justify-between gap-3"><div><h2 className="text-lg font-semibold">{history.symbol} · {pick("주가와 주간 σ", "Price & weekly sigma")}</h2><p className="mt-1 text-xs text-muted-foreground">{pick("각 날짜에 적용된 밴드 기준 · 주간 마감 후에도 과거 밴드 유지", "Each date uses its own weekly band · settled bands are retained")}</p></div>
       <div className="flex gap-1">{PRICE_SIGMA_PERIODS.map(label => <button key={label} aria-pressed={period === label} onClick={() => setPeriod(label)} className={`min-h-11 rounded-lg px-3 text-sm ${period === label ? "bg-foreground text-background" : "text-muted-foreground"}`}>{label}</button>)}</div></div>
+    {history.archiveUnavailable && <p role="status" className="mt-3 text-xs text-muted-foreground">{pick("장기 이력을 불러오지 못해 최근 가격만 표시합니다.", "Long-term history could not be loaded; showing recent prices.")} <button type="button" onClick={() => window.location.reload()} className="min-h-11 underline underline-offset-4">{pick("다시 불러오기", "Retry")}</button></p>}
     <PriceSigmaOverlayChart data={rows} symbol={history.symbol} />
     <div className="mt-2 space-y-1 text-[11px] leading-relaxed text-muted-foreground">
       <p className="num">{pick("표시 주가", "Prices shown")} {rows[0]?.date ?? "—"}–{rows.at(-1)?.date ?? "—"} · {pick(`${rows.length}거래일`, `${rows.length} sessions`)}</p>

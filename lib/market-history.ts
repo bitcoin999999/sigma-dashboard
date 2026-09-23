@@ -2,7 +2,7 @@ import { buildWeeklyBand, calculateZScore, sigmaPriceRange, resolveStatus } from
 import type { MarketSnapshot, StockData, WeeklyBand } from "./types";
 import { bandEndDate, isDate } from "./market-dates";
 export interface HistoryBand extends WeeklyBand { endDate: string; observedAt?: string; fromAnchor?: boolean; scaled?: boolean }
-export interface MarketHistory { schemaVersion: 1; symbol: string; generatedAt: string; prices: { date: string; close: number }[]; bands: HistoryBand[] }
+export interface MarketHistory { archiveUnavailable?: boolean; schemaVersion: 1; symbol: string; generatedAt: string; prices: { date: string; close: number }[]; bands: HistoryBand[] }
 export function currentHistory(stock: StockData, snapshot: MarketSnapshot): MarketHistory {
   const bands: HistoryBand[] = [stock.weekBeforeLast, stock.lastWeek].flatMap(b => b ? [{ ...b, endDate: b.closes.at(-1)?.date ?? bandEndDate(b.anchorDate) }] : []);
   bands.push({ ...stock.sigmaBasis, anchorDate: snapshot.bandAnchorDate, endDate: snapshot.bandEndDate ?? bandEndDate(snapshot.bandAnchorDate), anchor: stock.anchor, sigmaPercent: stock.sigmaPercent, closes: stock.history.filter(p => p.date > snapshot.bandAnchorDate && p.date <= snapshot.sessionDate) });
