@@ -116,3 +116,11 @@
 - 1Y기본값과 작은 고정 정보줄 유지. 가격패널에는 가격단위만, 하단에는σ단위만 표시한다.
 - 테스트100개 통과(새 캐시/재시도/잘못된 종목/명시적 실패상태4개). TypeScript/ESLint/Next운영빌드 통과. MU데스크톱·390px모바일에서 상하분리, 날짜동기화, 기간전환, 가로넘침없음, 콘솔오류0 확인.
 - 전수대조 원본: `/private/tmp/sigma-all-pages-before.json`, 불일치90개 `/private/tmp/sigma-history-stale-before.json`. 후속검증 도구는 작업폴더 `audit-history-pages.py`; 실제서버HTML의 가격일수와밴드커버리지, 두패널존재를 종목별원본과 비교한다.
+
+
+### 캐시 수정·분리 차트 배포 검증
+
+- 코드 `d2fca8a`, 운영 배포 `dpl_5iBgMJU16U6NAaV9Hsj3B7KFHFPX` READY. https://sigma-dashboard-cbt8z6l84-svpk1.vercel.app → sigma-dashboard-five.vercel.app.
+- 운영123개 상세 페이지를 각1회 조회해 공개HTML의 날짜범위·가격일수·밴드일수·가격/σ독립패널 존재를 로컬원본과 대조: **123/123통과, 불일치0(수정전90)**. 결과 `/private/tmp/sigma-all-pages-after.json`. 동일 검사에서 데이터가 짧은7종목과 fromAnchor=false/과거자료누락 구간도 실제보유범위대로 일치함을 확인했다.
+- ALAB 운영 브라우저: 이전11/252 →252/252, 상단가격+하단σ 확인. 모바일390px에서도 두패널 유지, 가로넘침없음. MU하단패널 방향키가 상단숫자줄 날짜/값을 동기화함을 확인.
+- 이전부터 열린 브라우저에는 구 화면이 남을 수 있으므로 배포후1회새로고침 안내. 서버의 종목별 stale응답을 유지하고 사용자에게 여러번새로고침하게 하는 방식으로 되돌리지 말 것.
