@@ -6,7 +6,6 @@ import { useLocale } from "@/components/locale-provider";
 import { formatCurrency, formatSigma } from "@/lib/format";
 import type { PriceSigmaPoint } from "@/lib/market-history";
 import { priceSigmaDomains } from "@/lib/price-sigma-chart";
-import { resolveStatus, STATUS_META } from "@/lib/sigma";
 
 const COLORS = { close: "#54D2D2", upper: "#A855F7", lower: "#F3D37A", sigma: "var(--foreground)" };
 const mobileQuery = "(max-width: 639px)";
@@ -20,22 +19,16 @@ const serverSnapshot = () => false;
 const dollar = (value: number | null) => value === null ? "—" : formatCurrency(value);
 const sigma = (value: number | null) => value === null ? "—" : formatSigma(value);
 
-function PointTooltip({ point }: { point: PriceSigmaPoint }) {
+function PointReadout({ point }: { point: PriceSigmaPoint }) {
   const { pick } = useLocale();
-  return <div className="w-56 max-w-[calc(100vw-3rem)] rounded-xl border border-border bg-popover p-3 text-xs text-popover-foreground shadow-lg" role="status">
-    <p className="num mb-2 font-semibold">{point.date}</p>
-    <dl className="space-y-1.5">
-      {[
-        [pick("종가", "Close"), dollar(point.close), COLORS.close],
-        ["+1σ", dollar(point.upper1Sigma), COLORS.upper],
-        ["−1σ", dollar(point.lower1Sigma), COLORS.lower],
-        [pick("주간 앵커", "Weekly anchor"), dollar(point.anchorClose), "var(--muted-foreground)"],
-        [pick("σ 위치", "Sigma position"), sigma(point.sigmaPosition), COLORS.sigma],
-      ].map(([label, value, color]) => <div key={label} className="flex justify-between gap-3"><dt className="flex items-center gap-2"><span className="size-2 rounded-full" style={{ backgroundColor: color }} />{label}</dt><dd className="num font-medium">{value}</dd></div>)}
-    </dl>
-    {(point.upperCloseTouchValue !== null || point.lowerCloseTouchValue !== null) && <p className="mt-2 border-t border-border pt-2 text-muted-foreground">
-      {point.upperCloseTouchValue !== null ? pick("종가 ≥ +1σ", "Close ≥ +1σ") : pick("종가 ≤ −1σ", "Close ≤ −1σ")}
-    </p>}
+  return <div className="grid grid-cols-3 gap-x-3 gap-y-2 text-[11px] sm:flex sm:flex-wrap sm:items-center sm:gap-x-5" role="status">
+    <span className="num self-center text-muted-foreground">{point.date}</span>
+    {[
+      [pick("종가", "Close"), dollar(point.close), COLORS.close],
+      ["+1σ", dollar(point.upper1Sigma), COLORS.upper],
+      ["−1σ", dollar(point.lower1Sigma), COLORS.lower],
+      [pick("위치", "Position"), sigma(point.sigmaPosition), COLORS.sigma],
+    ].map(([label, value, color]) => <span key={label} className="whitespace-nowrap"><span className="mr-1 text-muted-foreground">{label}</span><strong className="num font-medium" style={{ color }}>{value}</strong></span>)}
   </div>;
 }
 
@@ -46,17 +39,13 @@ export function PriceSigmaOverlayChart({ data, symbol }: { data: PriceSigmaPoint
   const showPrice = !mobile || mobileMode === "price";
   const showSigma = !mobile || mobileMode === "sigma";
   const domains = priceSigmaDomains(data);
-  const latest = data.at(-1);
+  const longRange = data.length > 90;
+  const monthTicks = data.filter((row, index) => index === 0 || row.date.slice(0, 7) !== data[index - 1].date.slice(0, 7)).map(row => row.date);
+  const [readoutPortal, setReadoutPortal] = useState<HTMLDivElement | null>(null);
   // A new anchor resets sigma, not the price. Do not draw a return between weeks.
   const anchors = [...new Set(data.flatMap(row => row.anchorDate ? [row.anchorDate] : []))];
-  const statusColor = latest?.sigmaPosition == null ? "var(--muted-foreground)" : `var(${STATUS_META[resolveStatus(latest.sigmaPosition)].colorVar})`;
 
   return <div className="mt-4 min-w-0">
-    {latest && <div className="text-sm leading-relaxed">
-      <p className="num"><span className="text-muted-foreground">{pick("종가", "Close")} </span><strong style={{ color: COLORS.close }}>{dollar(latest.close)}</strong>
-        <span className="mx-2 text-muted-foreground">vs</span><span style={{ color: COLORS.upper }}>+1σ {dollar(latest.upper1Sigma)}</span><span className="ml-2 text-xs text-muted-foreground">{latest.date}</span></p>
-      <p className="mt-1 text-xs text-muted-foreground">{symbol} · {pick("주간 앵커 대비", "Relative to weekly anchor")} <strong className="num" style={{ color: statusColor }}>{sigma(latest.sigmaPosition)}</strong></p>
-    </div>}
     <div className="mt-3 flex gap-1 sm:hidden" role="group" aria-label={pick("차트 표시", "Chart view")}>
       {(["price", "sigma"] as const).map(mode => <button key={mode} type="button" aria-pressed={mobileMode === mode} onClick={() => setMobileMode(mode)} className={`min-h-11 rounded-lg px-3 text-xs ${mobileMode === mode ? "bg-foreground text-background" : "text-muted-foreground"}`}>
         {mode === "price" ? pick("가격 + 밴드", "Price + Band") : pick("σ 위치", "Sigma Position")}
@@ -66,18 +55,20 @@ export function PriceSigmaOverlayChart({ data, symbol }: { data: PriceSigmaPoint
       {(showPrice ? [[pick("종가", "Close"), COLORS.close, false], ["+1σ", COLORS.upper, true], ["−1σ", COLORS.lower, true]] as const : []).map(([label, color, dashed]) => <li key={label} className="flex items-center gap-1.5"><span className="w-4 border-t-2" style={{ borderColor: color, borderStyle: dashed ? "dashed" : "solid" }} />{label}</li>)}
       {showSigma && <li className="flex items-center gap-1.5"><span className="w-4 border-t" style={{ borderColor: COLORS.sigma }} />{pick("σ 위치 · 오른쪽 축", "Sigma position · right axis")}</li>}
     </ul>
+    <div ref={setReadoutPortal} className="mt-3 min-h-14 sm:min-h-6" aria-label={pick("선택 날짜의 가격과 σ", "Price and sigma for selected date")} />
     <div className="mt-3 flex justify-between text-[10px] text-muted-foreground"><span>{showPrice ? pick("가격 ($)", "Price ($)") : ""}</span><span>{showSigma ? pick("위치 (σ)", "Position (σ)") : ""}</span></div>
     <div className="mt-1 h-72 min-w-0 overflow-hidden sm:h-96" aria-label={pick(`${symbol} 가격과 시그마 비교 차트`, `${symbol} price and sigma comparison chart`)}>
       <ResponsiveContainer width="100%" height="100%">
         <ComposedChart data={data} margin={{ top: 10, right: 0, bottom: 0, left: 0 }} accessibilityLayer>
           <CartesianGrid vertical={false} stroke="var(--border)" strokeOpacity={0.45} />
-          <XAxis dataKey="date" tickFormatter={(value: string) => value.slice(5).replace("-", "/")} minTickGap={40} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} padding={{ left: 5, right: 5 }} />
+          <XAxis dataKey="date" ticks={longRange ? monthTicks : undefined} tickFormatter={(value: string) => longRange ? `${value.slice(2, 4)}.${value.slice(5, 7)}` : value.slice(5).replace("-", "/")} interval="preserveStartEnd" minTickGap={40} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} padding={{ left: 5, right: 5 }} />
           <YAxis yAxisId="price" orientation="left" hide={!showPrice} domain={domains.price} width={62} tickFormatter={value => `$${Number(value).toLocaleString("en-US", { maximumFractionDigits: Math.abs(value) < 10 ? 2 : 0 })}`} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
-          <YAxis yAxisId="sigma" orientation="right" hide={!showSigma} domain={domains.sigma} width={52} tickFormatter={value => formatSigma(Number(value), 1)} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
-          <Tooltip content={({ active, label }) => {
-            const point = active ? data.find(row => row.date === label) : undefined;
-            return point ? <PointTooltip point={point} /> : null;
-          }} cursor={{ stroke: "var(--foreground)", strokeOpacity: 0.25, strokeDasharray: "4 4" }} />
+          <YAxis yAxisId="sigma" orientation="right" hide={!showSigma} domain={[Math.floor(domains.sigma[0]), Math.ceil(domains.sigma[1])]} allowDecimals={false} width={52} tickFormatter={value => formatSigma(Number(value), 1)} tick={{ fontSize: 11, fill: "var(--muted-foreground)" }} tickLine={false} axisLine={false} />
+          {readoutPortal && <Tooltip key={`${data[0]?.date}:${data.at(-1)?.date}`} portal={readoutPortal} active defaultIndex={data.length - 1} isAnimationActive={false} includeHidden wrapperStyle={{ width: "100%", pointerEvents: "none" }} content={({ label }) => {
+            const point = data.find(row => row.date === label) ?? data.at(-1);
+            return point ? <PointReadout point={point} /> : null;
+          }} cursor={{ stroke: "var(--foreground)", strokeOpacity: 0.25, strokeDasharray: "4 4" }} />}
+
           {showSigma && [-1, 0, 1].map(value => <ReferenceLine key={value} yAxisId="sigma" y={value} stroke="var(--muted-foreground)" strokeOpacity={value === 0 ? 0.4 : 0.25} strokeDasharray={value === 0 ? "2 4" : "6 5"} label={{ value: formatSigma(value, 0), position: "insideTopRight", fontSize: 10, fill: "var(--muted-foreground)" }} />)}
           {showPrice && <>
             {/* A ranged Area fills only [lower, upper], never zero to upper. */}

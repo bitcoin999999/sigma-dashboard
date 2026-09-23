@@ -207,3 +207,15 @@ test('GEX proximity never invents data or relabels stale, crossed, conflicted or
   for(const stock of [gexStock([level(100.5)],[level(99.5)]),gexStock([level(100)],[level(100)]),gexStock([level(99,-100)],[level(101,0)])])assert.deepEqual(proximity.nearbyGexLevels(stock,'2026-09-22').levels,[]);
   assert.equal(proximity.nearbyGexLevels({...gexStock([level(99)]),price:0},'2026-09-22').state,'unavailable');
 });
+
+test('price history opens at one calendar year and retains the anniversary session',()=>{
+  const periods=load('lib/price-sigma-chart.ts');
+  assert.equal(periods.DEFAULT_PRICE_SIGMA_PERIOD,'1Y');
+  assert.equal(periods.priceSigmaPeriodStart('2026-09-22','1Y'),'2025-09-22');
+  assert.equal(periods.priceSigmaPeriodStart('2024-02-29','1Y'),'2023-02-28');
+  assert.equal(periods.priceSigmaPeriodStart('2026-03-31','1M'),'2026-02-28');
+  assert.equal(periods.priceSigmaPeriodStart('2026-09-22','3M'),'2026-06-22');
+  assert.equal(periods.priceSigmaPeriodStart('2026-09-22','ALL'),'');
+  const points=[{date:'2025-09-22',close:100},{date:'2026-09-22',close:200}];
+  assert.equal(points.filter(p=>p.date>=periods.priceSigmaPeriodStart('2026-09-22','1Y')).length,2);
+});
