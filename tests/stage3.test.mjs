@@ -145,3 +145,65 @@ test('model uses the reference session calendar to reject jointly missing days',
   assert.equal(portfolio.modelPerformance([{symbol:'AAA',weight:100}],0,history,'ALL','2026-09-16').reason,'history_gap');
   assert.equal(portfolio.modelPerformance([{symbol:'AAA',weight:100}],0,history,'1D','2026-09-16').reason,'insufficient_history');
 });
+
+test('price/sigma overlay keeps settled Friday, next-week resets and missing bands distinct',()=>{
+  const h={prices:[{date:'2026-09-10',close:99},{date:'2026-09-18',close:110},{date:'2026-09-21',close:99}],bands:[
+    {anchorDate:'2026-09-11',endDate:'2026-09-18',anchor:100,sigmaPercent:10,fromAnchor:true},
+    {anchorDate:'2026-09-18',endDate:'2026-09-25',anchor:110,sigmaPercent:10,fromAnchor:true},
+  ]};
+  const [missing,friday,monday]=history.historyChartRows(h);
+  for(const key of ['sigmaPosition','anchorClose','upper1Sigma','lower1Sigma','range','upperCloseTouchValue','lowerCloseTouchValue'])assert.equal(missing[key],null);
+  assert.equal(friday.anchorClose,100);assert.equal(friday.sigmaPosition,1);assert.deepEqual(friday.range,[90,110]);assert.equal(friday.upperCloseTouchValue,110);
+  assert.equal(monday.anchorClose,110);assert.equal(monday.sigmaPosition,-1);assert.equal(monday.lowerCloseTouchValue,99);
+  assert.notEqual(friday.anchorDate,monday.anchorDate);
+});
+test('AMD overlay uses the shared unrounded sigma calculation and never rounds touch decisions',()=>{
+  const make=close=>history.historyChartRows({prices:[{date:'2026-09-22',close}],bands:[{anchorDate:'2026-09-18',endDate:'2026-09-25',anchor:559.82,sigmaPercent:36.72/559.82*100,fromAnchor:true}]})[0];
+  const row=make(623.77);
+  assert.ok(Math.abs(row.sigmaPosition-1.741557734204791)<1e-10);
+  assert.ok(Math.abs(row.upper1Sigma-596.54)<1e-10);
+  assert.ok(Math.abs(row.lower1Sigma-523.10)<1e-10);
+  assert.equal(make(596.54-0.00001).upperCloseTouchValue,null);
+  assert.equal(row.sigmaPosition,sigma.calculateZScore(623.77,559.82,36.72));
+});
+test('overlay domains follow the selected period and include outliers without inserting missing sigma',()=>{
+  const domains=load('lib/price-sigma-chart.ts').priceSigmaDomains;
+  const recent=[{close:100,lower1Sigma:90,upper1Sigma:110,sigmaPosition:0}];
+  const prior={close:1000,lower1Sigma:80,upper1Sigma:120,sigmaPosition:45};
+  const one=domains(recent),year=domains([prior,...recent]);
+  assert.ok(one.price[0]<90 && one.price[1]>110 && one.price[1]<120);
+  assert.ok(year.price[1]>1000 && year.sigma[1]>45);
+  assert.ok(one.sigma[0]<-1 && one.sigma[1]>1);
+  const missing=[{close:100,lower1Sigma:null,upper1Sigma:null,sigmaPosition:null}];
+  assert.ok(domains(missing).price[0]>90);assert.equal(missing[0].sigmaPosition,null);
+  for(const pair of Object.values(domains([])))assert.ok(pair.every(Number.isFinite) && pair[0]<pair[1]);
+});
+
+test('summary All includes every saved symbol, even missing data, and applies both filters to the same rows',()=>{
+  const symbols=['UP','DOWN','NEAR','INSIDE','NO_SIGMA','MISSING'];
+  const stocks=[['UP',1.1],['DOWN',-1],['NEAR',.85],['INSIDE',.2],['NO_SIGMA',NaN]].map(([symbol,zScore])=>({symbol,zScore}));
+  assert.deepEqual(summary.summarySymbolRows(symbols,stocks,'all').map(r=>r.symbol),symbols);
+  assert.equal(summary.summarySymbolRows(symbols,stocks,'all').at(-1).stock,null);
+  assert.deepEqual(summary.summarySymbolRows(symbols,stocks,'outside').map(r=>r.symbol),['UP','DOWN']);
+  assert.deepEqual(summary.summarySymbolRows(symbols,stocks,'approaching').map(r=>r.symbol),['NEAR']);
+  assert.deepEqual(summary.summarySymbolRows(['INSIDE'],stocks,'outside'),[]);
+});
+const proximity=load('lib/gex-proximity.ts');
+const level=(strike,netGex=100)=>({strike,netGex});
+const gexStock=(support=[],resistance=[],extra={})=>({price:100,gex:{asOf:'2026-09-22',support,resistance,profile:[...support,...resistance],...extra}});
+test('GEX proximity includes exact 1%, excludes values beyond it, and picks the closest published candidate per side',()=>{
+  const result=proximity.nearbyGexLevels(gexStock([level(98,200),level(99,100)],[level(101,200),level(100.5,100)]),'2026-09-22');
+  assert.equal(result.state,'current');assert.equal(result.levels.length,2);
+  assert.equal(result.levels.find(r=>r.role==='support').price,99);
+  assert.equal(result.levels.find(r=>r.role==='resistance').price,100.5);
+  assert.equal(result.levels.find(r=>r.role==='support').distancePercent,-1);
+  assert.equal(proximity.nearbyGexLevels(gexStock([],[level(101.00001)]),'2026-09-22').levels.length,0);
+  assert.equal(proximity.nearbyGexLevels(gexStock([level(99.999)],[level(100.001)]),'2026-09-22').levels.length,2);
+});
+test('GEX proximity never invents data or relabels stale, crossed, conflicted or nonpositive candidates',()=>{
+  assert.equal(proximity.nearbyGexLevels({price:100},'2026-09-22').state,'unavailable');
+  assert.equal(proximity.nearbyGexLevels(gexStock([level(99)],[],{asOf:'2026-09-21'}),'2026-09-22').state,'different_session');
+  assert.equal(proximity.nearbyGexLevels(gexStock([level(99)],[],{asOf:'invalid'}),'2026-09-22').state,'unavailable');
+  for(const stock of [gexStock([level(100.5)],[level(99.5)]),gexStock([level(100)],[level(100)]),gexStock([level(99,-100)],[level(101,0)])])assert.deepEqual(proximity.nearbyGexLevels(stock,'2026-09-22').levels,[]);
+  assert.equal(proximity.nearbyGexLevels({...gexStock([level(99)]),price:0},'2026-09-22').state,'unavailable');
+});

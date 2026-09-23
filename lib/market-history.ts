@@ -23,16 +23,35 @@ export function mergeMarketHistory(archive: MarketHistory | null, current: Marke
   const cutoff = current.prices.at(-1)?.date ?? "";
   return { ...current, prices: [...prices.values()].filter(p => p.date <= cutoff).sort((a,b) => a.date.localeCompare(b.date)), bands: [...bands.values()].filter(b => b.anchorDate <= cutoff).sort((a,b) => a.anchorDate.localeCompare(b.anchorDate)) };
 }
-export function historyChartRows(history: MarketHistory) {
+export type PriceSigmaPoint = {
+  date: string;
+  close: number | null;
+  anchorClose: number | null;
+  upper1Sigma: number | null;
+  lower1Sigma: number | null;
+  sigmaPosition: number | null;
+  anchorDate: string | null;
+  range: [number, number] | null;
+  upperCloseTouchValue: number | null;
+  lowerCloseTouchValue: number | null;
+};
+
+export function historyChartRows(history: MarketHistory): (PriceSigmaPoint & { price: number; sigma: number | null; status: ReturnType<typeof resolveStatus> })[] {
   return history.prices.map(p => {
     // Closing Friday belongs to the band that just finished, never the new zero-sigma band.
     const band = history.bands.find(b => b.fromAnchor === true && p.date > b.anchorDate && p.date <= b.endDate);
     const sd = band ? band.anchor * band.sigmaPercent / 100 : NaN;
     const z = band ? calculateZScore(p.close,band.anchor,sd) : NaN;
-    const bounds = band ? sigmaPriceRange(band.anchor,sd,1) : null;
-    return { date: p.date, price: p.close, sigma: Number.isFinite(z) ? z : null,
-      range: bounds && Number.isFinite(bounds.lower) ? [bounds.lower,bounds.upper] : null,
-      anchorDate: band?.anchorDate ?? null, status: resolveStatus(z) };
+    const bounds = band && Number.isFinite(z) ? sigmaPriceRange(band.anchor,sd,1) : null;
+    const sigmaPosition = Number.isFinite(z) ? z : null;
+    return { date: p.date, price: p.close, close: p.close, sigma: sigmaPosition, sigmaPosition,
+      anchorClose: bounds ? band!.anchor : null,
+      upper1Sigma: bounds?.upper ?? null, lower1Sigma: bounds?.lower ?? null,
+      range: bounds ? [bounds.lower,bounds.upper] : null,
+      // This archive contains closes only. These are NOT intraday touches.
+      upperCloseTouchValue: bounds && p.close >= bounds.upper ? bounds.upper : null,
+      lowerCloseTouchValue: bounds && p.close <= bounds.lower ? bounds.lower : null,
+      anchorDate: bounds ? band!.anchorDate : null, status: resolveStatus(z) };
   });
 }
 export function weeklyOutcomes(history: MarketHistory, session: string) {

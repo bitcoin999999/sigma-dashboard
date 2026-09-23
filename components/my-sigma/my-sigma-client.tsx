@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { SigmaSummary, matchesSigmaFilter, type SigmaFilter } from "./sigma-summary";
+import { SigmaSummary } from "./sigma-summary";
+import { matchesSigmaFilter, type SigmaFilter } from "@/lib/watchlist-summary";
 import { WatchlistChanges } from "./watchlist-changes";
 import { useWatchlist, saveWatchlist } from "@/hooks/use-watchlist";
 import { normalizeSymbols, WATCHLIST_LIMIT } from "@/lib/watchlist";

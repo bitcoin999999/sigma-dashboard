@@ -35,3 +35,15 @@ export function attentionStocks(stocks: StockData[], limit = 3): StockData[] {
     Number(isApproachingSigma(b.zScore)) - Number(isApproachingSigma(a.zScore)) ||
     Math.abs(b.zScore) - Math.abs(a.zScore) || a.symbol.localeCompare(b.symbol)).slice(0, limit);
 }
+
+export type SigmaFilter = "all" | "outside" | "approaching";
+export function matchesSigmaFilter(stock: StockData, filter: SigmaFilter) {
+  return filter === "all" || (filter === "outside" ? isOutsideSigma(stock.zScore) : isApproachingSigma(stock.zScore));
+}
+
+/** All means every saved symbol, including unavailable quotes; never a top-three preview. */
+export function summarySymbolRows(symbols: string[], stocks: StockData[], filter: SigmaFilter) {
+  const bySymbol = new Map(stocks.map(stock => [stock.symbol, stock]));
+  return symbols.map(symbol => ({ symbol, stock: bySymbol.get(symbol) ?? null }))
+    .filter(row => filter === "all" || (row.stock !== null && matchesSigmaFilter(row.stock, filter)));
+}
