@@ -75,3 +75,11 @@
 - 검증: 전체 95개 테스트(직전 92+추가 3), TypeScript/변경 파일 ESLint/webpack 빌드 통과. 샘플 6개 티커로 전체6→경계 밖4→전체6, 빈 근접 필터 확인. 사용자 브라우저 저장 자료는 변경하지 않았다.
 - 실제 2026-09-22 공개 자료: SOXX 종가572.78/지지570(−0.49%), MU1096.16/저항1100(+0.35%), NVDA228.87/저항230(+0.49%). 이는 가격 거리이며 효과 검증 결과가 아니다.
 - 모바일 viewport360/390/430px 가로 넘침 없음. 브라우저 경고/오류 0.
+
+### 운영 배포 완료
+
+- 2026-09-23, 코드 커밋 `69650e9`. `vercel --prod --scope svpk1` 직접 배포.
+- `dpl_9j81N85S4EymKHc1CUjDFPWt8KuB`, READY/production. 배포 URL https://sigma-dashboard-fo4rljuxx-svpk1.vercel.app → https://sigma-dashboard-five.vercel.app 별칭 연결.
+- 운영 My Sigma의 샘플 전체6/경계 밖4/전체6 전환과 GEX 가격·거리 표시 확인. 평균 절대 위치/분석 가능 항목 없음. 390px에서 clientWidth=scrollWidth=380, 콘솔 오류0.
+- 운영 AMD 상세에서 좌측 가격·우측 σ축, 종가623.77/상단596.54/위치+1.74σ, 범례·음영을 확인했다.
+- 사용자 저장 목록·보유정보와 발행 스케줄/데이터 산식은 수정하지 않았다.
