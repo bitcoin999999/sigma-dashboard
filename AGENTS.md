@@ -11,8 +11,21 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 # sigma-dashboard
 
 사용자가 **"홈페이지"**라고 부르면 이 프로젝트를 뜻한다. 사이트 제목은
-**1SIGMA · Market Range Monitor**. `../oi_shock`이 산출하는 주간 1σ 밴드를 웹으로 보여주는
+**SigmaRange · Market Range Monitor**(2026-09-26 사용자 확정, 이전 1SIGMA). `../oi_shock`이 산출하는 주간 1σ 밴드를 웹으로 보여주는
 대시보드다(금요일 종가 앵커 기준 밴드 소진율).
+
+대표 주소는 **https://sigmarange.com**. 이름·canonical·공유 주소의 단일 출처는 `lib/site.ts`다.
+브랜드 로고는 2026-09-27 사용자가 승인한 **민트색 기하학적 SR 결합 A안**이다.
+벡터·색상의 단일 원본은 `lib/brand.ts`, 생성 명령은 `npm run brand:generate`.
+헤더·푸터·공유 이미지·탭·모바일 홈 아이콘에 공통 적용한다. 과거 σ 마크나 다른 시안으로 되돌리지 말 것.
+아이콘 메타데이터·캐시 주의사항은 `docs/agent-context/brand.md` 참고.
+가비아 `A @ 76.76.21.21`, TTL 600으로 연결했고 2026-09-26 DNS·HTTPS를 확인했다.
+`www.sigmarange.com`은 **코드가 아니라 Vercel 프로젝트 도메인 설정**에서 apex로 308 리디렉션한다
+(2026-09-27, 경로·쿼리 보존). 확인: `vercel api /v9/projects/sigma-dashboard/domains --scope svpk1`.
+www의 DNS는 가비아 `A www 76.76.21.21`(Vercel CLI 권장값, 2026-09-27 사용자 추가)이고 www 인증서는
+Vercel이 자동 발급했다. ⚠️ 가비아 SOA의 negative TTL이 **86400초(24시간)**라, 새 레코드를 추가하기 전에
+그 이름을 조회한 리졸버는 최대 하루 동안 "없음"을 기억할 수 있다. 추가 직후 확인은 권한 서버·8.8.8.8에 직접 물을 것.
+옛 `sigma-dashboard-five.vercel.app`은 My Sigma 이전 때문에 일부러 리디렉션하지 않는다.
 
 Vercel 팀 **`SVPK`(슬러그 `svpk1`)** / 프로젝트 `sigma-dashboard`에 배포돼 있다.
 `centme-9969`는 팀이 아니라 **로그인 사용자명**이다(`vercel whoami`가 이걸 뱉는다).
@@ -32,6 +45,23 @@ vercel --prod --scope svpk1
 **`--scope svpk1`은 배포할 때도 붙여야 한다.** `.vercel/project.json`에 팀 ID가 적혀
 있어도 CLI는 로그인 사용자의 개인 스코프를 기본으로 잡아서, 빼면 `Not authorized`로
 떨어진다(2026-08-26에 겪었다). 링크 한 번 했으니 됐다고 넘어가지 말 것.
+
+## Google AdSense (2026-09-26 준비, 계정·승인 전)
+
+- 게시자 ID의 단일 출처는 `lib/site.ts`의 `ADSENSE_CLIENT`, 판정 규칙은 `lib/adsense.ts`.
+  비어 있으면 광고 스크립트·`google-adsense-account` 메타 태그가 없고 `/ads.txt`는 404다.
+  **형식(`ca-pub-`+16자리)이 틀리면 `next build`가 실패하고 테스트도 실패한다** — 오타 하나로
+  광고가 조용히 꺼지는 일을 막으려는 것이니 이 검사를 느슨하게 만들지 말 것.
+- 광고 코드는 **`sigmarange.com` 호스트에서만** 로드한다(옛 vercel.app·www·localhost 제외).
+- `/my-sigma/transfer`는 포트폴리오를 창 사이 postMessage로 넘기는 페이지라 **광고 코드 금지**.
+  이미 실행 중인 스크립트는 내릴 수 없으므로 이 페이지로 가는 링크는 `<Link>`가 아니라 `<a>`여야
+  한다(`tests/adsense.test.mjs`가 감시).
+- `/about`·`/privacy`는 심사용 페이지다. 개인정보처리방침 내용을 바꾸면 `EFFECTIVE` 날짜를 갱신할 것.
+  `CONTACT_EMAIL`이 비어 있으면 두 페이지에서 문의 섹션이 빠진다.
+- 9/23 브랜치 `claude/sigmarange-domain`은 이 작업으로 대체됐다. **병합 금지** — 그 브랜치의
+  옛 호스트 308 리다이렉트는 옛 주소 localStorage에 닿는 My Sigma 이전 흐름을 막는다.
+- 배포 후 확인: `curl -s https://sigmarange.com/ | grep -c adsbygoogle.js`(1이어야 함),
+  `curl -s https://sigmarange.com/ads.txt`.
 
 ## 데이터 흐름
 
