@@ -83,3 +83,12 @@ curl -s -o /dev/null -w '%{http_code}\n' https://sigma-dashboard-five.vercel.app
   방문자수와는 다른 지표다.
 - Vercel Web Analytics는 **코드 추가만으로 켜지지 않는다.** 프로젝트 설정에서 별도 활성화가 필요하다.
   수치가 0이면 이 토글부터 확인할 것.
+
+## 종목 추가·빼기·섹터 변경 (2026-09-27~)
+
+- 사용자는 맥의 **'SigmaRange 종목관리' 앱**으로 직접 한다. 도구는 `../oi_shock/tools/symbol_admin.py`이고
+  **이 저장소의 코드 변경·배포 없이** 데이터 배포만으로 반영된다(홈페이지는 스냅샷이 종목 목록을 정한다).
+- 부탁을 받으면 이 저장소가 아니라 그 도구의 CLI를 쓸 것. 규칙·주의점은 `../oi_shock/AGENTS.md`의 같은 절과
+  `../oi_shock/docs/agent-context/symbol-admin.md`.
+- 사용자가 새 섹터를 만들면 섹터 제목은 영어 키 그대로 뜨고, 필터·상세의 한글 라벨만 비어 있다.
+  한글로 보이게 하려면 `lib/classification.ts`의 `CLASSIFICATION_LABELS`에 추가 후 배포.
